@@ -11,17 +11,18 @@
   <link rel="stylesheet" href="index.css">
 </head>
 <body>
-  <!-- Navigation -->
   <nav id="main-nav" class="navbar">
     <div class="nav-logo">
-      <span class="logo-icon">◆</span>
-      <span class="logo-text">Kaleh<span class="logo-accent">Design</span></span>
+      <span class="logo-text"><strong>anime</strong>js</span>
+      <span class="logo-dot"></span>
     </div>
-    <button id="menu-toggle" class="menu-toggle" aria-label="Toggle menu">
-      <span class="menu-line"></span>
-      <span class="menu-line"></span>
-      <span class="menu-line"></span>
-    </button>
+    <div class="nav-links">
+      <a href="#docs" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg> Docs</a>
+      <a href="#easings" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg> Easings</a>
+      <a href="#learn" class="nav-link"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg> Learn</a>
+      <a href="#" class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg></a>
+      <a href="#" class="nav-btn-sponsor"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> Sponsor</a>
+    </div>
   </nav>
 
   <!-- Side Menu Overlay -->
@@ -40,45 +41,44 @@
   </div>
 
   <!-- Hero Section -->
-  <section id="hero" class="section section--dark hero-section">
-    <div class="hero-content">
-      <h1 class="hero-title">
-        <span class="hero-title-line" data-animate="slide-up">All-in-one</span>
-        <span class="hero-title-line" data-animate="slide-up">animation &</span>
-        <span class="hero-title-line" data-animate="slide-up">design engine<span class="hero-dot">.</span></span>
-      </h1>
-      <p class="hero-subtitle" data-animate="fade-in">
-        A fast and flexible JavaScript library to animate,<br>
-        transform, and bring your web designs to life <span class="hero-cursor">_</span>
-      </p>
-    </div>
-
-    <!-- Hero Animation Grid -->
-    <div class="hero-animation" id="hero-animation">
-      <div class="hero-grid" id="hero-grid"></div>
-    </div>
-
-    <div class="hero-bottom">
-      <div class="hero-install">
-        <code id="install-cmd">npm i kalehdesign</code>
-        <button id="copy-btn" class="copy-btn" aria-label="Copy install command">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-          </svg>
-        </button>
+  <section id="hero" class="hero-section">
+    <div class="hero-container">
+      <div class="hero-content">
+        <h1 class="hero-title">
+          All-in-one<br>animation<br>engine.
+        </h1>
+        <p class="hero-subtitle">
+          A fast and flexible JavaScript<br>
+          library to animate WebGL.
+        </p>
       </div>
-      <a href="#features" class="hero-learn-more" id="learn-more-btn">
-        Learn more
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 5v14M19 12l-7 7-7-7"></path>
-        </svg>
-      </a>
+
+      <!-- Hero Animation Canvas -->
+      <div class="hero-animation" id="hero-animation">
+        <canvas id="hero-canvas"></canvas>
+      </div>
     </div>
 
-    <!-- Glow effects -->
-    <div class="hero-glow hero-glow--left"></div>
-    <div class="hero-glow hero-glow--right"></div>
+    <div class="hero-bottom-bar">
+      <div class="hero-actions">
+        <div class="npm-box">
+          <code>npm i animejs</code>
+          <button class="copy-btn" aria-label="Copy install command">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+        </div>
+        <a href="#features" class="learn-more-btn">
+          Learn more <span>↓</span>
+        </a>
+      </div>
+      <div class="sponsored-by">
+        <span class="sponsor-label">Sponsored by</span>
+        <div class="sponsor-logos">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L9 9H2l6 4-2 8 6-5 6 5-2-8 6-4h-7L12 2z"/></svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- Features Section -->

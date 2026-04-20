@@ -34,51 +34,123 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 1500);
   });
 
-  // ── Hero Grid Animation (anime.js) ──
-  const heroGrid = document.getElementById('hero-grid');
-  if (heroGrid) {
-    const heroGridSize = 14;
-    const heroTotalElements = heroGridSize * heroGridSize;
-    const fragment = document.createDocumentFragment();
-    for (let i = 0; i < heroTotalElements; i++) {
-      const el = document.createElement('div');
-      el.className = 'el';
-      fragment.appendChild(el);
+  // ── Hero Canvas Animation (animejs.com v3 Replica) ──
+  const canvas = document.getElementById('hero-canvas');
+  if (canvas) {
+    const ctx = canvas.getContext('2d');
+    let W, H, cx, cy;
+    
+    function resizeCanvas() {
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      W = rect.width;
+      H = rect.height;
+      cx = W / 2;
+      cy = H / 2;
     }
-    heroGrid.appendChild(fragment);
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
-    if (typeof anime !== 'undefined') {
-      const heroTimeline = anime.timeline({
-        targets: '.hero-grid .el',
-        delay: anime.stagger(50, {grid: [heroGridSize, heroGridSize], from: 'center'}),
-        loop: true,
-        direction: 'alternate'
+    let t = 0;
+    function drawHero() {
+      t += 0.005;
+      ctx.clearRect(0, 0, W, H);
+      const r = Math.min(W, H) * 0.42;
+
+      // 1. Outer Gradient Ring
+      const segments = [
+        { color: '#18FF92', start: Math.PI, end: Math.PI * 1.48 },
+        { color: '#FF4B4B', start: Math.PI * 1.52, end: Math.PI * 1.98 },
+        { color: '#FF8A3D', start: Math.PI * 2.02, end: Math.PI * 2.2 },
+        { color: '#FFB885', start: Math.PI * 2.22, end: Math.PI * 2.48 },
+        { color: '#5A87FF', start: Math.PI * 2.52, end: Math.PI * 2.8 },
+        { color: '#26D5FF', start: Math.PI * 2.82, end: Math.PI * 2.98 }
+      ];
+      
+      ctx.lineWidth = 4;
+      segments.forEach(seg => {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, seg.start, seg.end);
+        ctx.strokeStyle = seg.color;
+        ctx.shadowBlur = 12;
+        ctx.shadowColor = seg.color;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
       });
 
-      heroTimeline
-      .add({
-        scale: [0, 1],
-        opacity: [0, 1],
-        backgroundColor: ['#FF4B4B', '#F6C153', '#18FF92', '#5A87FF'],
-        duration: 1500,
-        easing: 'easeInOutQuad'
-      })
-      .add({
-        rotate: anime.stagger([0, 90], {grid: [heroGridSize, heroGridSize], from: 'center'}),
-        scale: 0.5,
-        borderRadius: ['4px', '50%'],
-        duration: 1200,
-        easing: 'easeInOutSine'
-      })
-      .add({
-        scale: 1,
-        rotate: 0,
-        borderRadius: '4px',
-        backgroundColor: '#FF4B4B',
-        duration: 1200,
-        easing: 'easeOutElastic(1, .5)'
-      });
+      // 2. Inner Tick Marks (rotating slowly)
+      ctx.lineWidth = 1;
+      const tickCount = 120;
+      for (let i = 0; i < tickCount; i++) {
+        const angle = (i / tickCount) * Math.PI * 2 + t * 0.5;
+        const isLong = i % 10 === 0;
+        const innerR = r * (isLong ? 0.9 : 0.95);
+        const outerR = r * 0.98;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(angle) * innerR, cy + Math.sin(angle) * innerR);
+        ctx.lineTo(cx + Math.cos(angle) * outerR, cy + Math.sin(angle) * outerR);
+        ctx.strokeStyle = `rgba(255,255,255,${isLong ? 0.4 : 0.1})`;
+        ctx.stroke();
+      }
+
+      // 3. Inner Dark Circular Backgrounds
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * 0.85, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      ctx.fill();
+      
+      for(let i=0; i<4; i++) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * (0.8 - i*0.06), t * (1 + i*0.4), t * (1 + i*0.4) + Math.PI*(0.5 + i*0.2));
+        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
+      // 4. Center Hatching (Audio visualizer style)
+      const hatchWidth = r * 1.4;
+      const hatchHeight = r * 0.8;
+      const lineSpacing = 5;
+      ctx.lineWidth = 1.5;
+      for(let y = -hatchHeight/2; y <= hatchHeight/2; y += lineSpacing) {
+        const envelope = Math.sin((y + hatchHeight/2) / hatchHeight * Math.PI);
+        const dynamicWidth = hatchWidth * envelope * (0.85 + 0.15 * Math.sin(t * 15 + y * 0.1));
+        
+        ctx.beginPath();
+        ctx.moveTo(cx - dynamicWidth/2, cy + y);
+        ctx.lineTo(cx + dynamicWidth/2, cy + y);
+        ctx.strokeStyle = 'rgba(255, 75, 75, 0.5)';
+        ctx.stroke();
+      }
+
+      // 5. Center Red Dots along a wave
+      const dotCount = 30;
+      for (let i = 0; i < dotCount; i++) {
+        const xPos = (i / dotCount) * hatchWidth - hatchWidth/2;
+        const waveY = Math.sin(xPos * 0.02 + t * 4) * 40 * Math.cos(xPos * 0.015) * Math.sin(t*1.5);
+        
+        ctx.beginPath();
+        ctx.arc(cx + xPos, cy + waveY, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#FF4B4B';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#FF4B4B';
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      
+      for(let i=-2; i<=2; i++) {
+        ctx.beginPath();
+        ctx.arc(cx, cy + i*40, 3, 0, Math.PI*2);
+        ctx.fillStyle = '#FF4B4B';
+        ctx.fill();
+      }
+
+      requestAnimationFrame(drawHero);
     }
+    drawHero();
   }
 
   // ── Demo Grid ──
