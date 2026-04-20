@@ -7,7 +7,7 @@ import ParticleCanvas from "./ParticleCanvas";
 const TITLE_LINE_1 = "Crafting Digital";
 const TITLE_LINE_2 = "Experiences";
 const SUBTITLE =
-  "Senior Creative Technologist specializing in high-performance\ninteractive interfaces and award-winning web experiences.";
+  "kaleh — Senior Creative Technologist specializing in WebGL\nexperiences, motion systems, and award-winning interfaces.";
 
 function splitToChars(text: string, className: string) {
   return text.split("").map((char, i) => (

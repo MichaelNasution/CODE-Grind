@@ -78,7 +78,6 @@ export default function WorkPage() {
           className=""
           color="var(--accent)"
           opacity={0.05}
-          // @ts-expect-error style prop
           style={{
             position: "absolute",
             right: "8%",

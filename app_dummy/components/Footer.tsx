@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import Link from "next/link";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -72,8 +73,8 @@ export default function Footer() {
           Remarkable.
         </h2>
 
-        <a
-          href="mailto:hello@codegrind.dev"
+        <Link
+          href="/contact"
           data-cursor="pointer"
           style={{
             display: "inline-flex",
@@ -100,9 +101,9 @@ export default function Footer() {
             (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)";
           }}
         >
-          hello@codegrind.dev
+          Start the conversation
           <span style={{ fontSize: "18px" }}>→</span>
-        </a>
+        </Link>
       </div>
 
       <div className="divider footer-item" />
@@ -119,17 +120,21 @@ export default function Footer() {
           gap: "16px",
         }}
       >
-        <span
+        <div
           style={{
             fontFamily: "var(--font-sans)",
             fontSize: "13px",
             fontWeight: 600,
-            letterSpacing: "0.06em",
+            letterSpacing: "0.02em",
             color: "var(--text-primary)",
           }}
         >
-          <span style={{ color: "var(--accent)" }}>◈</span> CODEGRIND
-        </span>
+          dev{" "}
+          <span style={{ color: "var(--text-tertiary)", fontWeight: 300 }}>
+            w/
+          </span>{" "}
+          <span style={{ color: "var(--accent)" }}>kaleh</span>
+        </div>
 
         <div style={{ display: "flex", gap: "28px" }}>
           {["Twitter", "GitHub", "Dribbble", "LinkedIn"].map((link) => (
@@ -165,7 +170,7 @@ export default function Footer() {
             letterSpacing: "0.06em",
           }}
         >
-          © 2025 CodeGrind. All rights reserved.
+          © 2026 kaleh. All rights reserved.
         </span>
       </div>
     </footer>

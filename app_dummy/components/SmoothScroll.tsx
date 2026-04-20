@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -13,7 +14,7 @@ interface SmoothScrollProps {
 
 export default function SmoothScroll({ children }: SmoothScrollProps) {
   const lenisRef = useRef<Lenis | null>(null);
-  const rafRef = useRef<number>(0);
+  const pathname = usePathname();
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -48,6 +49,14 @@ export default function SmoothScroll({ children }: SmoothScrollProps) {
       });
     };
   }, []);
+
+  useEffect(() => {
+    // Refresh ScrollTrigger when route changes to recalculate heights
+    const timeoutId = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [pathname]);
 
   return <>{children}</>;
 }

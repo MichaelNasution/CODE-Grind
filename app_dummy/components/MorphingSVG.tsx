@@ -17,10 +17,12 @@ export default function MorphingSVG({
   className = "",
   color = "var(--accent)",
   opacity = 0.08,
+  style: containerStyle = {},
 }: {
   className?: string;
   color?: string;
   opacity?: number;
+  style?: React.CSSProperties;
 }) {
   const pathRef = useRef<SVGPathElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -70,7 +72,7 @@ export default function MorphingSVG({
     <div
       ref={wrapRef}
       className={className}
-      style={{ lineHeight: 0, display: "inline-block" }}
+      style={{ lineHeight: 0, display: "inline-block", ...containerStyle }}
       aria-hidden="true"
     >
       <svg
