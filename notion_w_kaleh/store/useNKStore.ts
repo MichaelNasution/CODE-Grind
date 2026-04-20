@@ -16,6 +16,7 @@ import {
   type Task,
 } from '../lib/schema';
 import { desc, eq, sql } from 'drizzle-orm';
+import { Platform } from 'react-native';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
@@ -75,11 +76,12 @@ export const useNKStore = create<NKState>((set, get) => ({
   totalBalance: 0,
 
   loadTransactions: async () => {
+    if (Platform.OS === 'web') return;
     const rows = await db.query.financeTransactions.findMany({
       orderBy: [desc(financeTransactions.createdAt)],
     });
     const balance = rows.reduce(
-      (acc, t) => (t.type === 'income' ? acc + t.amount : acc - t.amount),
+      (acc: number, t: FinanceTransaction) => (t.type === 'income' ? acc + t.amount : acc - t.amount),
       0
     );
     set({ transactions: rows, totalBalance: balance });
@@ -94,11 +96,23 @@ export const useNKStore = create<NKState>((set, get) => ({
       note,
       createdAt: new Date(),
     };
+    if (Platform.OS === 'web') {
+      const list = [newTx, ...get().transactions];
+      const bal = list.reduce((a: number, t: FinanceTransaction) => t.type === 'income' ? a + t.amount : a - t.amount, 0);
+      set({ transactions: list, totalBalance: bal });
+      return;
+    }
     await db.insert(financeTransactions).values(newTx);
     await get().loadTransactions();
   },
 
   deleteTransaction: async (id) => {
+    if (Platform.OS === 'web') {
+      const list = get().transactions.filter(t => t.id !== id);
+      const bal = list.reduce((a: number, t: FinanceTransaction) => t.type === 'income' ? a + t.amount : a - t.amount, 0);
+      set({ transactions: list, totalBalance: bal });
+      return;
+    }
     await db.delete(financeTransactions).where(eq(financeTransactions.id, id));
     await get().loadTransactions();
   },
@@ -108,6 +122,7 @@ export const useNKStore = create<NKState>((set, get) => ({
   habitLogs: [],
 
   loadHabits: async () => {
+    if (Platform.OS === 'web') return;
     const habitRows = await db.query.habits.findMany({
       orderBy: [desc(habits.createdAt)],
     });
@@ -116,14 +131,19 @@ export const useNKStore = create<NKState>((set, get) => ({
   },
 
   addHabit: async (name, icon, color) => {
-    await db.insert(habits).values({
+    const newHabit = {
       id: uuid(),
       name,
       icon,
       color,
       streak: 0,
       createdAt: new Date(),
-    });
+    };
+    if (Platform.OS === 'web') {
+      set({ habitList: [newHabit, ...get().habitList] });
+      return;
+    }
+    await db.insert(habits).values(newHabit);
     await get().loadHabits();
   },
 
@@ -135,17 +155,27 @@ export const useNKStore = create<NKState>((set, get) => ({
 
     if (existing) {
       // Uncheck — remove log
+      if (Platform.OS === 'web') {
+        set({ habitLogs: get().habitLogs.filter(l => l.id !== existing.id) });
+        return false;
+      }
       await db.delete(habitLogs).where(eq(habitLogs.id, existing.id));
       await get().loadHabits();
       return false;
     } else {
       // Check — add log and update streak
-      await db.insert(habitLogs).values({
+      const newLog = {
         id: uuid(),
         habitId,
         completedAt: new Date(),
         dateKey: today,
-      });
+      };
+      if (Platform.OS === 'web') {
+        set({ habitLogs: [...get().habitLogs, newLog] });
+        set({ habitList: get().habitList.map(h => h.id === habitId ? { ...h, streak: h.streak + 1 } : h) });
+        return true;
+      }
+      await db.insert(habitLogs).values(newLog);
       // Recalculate streak (simple: count consecutive days)
       await db
         .update(habits)
@@ -157,6 +187,10 @@ export const useNKStore = create<NKState>((set, get) => ({
   },
 
   deleteHabit: async (id) => {
+    if (Platform.OS === 'web') {
+      set({ habitList: get().habitList.filter(h => h.id !== id), habitLogs: get().habitLogs.filter(l => l.habitId !== id) });
+      return;
+    }
     await db.delete(habits).where(eq(habits.id, id));
     await get().loadHabits();
   },
@@ -172,6 +206,7 @@ export const useNKStore = create<NKState>((set, get) => ({
   taskList: [],
 
   loadTasks: async () => {
+    if (Platform.OS === 'web') return;
     const rows = await db.query.tasks.findMany({
       orderBy: [desc(tasks.createdAt)],
     });
@@ -179,20 +214,30 @@ export const useNKStore = create<NKState>((set, get) => ({
   },
 
   addTask: async (title, category, priority) => {
-    await db.insert(tasks).values({
+    const newTask = {
       id: uuid(),
       title,
       category,
       priority,
       isCompleted: false,
       createdAt: new Date(),
-    });
+      dueDate: null,
+    };
+    if (Platform.OS === 'web') {
+      set({ taskList: [newTask, ...get().taskList] });
+      return;
+    }
+    await db.insert(tasks).values(newTask);
     await get().loadTasks();
   },
 
   toggleTask: async (id) => {
     const task = get().taskList.find((t) => t.id === id);
     if (!task) return;
+    if (Platform.OS === 'web') {
+      set({ taskList: get().taskList.map(t => t.id === id ? { ...t, isCompleted: !t.isCompleted } : t) });
+      return;
+    }
     await db
       .update(tasks)
       .set({ isCompleted: !task.isCompleted })
@@ -201,6 +246,10 @@ export const useNKStore = create<NKState>((set, get) => ({
   },
 
   deleteTask: async (id) => {
+    if (Platform.OS === 'web') {
+      set({ taskList: get().taskList.filter(t => t.id !== id) });
+      return;
+    }
     await db.delete(tasks).where(eq(tasks.id, id));
     await get().loadTasks();
   },

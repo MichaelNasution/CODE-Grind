@@ -7,17 +7,22 @@ import { openDatabaseSync } from 'expo-sqlite';
 import { drizzle } from 'drizzle-orm/expo-sqlite';
 import * as schema from './schema';
 
+import { Platform } from 'react-native';
+
+const isWeb = Platform.OS === 'web';
+
 // Open (or create) the SQLite database file
-const sqlite = openDatabaseSync('nk.db');
+const sqlite = !isWeb ? openDatabaseSync('nk.db') : null as any;
 
 // Export the Drizzle-wrapped db instance
-export const db = drizzle(sqlite, { schema });
+export const db = !isWeb ? drizzle(sqlite, { schema }) : null as any;
 
 /**
  * Run initial table creation migrations.
  * Call this once at app startup (in _layout.tsx).
  */
 export async function initDatabase(): Promise<void> {
+  if (isWeb) return;
   await sqlite.execAsync(`
     PRAGMA journal_mode = WAL;
     PRAGMA foreign_keys = ON;
