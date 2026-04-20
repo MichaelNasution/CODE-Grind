@@ -2,16 +2,38 @@ import type { Metadata } from "next";
 import "./globals.css";
 import SmoothScroll from "@/components/SmoothScroll";
 import CustomCursor from "@/components/CustomCursor";
+import Navbar from "@/components/Navbar";
+import PageTransition from "@/components/PageTransition";
 
 export const metadata: Metadata = {
-  title: "CodeGrind — Award-Winning Developer Experience",
+  title: {
+    default: "dev w/ kaleh — Creative Developer Portfolio",
+    template: "%s | dev w/ kaleh",
+  },
   description:
-    "A high-end interactive landing page built with Next.js 14, GSAP, and Lenis. Featuring smooth scrolling, particle interactions, and precision animations.",
-  keywords: ["Next.js", "GSAP", "animation", "portfolio", "developer"],
+    "Portfolio of kaleh — Senior Creative Technologist specializing in WebGL experiences, motion design systems, and award-winning interactive interfaces.",
+  keywords: [
+    "creative developer",
+    "WebGL",
+    "GSAP",
+    "motion design",
+    "interactive",
+    "portfolio",
+    "Next.js",
+  ],
+  authors: [{ name: "kaleh" }],
+  creator: "kaleh",
   openGraph: {
-    title: "CodeGrind — Award-Winning Developer Experience",
-    description: "High-end interactive landing page with GSAP animations and Lenis smooth scroll.",
+    title: "dev w/ kaleh — Creative Developer Portfolio",
+    description:
+      "WebGL experiences, motion design systems, and award-winning interactive interfaces.",
     type: "website",
+    siteName: "dev w/ kaleh",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "dev w/ kaleh",
+    description: "Creative Developer — WebGL · Motion · Systems",
   },
 };
 
@@ -32,7 +54,11 @@ export default function RootLayout({
       </head>
       <body>
         <CustomCursor />
-        <SmoothScroll>{children}</SmoothScroll>
+        <PageTransition />
+        <SmoothScroll>
+          <Navbar />
+          {children}
+        </SmoothScroll>
       </body>
     </html>
   );
