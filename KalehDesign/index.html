@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KalehDesign — All-in-one Animation & Design Engine</title>
+  <meta name="description" content="KalehDesign is a powerful, lightweight animation and design engine for the modern web. Create stunning animations with an intuitive API.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <!-- Navigation -->
+  <nav id="main-nav" class="navbar">
+    <div class="nav-logo">
+      <span class="logo-icon">◆</span>
+      <span class="logo-text">Kaleh<span class="logo-accent">Design</span></span>
+    </div>
+    <button id="menu-toggle" class="menu-toggle" aria-label="Toggle menu">
+      <span class="menu-line"></span>
+      <span class="menu-line"></span>
+      <span class="menu-line"></span>
+    </button>
+  </nav>
+
+  <!-- Side Menu Overlay -->
+  <div id="side-menu" class="side-menu">
+    <div class="side-menu-content">
+      <a href="#hero" class="side-menu-link" data-index="01">Home</a>
+      <a href="#features" class="side-menu-link" data-index="02">Features</a>
+      <a href="#toolbox" class="side-menu-link" data-index="03">Toolbox</a>
+      <a href="#animations" class="side-menu-link" data-index="04">Animations</a>
+      <a href="#api" class="side-menu-link" data-index="05">API</a>
+      <a href="#docs" class="side-menu-link" data-index="06">Docs</a>
+      <div class="side-menu-divider"></div>
+      <a href="#" class="side-menu-link side-menu-link--github" data-index="⚡">GitHub</a>
+      <a href="#" class="side-menu-link side-menu-link--sponsor" data-index="♥">Sponsor</a>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <section id="hero" class="section section--dark hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">
+        <span class="hero-title-line" data-animate="slide-up">All-in-one</span>
+        <span class="hero-title-line" data-animate="slide-up">animation &</span>
+        <span class="hero-title-line" data-animate="slide-up">design engine<span class="hero-dot">.</span></span>
+      </h1>
+      <p class="hero-subtitle" data-animate="fade-in">
+        A fast and flexible JavaScript library to animate,<br>
+        transform, and bring your web designs to life <span class="hero-cursor">_</span>
+      </p>
+    </div>
+
+    <!-- Hero Animation Canvas -->
+    <div class="hero-animation" id="hero-animation">
+      <canvas id="hero-canvas"></canvas>
+    </div>
+
+    <div class="hero-bottom">
+      <div class="hero-install">
+        <code id="install-cmd">npm i kalehdesign</code>
+        <button id="copy-btn" class="copy-btn" aria-label="Copy install command">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+        </button>
+      </div>
+      <a href="#features" class="hero-learn-more" id="learn-more-btn">
+        Learn more
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M19 12l-7 7-7-7"></path>
+        </svg>
+      </a>
+    </div>
+
+    <!-- Glow effects -->
+    <div class="hero-glow hero-glow--left"></div>
+    <div class="hero-glow hero-glow--right"></div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="section section--light features-section">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-tag">Features</span>
+        <h2 class="section-title section-title--dark">The complete<br>design toolbox.</h2>
+        <p class="section-desc">Everything you need to create stunning web animations, all in one lightweight package.</p>
+      </div>
+
+      <div class="features-grid" id="features-grid">
+        <div class="feature-card" data-feature="animate">
+          <div class="feature-icon">
+            <div class="feature-icon-inner" id="feature-icon-1">
+              <div class="icon-circle"></div>
+              <div class="icon-circle icon-circle--2"></div>
+              <div class="icon-circle icon-circle--3"></div>
+            </div>
+          </div>
+          <h3 class="feature-title">Animate</h3>
+          <p class="feature-desc">CSS, SVG, DOM attributes, and JavaScript objects. Animate anything with precision timing.</p>
+          <div class="feature-tags">
+            <span class="feature-tag">CSS Props</span>
+            <span class="feature-tag">SVG</span>
+            <span class="feature-tag">Objects</span>
+          </div>
+        </div>
+
+        <div class="feature-card" data-feature="stagger">
+          <div class="feature-icon">
+            <div class="feature-icon-inner" id="feature-icon-2">
+              <div class="stagger-bar"></div>
+              <div class="stagger-bar"></div>
+              <div class="stagger-bar"></div>
+              <div class="stagger-bar"></div>
+              <div class="stagger-bar"></div>
+            </div>
+          </div>
+          <h3 class="feature-title">Stagger</h3>
+          <p class="feature-desc">Sequentially animate multiple elements with customizable stagger delay and easing.</p>
+          <div class="feature-tags">
+            <span class="feature-tag">Sequential</span>
+            <span class="feature-tag">Grid</span>
+            <span class="feature-tag">Wave</span>
+          </div>
+        </div>
+
+        <div class="feature-card" data-feature="timeline">
+          <div class="feature-icon">
+            <div class="feature-icon-inner" id="feature-icon-3">
+              <div class="timeline-track">
+                <div class="timeline-segment timeline-segment--1"></div>
+                <div class="timeline-segment timeline-segment--2"></div>
+                <div class="timeline-segment timeline-segment--3"></div>
+                <div class="timeline-head"></div>
+              </div>
+            </div>
+          </div>
+          <h3 class="feature-title">Timeline</h3>
+          <p class="feature-desc">Chain multiple animations together with precise control over sequencing and overlap.</p>
+          <div class="feature-tags">
+            <span class="feature-tag">Sequencing</span>
+            <span class="feature-tag">Offsets</span>
+            <span class="feature-tag">Sync</span>
+          </div>
+        </div>
+
+        <div class="feature-card" data-feature="spring">
+          <div class="feature-icon">
+            <div class="feature-icon-inner" id="feature-icon-4">
+              <svg class="spring-svg" viewBox="0 0 80 80">
+                <path class="spring-path" d="M10,40 Q20,10 30,40 Q40,70 50,40 Q60,10 70,40" fill="none" stroke="currentColor" stroke-width="2"/>
+                <circle class="spring-ball" cx="70" cy="40" r="5" fill="currentColor"/>
+              </svg>
+            </div>
+          </div>
+          <h3 class="feature-title">Spring Physics</h3>
+          <p class="feature-desc">Natural motion with configurable spring dynamics — mass, stiffness, and damping.</p>
+          <div class="feature-tags">
+            <span class="feature-tag">Physics</span>
+            <span class="feature-tag">Natural</span>
+            <span class="feature-tag">Dynamic</span>
+          </div>
+        </div>
+
+        <div class="feature-card" data-feature="scroll">
+          <div class="feature-icon">
+            <div class="feature-icon-inner" id="feature-icon-5">
+              <div class="scroll-indicator">
+                <div class="scroll-track">
+                  <div class="scroll-thumb"></div>
+                </div>
+                <div class="scroll-lines">
+                  <span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <h3 class="feature-title">Scroll Observer</h3>
+          <p class="feature-desc">Trigger and control animations based on scroll position with intersection detection.</p>
+          <div class="feature-tags">
+            <span class="feature-tag">Intersection</span>
+            <span class="feature-tag">Parallax</span>
+            <span class="feature-tag">Progress</span>
+          </div>
+        </div>
+
+        <div class="feature-card" data-feature="easing">
+          <div class="feature-icon">
+            <div class="feature-icon-inner" id="feature-icon-6">
+              <svg class="easing-svg" viewBox="0 0 80 80">
+                <path class="easing-curve" d="M10,70 C10,70 25,70 40,40 C55,10 70,10 70,10" fill="none" stroke="currentColor" stroke-width="2"/>
+                <circle class="easing-dot" cx="10" cy="70" r="4" fill="currentColor"/>
+              </svg>
+            </div>
+          </div>
+          <h3 class="feature-title">Custom Easings</h3>
+          <p class="feature-desc">30+ built-in easings plus custom cubic-bezier and spring curves for any motion style.</p>
+          <div class="feature-tags">
+            <span class="feature-tag">Bezier</span>
+            <span class="feature-tag">Steps</span>
+            <span class="feature-tag">Elastic</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Animation Demo Section -->
+  <section id="toolbox" class="section section--dark toolbox-section">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-tag">Interactive</span>
+        <h2 class="section-title">See it in action.</h2>
+        <p class="section-desc section-desc--light">Click the controls below to see KalehDesign's animation engine at work.</p>
+      </div>
+
+      <div class="demo-container">
+        <div class="demo-stage" id="demo-stage">
+          <div class="demo-grid" id="demo-grid">
+            <!-- Generated by JS -->
+          </div>
+        </div>
+        <div class="demo-controls">
+          <button class="demo-btn demo-btn--active" data-animation="wave" id="btn-wave">
+            <span class="demo-btn-icon">〰️</span>
+            Wave
+          </button>
+          <button class="demo-btn" data-animation="spiral" id="btn-spiral">
+            <span class="demo-btn-icon">🌀</span>
+            Spiral
+          </button>
+          <button class="demo-btn" data-animation="explosion" id="btn-explosion">
+            <span class="demo-btn-icon">💥</span>
+            Explosion
+          </button>
+          <button class="demo-btn" data-animation="heartbeat" id="btn-heartbeat">
+            <span class="demo-btn-icon">💎</span>
+            Pulse
+          </button>
+          <button class="demo-btn" data-animation="matrix" id="btn-matrix">
+            <span class="demo-btn-icon">⚡</span>
+            Matrix
+          </button>
+        </div>
+
+        <!-- Code preview -->
+        <div class="code-preview">
+          <div class="code-header">
+            <div class="code-dots">
+              <span class="code-dot code-dot--red"></span>
+              <span class="code-dot code-dot--yellow"></span>
+              <span class="code-dot code-dot--green"></span>
+            </div>
+            <span class="code-filename">animation.js</span>
+          </div>
+          <pre class="code-block" id="code-block"><code id="code-content">kaleh.animate({
+  targets: '.grid-item',
+  scale: [0.5, 1],
+  opacity: [0, 1],
+  delay: kaleh.stagger(50, {
+    grid: [10, 10],
+    from: 'center'
+  }),
+  easing: 'easeOutElastic(1, .5)',
+  duration: 1500
+});</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Scroll Animation Section -->
+  <section id="animations" class="section section--light scroll-section">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-tag section-tag--dark">Scroll Observer</span>
+        <h2 class="section-title section-title--dark">Animate on scroll.</h2>
+        <p class="section-desc section-desc--dark">Trigger animations based on scroll position. Watch these elements come alive as you scroll.</p>
+      </div>
+
+      <div class="scroll-demo">
+        <div class="scroll-cards" id="scroll-cards">
+          <div class="scroll-card scroll-animate" data-direction="left">
+            <div class="scroll-card-visual">
+              <div class="morph-shape" id="morph-1">
+                <svg viewBox="0 0 200 200">
+                  <path d="M100,10 C140,10 190,60 190,100 C190,140 140,190 100,190 C60,190 10,140 10,100 C10,60 60,10 100,10Z" fill="url(#grad1)"/>
+                  <defs>
+                    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" style="stop-color:#FF324A;stop-opacity:1" />
+                      <stop offset="100%" style="stop-color:#FF8C42;stop-opacity:1" />
+                    </linearGradient>
+                  </defs>
+                </svg>
+              </div>
+            </div>
+            <div class="scroll-card-content">
+              <h3>Morph Shapes</h3>
+              <p>Smoothly transition between complex SVG path shapes with interpolated morphing.</p>
+            </div>
+          </div>
+
+          <div class="scroll-card scroll-animate" data-direction="right">
+            <div class="scroll-card-visual">
+              <div class="orbit-system" id="orbit-1">
+                <div class="orbit-center"></div>
+                <div class="orbit-ring orbit-ring--1">
+                  <div class="orbit-planet orbit-planet--1"></div>
+                </div>
+                <div class="orbit-ring orbit-ring--2">
+                  <div class="orbit-planet orbit-planet--2"></div>
+                </div>
+                <div class="orbit-ring orbit-ring--3">
+                  <div class="orbit-planet orbit-planet--3"></div>
+                </div>
+              </div>
+            </div>
+            <div class="scroll-card-content">
+              <h3>Motion Paths</h3>
+              <p>Animate elements along custom SVG paths with automatic rotation and easing.</p>
+            </div>
+          </div>
+
+          <div class="scroll-card scroll-animate" data-direction="left">
+            <div class="scroll-card-visual">
+              <div class="particle-field" id="particle-field">
+                <!-- Particles generated by JS -->
+              </div>
+            </div>
+            <div class="scroll-card-content">
+              <h3>Particle Systems</h3>
+              <p>Create dynamic particle effects with physics-based motion and collision detection.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scroll Progress Gauge -->
+      <div class="scroll-gauge-container">
+        <div class="scroll-gauge" id="scroll-gauge">
+          <svg viewBox="0 0 200 200" class="gauge-svg">
+            <circle class="gauge-bg" cx="100" cy="100" r="85" fill="none" stroke="#e0ddd8" stroke-width="3"/>
+            <circle class="gauge-progress" id="gauge-progress" cx="100" cy="100" r="85" fill="none" stroke="url(#gaugeGrad)" stroke-width="4" stroke-linecap="round" stroke-dasharray="534" stroke-dashoffset="534" transform="rotate(-90 100 100)"/>
+            <defs>
+              <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#FF324A" />
+                <stop offset="50%" style="stop-color:#FFBD39" />
+                <stop offset="100%" style="stop-color:#27E07D" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="gauge-label">
+            <span class="gauge-value" id="gauge-value">0</span>
+            <span class="gauge-unit">%</span>
+          </div>
+          <span class="gauge-caption">Scroll Progress</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- API / Modular Section -->
+  <section id="api" class="section section--dark api-section">
+    <div class="section-container">
+      <div class="section-header">
+        <span class="section-tag">Modular API</span>
+        <h2 class="section-title">Lightweight.<br>Modular.<br>Powerful.</h2>
+        <p class="section-desc section-desc--light">Import only what you need. Tree-shakeable modules keep your bundle lean.</p>
+      </div>
+
+      <div class="api-grid">
+        <div class="api-card api-card--size">
+          <div class="api-card-header">
+            <span class="api-card-label">Bundle Size</span>
+            <span class="api-card-value">14.2 <small>KB</small></span>
+          </div>
+          <div class="api-size-bars">
+            <div class="api-size-bar">
+              <span class="api-size-bar-label">Core</span>
+              <div class="api-size-bar-track">
+                <div class="api-size-bar-fill" data-width="45" style="background: linear-gradient(90deg, #FF324A, #FF6B7A);"></div>
+              </div>
+              <span class="api-size-bar-value">6.4 KB</span>
+            </div>
+            <div class="api-size-bar">
+              <span class="api-size-bar-label">Easings</span>
+              <div class="api-size-bar-track">
+                <div class="api-size-bar-fill" data-width="20" style="background: linear-gradient(90deg, #3777FF, #60A5FA);"></div>
+              </div>
+              <span class="api-size-bar-value">2.8 KB</span>
+            </div>
+            <div class="api-size-bar">
+              <span class="api-size-bar-label">Timeline</span>
+              <div class="api-size-bar-track">
+                <div class="api-size-bar-fill" data-width="15" style="background: linear-gradient(90deg, #27E07D, #6EE7B7);"></div>
+              </div>
+              <span class="api-size-bar-value">2.1 KB</span>
+            </div>
+            <div class="api-size-bar">
+              <span class="api-size-bar-label">Scroll</span>
+              <div class="api-size-bar-track">
+                <div class="api-size-bar-fill" data-width="12" style="background: linear-gradient(90deg, #FFBD39, #FCD34D);"></div>
+              </div>
+              <span class="api-size-bar-value">1.7 KB</span>
+            </div>
+            <div class="api-size-bar">
+              <span class="api-size-bar-label">Spring</span>
+              <div class="api-size-bar-track">
+                <div class="api-size-bar-fill" data-width="8" style="background: linear-gradient(90deg, #A855F7, #C084FC);"></div>
+              </div>
+              <span class="api-size-bar-value">1.2 KB</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="api-card api-card--code">
+          <div class="code-header">
+            <div class="code-dots">
+              <span class="code-dot code-dot--red"></span>
+              <span class="code-dot code-dot--yellow"></span>
+              <span class="code-dot code-dot--green"></span>
+            </div>
+            <span class="code-filename">imports.js</span>
+          </div>
+          <pre class="code-block"><code><span class="code-keyword">import</span> { animate, stagger } <span class="code-keyword">from</span> <span class="code-string">'kalehdesign'</span>;
+<span class="code-keyword">import</span> { spring } <span class="code-keyword">from</span> <span class="code-string">'kalehdesign/spring'</span>;
+<span class="code-keyword">import</span> { timeline } <span class="code-keyword">from</span> <span class="code-string">'kalehdesign/timeline'</span>;
+<span class="code-keyword">import</span> { scroll } <span class="code-keyword">from</span> <span class="code-string">'kalehdesign/scroll'</span>;
+
+<span class="code-comment">// Compose animations naturally</span>
+<span class="code-keyword">const</span> tl = <span class="code-func">timeline</span>({
+  defaults: { duration: <span class="code-number">800</span> }
+});
+
+tl.<span class="code-func">add</span>(<span class="code-string">'.hero'</span>, {
+  opacity: [<span class="code-number">0</span>, <span class="code-number">1</span>],
+  translateY: [<span class="code-number">40</span>, <span class="code-number">0</span>],
+  easing: <span class="code-func">spring</span>(<span class="code-number">1</span>, <span class="code-number">80</span>, <span class="code-number">10</span>)
+});</code></pre>
+        </div>
+
+        <div class="api-stats">
+          <div class="api-stat" id="stat-1">
+            <span class="api-stat-number" data-target="30">0</span>
+            <span class="api-stat-label">Built-in Easings</span>
+          </div>
+          <div class="api-stat" id="stat-2">
+            <span class="api-stat-number" data-target="60">0</span>
+            <span class="api-stat-label">FPS Performance</span>
+          </div>
+          <div class="api-stat" id="stat-3">
+            <span class="api-stat-number" data-target="0">0</span>
+            <span class="api-stat-label">Dependencies</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Docs / CTA Section -->
+  <section id="docs" class="section section--gradient docs-section">
+    <div class="section-container">
+      <div class="docs-content">
+        <h2 class="docs-title">Ready to create<br>something amazing?</h2>
+        <p class="docs-desc">Dive into the documentation, explore examples, and start building beautiful animations today.</p>
+        <div class="docs-buttons">
+          <a href="#" class="btn btn--primary" id="btn-get-started">
+            Get Started
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"></path>
+            </svg>
+          </a>
+          <a href="#" class="btn btn--outline" id="btn-examples">
+            View Examples
+          </a>
+        </div>
+      </div>
+
+      <!-- Floating animated shapes -->
+      <div class="docs-shapes">
+        <div class="floating-shape floating-shape--1"></div>
+        <div class="floating-shape floating-shape--2"></div>
+        <div class="floating-shape floating-shape--3"></div>
+        <div class="floating-shape floating-shape--4"></div>
+        <div class="floating-shape floating-shape--5"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer id="footer" class="footer">
+    <div class="footer-container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="nav-logo">
+            <span class="logo-icon">◆</span>
+            <span class="logo-text">Kaleh<span class="logo-accent">Design</span></span>
+          </div>
+          <p class="footer-brand-desc">A fast and flexible JavaScript animation engine for the modern web.</p>
+        </div>
+
+        <div class="footer-links-group">
+          <h4 class="footer-heading">Site</h4>
+          <a href="#" class="footer-link">Home</a>
+          <a href="#" class="footer-link">Documentation</a>
+          <a href="#" class="footer-link">Easings Editor</a>
+          <a href="#" class="footer-link">Learn</a>
+          <a href="#" class="footer-link">Examples</a>
+        </div>
+
+        <div class="footer-links-group">
+          <h4 class="footer-heading">Socials</h4>
+          <a href="#" class="footer-link">GitHub</a>
+          <a href="#" class="footer-link">Twitter / X</a>
+          <a href="#" class="footer-link">Discord</a>
+          <a href="#" class="footer-link">CodePen</a>
+        </div>
+
+        <div class="footer-newsletter">
+          <h4 class="footer-heading">Stay in the loop</h4>
+          <p class="footer-newsletter-desc">Get updates about new features and releases.</p>
+          <div class="newsletter-form" id="newsletter-form">
+            <input type="email" class="newsletter-input" placeholder="your@email.com" id="newsletter-email" aria-label="Email address">
+            <button class="newsletter-btn" id="newsletter-btn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p class="footer-copy">© 2026 KalehDesign. All rights reserved.</p>
+        <div class="footer-bottom-links">
+          <a href="#" class="footer-link">Privacy</a>
+          <a href="#" class="footer-link">Terms</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>
