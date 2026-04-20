@@ -46,7 +46,7 @@ export default function PageTransition() {
       );
 
       // Scroll to top immediately on route change
-      const lenis = (window as Window & { lenis?: { scrollTo: (pos: number, opts: object) => void } }).lenis;
+      const lenis = (window as unknown as { lenis?: { scrollTo: (pos: number, opts: object) => void } }).lenis;
       if (lenis) {
         lenis.scrollTo(0, { immediate: true });
       } else {

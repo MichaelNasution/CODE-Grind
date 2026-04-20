@@ -35,7 +35,7 @@ export default function VelocityMarquee({
     let lastTs = 0;
 
     const lenis = (
-      window as Window & { lenis?: Lenis }
+      window as unknown as { lenis?: Lenis }
     ).lenis;
 
     const onScroll = ({ velocity }: { velocity: number }) => {
