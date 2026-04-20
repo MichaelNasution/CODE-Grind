@@ -97,7 +97,7 @@ function BentoCard({
   return (
     <div
       ref={cardRef}
-      className="bento-card reveal-item"
+      className="bento-card"
       data-cursor="pointer"
       onMouseMove={handleMouseMove}
       style={{
@@ -198,33 +198,45 @@ export default function BentoGrid() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Title reveal
-      gsap.from(titleRef.current?.children ?? [], {
-        opacity: 0,
-        y: 30,
-        duration: 0.8,
-        stagger: 0.12,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: titleRef.current,
-          start: "top 85%",
-          toggleActions: "play none none none",
-        },
-      });
+      // Ensure ScrollTrigger is aware of current scroll position
+      ScrollTrigger.refresh();
 
-      // Cards stagger
-      gsap.from(".reveal-item", {
-        opacity: 0,
-        y: 50,
-        duration: 0.75,
-        stagger: 0.1,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top 75%",
-          toggleActions: "play none none none",
-        },
-      });
+      // Title reveal
+      gsap.fromTo(
+        titleRef.current?.children ?? [],
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          stagger: 0.12,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: titleRef.current,
+            start: "top 90%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
+
+      // Cards stagger — use direct DOM query on sectionRef
+      const cards = sectionRef.current?.querySelectorAll(".bento-card") ?? [];
+      gsap.fromTo(
+        cards,
+        { opacity: 0, y: 50 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.75,
+          stagger: 0.1,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
+            start: "top 85%",
+            toggleActions: "play none none none",
+          },
+        }
+      );
     }, sectionRef);
 
     return () => ctx.revert();

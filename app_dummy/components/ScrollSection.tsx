@@ -47,38 +47,48 @@ export default function ScrollSection() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
+      ScrollTrigger.refresh();
+
       // Process steps stagger
       const steps = processRef.current?.querySelectorAll(".process-step");
-      if (steps) {
-        gsap.from(steps, {
-          opacity: 0,
-          x: -40,
-          duration: 0.7,
-          stagger: 0.14,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: processRef.current,
-            start: "top 80%",
-            toggleActions: "play none none none",
-          },
-        });
+      if (steps && steps.length > 0) {
+        gsap.fromTo(
+          steps,
+          { opacity: 0, x: -40 },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.7,
+            stagger: 0.14,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: processRef.current,
+              start: "top 90%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
       }
 
       // Lab section elements
       const labItems = labRef.current?.querySelectorAll(".lab-item");
-      if (labItems) {
-        gsap.from(labItems, {
-          opacity: 0,
-          y: 40,
-          duration: 0.65,
-          stagger: 0.1,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: labRef.current,
-            start: "top 80%",
-            toggleActions: "play none none none",
-          },
-        });
+      if (labItems && labItems.length > 0) {
+        gsap.fromTo(
+          labItems,
+          { opacity: 0, y: 40 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.65,
+            stagger: 0.1,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: labRef.current,
+              start: "top 90%",
+              toggleActions: "play none none none",
+            },
+          }
+        );
       }
 
       // Marquee infinite scroll

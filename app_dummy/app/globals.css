@@ -203,8 +203,6 @@ section {
 
 /* ─── Stagger animation base state ─── */
 .reveal-item {
-  opacity: 0;
-  transform: translateY(30px);
   will-change: opacity, transform;
 }
 
