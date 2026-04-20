@@ -24,7 +24,11 @@ export default function RootLayout() {
 
   useEffect(() => {
     // Initialize DB then load all data
-    initDatabase().then(() => loadAll());
+    initDatabase().then(() => {
+      setTimeout(() => {
+        loadAll();
+      }, 0);
+    });
   }, []);
 
   return (
