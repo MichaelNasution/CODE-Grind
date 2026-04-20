@@ -5,34 +5,39 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   // ── Menu Toggle ──
-  const menuToggle = document.getElementById('menu-toggle');
+  const menuToggle = document.getElementById('menu-toggle') || document.querySelector('.nav-icon');
   const sideMenu = document.getElementById('side-menu');
   const menuLinks = document.querySelectorAll('.side-menu-link');
 
-  menuToggle.addEventListener('click', () => {
-    menuToggle.classList.toggle('active');
-    sideMenu.classList.toggle('open');
-    document.body.style.overflow = sideMenu.classList.contains('open') ? 'hidden' : '';
-  });
+  if (menuToggle && sideMenu) {
+    menuToggle.addEventListener('click', (e) => {
+      e.preventDefault();
+      menuToggle.classList.toggle('active');
+      sideMenu.classList.toggle('open');
+      document.body.style.overflow = sideMenu.classList.contains('open') ? 'hidden' : '';
+    });
+  }
 
   menuLinks.forEach((link, i) => {
     link.style.transitionDelay = `${i * 0.06}s`;
     link.addEventListener('click', () => {
-      menuToggle.classList.remove('active');
-      sideMenu.classList.remove('open');
+      if (menuToggle) menuToggle.classList.remove('active');
+      if (sideMenu) sideMenu.classList.remove('open');
       document.body.style.overflow = '';
     });
   });
 
   // ── Copy Install Command ──
-  document.getElementById('copy-btn').addEventListener('click', () => {
-    navigator.clipboard.writeText('npm i kalehdesign');
-    const btn = document.getElementById('copy-btn');
-    btn.innerHTML = '✓';
-    setTimeout(() => {
-      btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
-    }, 1500);
-  });
+  const copyBtn = document.getElementById('copy-btn') || document.querySelector('.copy-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText('npm i kalehdesign');
+      copyBtn.innerHTML = '✓';
+      setTimeout(() => {
+        copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+      }, 1500);
+    });
+  }
 
   // ── Hero Canvas Animation (animejs.com v3 Replica) ──
   const canvas = document.getElementById('hero-canvas');
@@ -352,6 +357,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Particle Field ──
   const pf = document.getElementById('particle-field');
   if (pf) {
+    const colors = ['#FF324A', '#FFBD39', '#27E07D', '#3777FF', '#A855F7'];
     for (let i = 0; i < 25; i++) {
       const p = document.createElement('div');
       p.className = 'particle';
