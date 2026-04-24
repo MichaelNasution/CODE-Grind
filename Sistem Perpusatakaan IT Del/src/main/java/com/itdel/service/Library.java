@@ -32,6 +32,7 @@ public class Library {
 
         // Dummy Users
         registerUser(new Student("12S21001", "Budi Santoso", "password123", "Informatika"));
+        registerUser(new Student("12S24003", "Michael Nasution", "sevenlake", "Informatika"));
         registerUser(new Librarian("L001", "Ani Yanti", "admin", "Pustaka Pusat"));
     }
 
