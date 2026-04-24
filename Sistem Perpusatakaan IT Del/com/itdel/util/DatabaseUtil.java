@@ -1,4 +1,4 @@
- package util;
+ package com.itdel.util;
 
         import java.sql.Connection;
         import java.sql.DriverManager;
