@@ -20,5 +20,7 @@ compile:
 clean:
 	@if exist $(OUT_DIR) rmdir /s /q $(OUT_DIR)
 
-javac -d out src/main/java/com/itdel/model/*.java src/main/java/com/itdel/service/*.java src/main/java/com/itdel/util/*.java src/main/java/com/itdel/MainApp.java; java -cp out com.itdel.MainApp
+javac -d out src/main/java/com/itdel/model/*.java src/main/java/com/itdel/service/*.java src/main/java/com/itdel/util/*.java src/main/java/com/itdel/MainApp.java; 
+
+java -cp out com.itdel.MainApp
 
