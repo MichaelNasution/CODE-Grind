@@ -147,60 +147,226 @@
 
                 <!-- MATRIX PRO MODULE -->
                 <div class="module-content" id="matrix-module">
-                    <div class="panel-header">MATRIX PRO ENGINE</div>
-                    <div class="matrix-controls">
-                        <select id="matrix-size">
-                            <option value="2">2x2</option>
-                            <option value="3" selected>3x3</option>
-                            <option value="4">4x4</option>
-                        </select>
-                        <button class="viz-btn" data-action="mat-det">DETERMINANT</button>
-                        <button class="viz-btn" data-action="mat-inv">INVERSE</button>
+                    <div class="card">
+                        <div class="panel-header">MATRIX PRO ENGINE</div>
+                        <div class="input-area">
+                            <label>Dimension:</label>
+                            <select id="matrix-size" class="input-field">
+                                <option value="2">2x2</option>
+                                <option value="3" selected>3x3</option>
+                                <option value="4">4x4</option>
+                            </select>
+                            <div class="matrix-editor" id="matrix-grid"></div>
+                        </div>
+                        <div class="action-area">
+                            <button class="btn-primary" data-action="mat-det">Determinant</button>
+                            <button class="btn-primary" data-action="mat-inv">Inverse</button>
+                        </div>
+                        <div class="result-area">
+                            <div class="result-box" id="matrix-result">Result will appear here...</div>
+                        </div>
                     </div>
-                    <div class="matrix-editor" id="matrix-grid">
-                        <!-- Dynamic cells -->
+                </div>
+
+                <!-- VECTOR PRO MODULE -->
+                <div class="module-content" id="vector-module">
+                    <div class="card">
+                        <div class="panel-header">VECTOR PRO</div>
+                        <div class="input-area">
+                            <label>Vector A (x, y, z):</label>
+                            <div class="vector-inputs">
+                                <input type="number" id="vecA-x" class="input-field" placeholder="X" value="0">
+                                <input type="number" id="vecA-y" class="input-field" placeholder="Y" value="0">
+                                <input type="number" id="vecA-z" class="input-field" placeholder="Z" value="0">
+                            </div>
+                            <label>Vector B (x, y, z):</label>
+                            <div class="vector-inputs">
+                                <input type="number" id="vecB-x" class="input-field" placeholder="X" value="0">
+                                <input type="number" id="vecB-y" class="input-field" placeholder="Y" value="0">
+                                <input type="number" id="vecB-z" class="input-field" placeholder="Z" value="0">
+                            </div>
+                        </div>
+                        <div class="action-area grid-actions">
+                            <button class="btn-primary" data-action="vec-dot">Dot Product</button>
+                            <button class="btn-primary" data-action="vec-cross">Cross Product</button>
+                            <button class="btn-secondary" data-action="vec-mag">Mag (A)</button>
+                            <button class="btn-secondary" data-action="vec-ang">Angle</button>
+                            <button class="btn-secondary" data-action="vec-proj">Proj(A→B)</button>
+                            <button class="btn-secondary" data-action="vec-unit">Unit(A)</button>
+                        </div>
+                        <div class="result-area">
+                            <div class="result-box" id="vector-result">Result will appear here...</div>
+                        </div>
                     </div>
-                    <div class="result-display" id="matrix-result">
-                        RESULT: [ ]
+                </div>
+
+                <!-- TABLE FUNCTION MODULE -->
+                <div class="module-content" id="table-module">
+                    <div class="card">
+                        <div class="panel-header">TABLE FUNCTION</div>
+                        <div class="input-area">
+                            <label>f(x) =</label>
+                            <input type="text" id="table-fx" class="input-field" placeholder="e.g. x^2 - 4">
+                            <label>g(x) = (optional)</label>
+                            <input type="text" id="table-gx" class="input-field" placeholder="e.g. sin(x)">
+                            <div class="range-inputs">
+                                <input type="number" id="table-start" class="input-field" placeholder="Start" value="-5">
+                                <input type="number" id="table-end" class="input-field" placeholder="End" value="5">
+                                <input type="number" id="table-step" class="input-field" placeholder="Step" value="1">
+                            </div>
+                        </div>
+                        <div class="action-area">
+                            <button class="btn-primary" data-action="table-gen">Generate Table</button>
+                        </div>
+                        <div class="result-area">
+                            <div class="table-container result-box" id="table-result">Table will appear here...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EQUATION SOLVER MODULE -->
+                <div class="module-content" id="solver-module">
+                    <div class="card">
+                        <div class="panel-header">EQUATION SOLVER</div>
+                        <div class="input-area">
+                            <label>Mode:</label>
+                            <select id="solver-mode" class="input-field">
+                                <option value="poly2">Polynomial (Degree 2)</option>
+                                <option value="poly3">Polynomial (Degree 3)</option>
+                                <option value="poly4">Polynomial (Degree 4)</option>
+                                <option value="lin2">Linear System (2 Vars)</option>
+                                <option value="lin3">Linear System (3 Vars)</option>
+                            </select>
+                            <div id="solver-inputs" class="solver-inputs-grid"></div>
+                        </div>
+                        <div class="action-area">
+                            <button class="btn-primary" data-action="solver-solve">Solve Equation</button>
+                        </div>
+                        <div class="result-area">
+                            <div class="result-box" id="solver-result">Roots will appear here...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- INEQUALITY SOLVER MODULE -->
+                <div class="module-content" id="inequality-module">
+                    <div class="card">
+                        <div class="panel-header">INEQUALITY SOLVER</div>
+                        <div class="input-area">
+                            <label>Expression (e.g. x^2 - 4 > 0):</label>
+                            <input type="text" id="ineq-expr" class="input-field" placeholder="f(x) > 0">
+                        </div>
+                        <div class="action-area">
+                            <button class="btn-primary" data-action="ineq-solve">Solve Inequality</button>
+                        </div>
+                        <div class="result-area">
+                            <div class="result-box" id="ineq-result">Interval will appear here...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NUMERICAL METHODS MODULE -->
+                <div class="module-content" id="numeric-module">
+                    <div class="card">
+                        <div class="panel-header">NUMERICAL SOLVER (N-R)</div>
+                        <div class="input-area">
+                            <label>f(x) =</label>
+                            <input type="text" id="num-fx" class="input-field" placeholder="e.g. cos(x) - x">
+                            <div class="range-inputs">
+                                <input type="number" id="num-guess" class="input-field" placeholder="Initial Guess (x0)" value="1">
+                                <select id="num-method" class="input-field">
+                                    <option value="nr">Newton-Raphson</option>
+                                    <option value="bi">Bisection</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="action-area">
+                            <button class="btn-primary" data-action="num-solve">Find Root</button>
+                        </div>
+                        <div class="result-area">
+                            <div class="result-box" id="num-result">Root and iterations will appear here...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CALCULUS MODULE -->
+                <div class="module-content" id="calculus-module">
+                    <div class="card">
+                        <div class="panel-header">INTEGRAL / DIFF</div>
+                        <div class="input-area">
+                            <label>f(x) =</label>
+                            <input type="text" id="calc-fx" class="input-field" placeholder="e.g. x^2">
+                            <label>Mode:</label>
+                            <select id="calc-mode" class="input-field">
+                                <option value="int">Definite Integral (Simpson's)</option>
+                                <option value="diff">Derivative at point</option>
+                            </select>
+                            <div class="range-inputs" id="calc-bounds">
+                                <input type="number" id="calc-a" class="input-field" placeholder="Lower (a)">
+                                <input type="number" id="calc-b" class="input-field" placeholder="Upper (b)">
+                            </div>
+                        </div>
+                        <div class="action-area">
+                            <button class="btn-primary" data-action="calc-solve">Compute</button>
+                        </div>
+                        <div class="result-area">
+                            <div class="result-box" id="calc-result">Result with error bounds...</div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- BASE-N MODULE -->
                 <div class="module-content" id="base-n-module">
-                    <div class="panel-header">BASE-N CONVERTER</div>
-                    <div class="base-selector">
-                        <button class="tab-item active" data-base="16">HEX</button>
-                        <button class="tab-item" data-base="10">DEC</button>
-                        <button class="tab-item" data-base="8">OCT</button>
-                        <button class="tab-item" data-base="2">BIN</button>
-                    </div>
-                    <input type="text" class="grid-cell" id="base-input" style="width: 100%; margin: 20px 0;">
-                    <div class="conversion-list" id="base-results">
-                        <!-- Results for all bases -->
+                    <div class="card">
+                        <div class="panel-header">BASE-N CONVERTER</div>
+                        <div class="input-area">
+                            <div class="base-selector">
+                                <button class="tab-item active" data-base="16">HEX</button>
+                                <button class="tab-item" data-base="10">DEC</button>
+                                <button class="tab-item" data-base="8">OCT</button>
+                                <button class="tab-item" data-base="2">BIN</button>
+                            </div>
+                            <input type="text" class="input-field" id="base-input" placeholder="Enter value..." style="margin-top: 10px;">
+                        </div>
+                        <div class="result-area">
+                            <div class="conversion-list result-box" id="base-results">
+                                <!-- Results for all bases -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- PHYSICS LIB MODULE -->
                 <div class="module-content" id="physics-module">
-                    <div class="panel-header">PHYSICS CONSTANTS</div>
-                    <input type="text" class="viz-btn" placeholder="Search Constants..." id="const-search">
-                    <div class="module-group" id="const-list" style="max-height: 300px;">
-                        <!-- Constants injected here -->
+                    <div class="card">
+                        <div class="panel-header">PHYSICS CONSTANTS</div>
+                        <div class="input-area">
+                            <input type="text" class="input-field" placeholder="Search Constants..." id="const-search">
+                        </div>
+                        <div class="result-area">
+                            <div class="module-group" id="const-list" style="max-height: 250px;">
+                                <!-- Constants injected here -->
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- PROGRAM ENGINE MODULE -->
                 <div class="module-content" id="program-module">
-                    <div class="panel-header">PROGRAM ENGINE</div>
-                    <div class="program-editor">
-                        <textarea id="prog-script" placeholder="Write expression pipeline... e.g., A+1 -> B : B*2 -> C"></textarea>
-                    </div>
-                    <div class="prog-controls">
-                        <button class="viz-btn" data-action="prog-step">STEP</button>
-                        <button class="viz-btn" data-action="prog-run">RUN ALL</button>
-                    </div>
-                    <div class="var-monitor" id="var-monitor">
-                        <!-- A-Z Values -->
+                    <div class="card">
+                        <div class="panel-header">PROGRAM ENGINE</div>
+                        <div class="input-area">
+                            <textarea id="prog-script" class="input-field" style="height: 80px;" placeholder="Pipeline... e.g. A+1: Ans*2"></textarea>
+                        </div>
+                        <div class="action-area">
+                            <button class="btn-primary" data-action="prog-step">Step</button>
+                            <button class="btn-primary" data-action="prog-run">Run All</button>
+                        </div>
+                        <div class="result-area">
+                            <div class="var-monitor result-box" id="var-monitor">
+                                <!-- A-Z Values -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
