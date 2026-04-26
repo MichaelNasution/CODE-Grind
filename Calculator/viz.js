@@ -74,7 +74,9 @@ class VisualizationEngine {
 
     drawFunctionGraph(fxStr, gxStr = null) {
         this.clear();
-        const f = (x) => { window.Core.memory['x'] = x; return parseFloat(window.Core.evaluate(fxStr)); };
+        const f = (x) => parseFloat(window.Core.evaluateWithLocal(fxStr, { x: x }));
+        let g = null;
+        if(gxStr) g = (x) => parseFloat(window.Core.evaluateWithLocal(gxStr, { x: x }));
         
         this.ctx.beginPath();
         this.ctx.strokeStyle = '#38bdf8'; // Cyan
@@ -138,7 +140,7 @@ class VisualizationEngine {
 
     drawIntegralArea(fxStr, a, b) {
         this.clear();
-        const f = (x) => { window.Core.memory['x'] = x; return parseFloat(window.Core.evaluate(fxStr)); };
+        const f = (x) => parseFloat(window.Core.evaluateWithLocal(fxStr, { x: x }));
         
         // Draw area
         this.ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
