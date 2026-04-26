@@ -210,6 +210,40 @@ class UIController {
         
         try {
             switch(action) {
+                // COMPLEX MODE
+                case 'complex-solve': {
+                    const payload = {
+                        expr: document.getElementById('complex-expr').value,
+                        format: document.getElementById('complex-format').value
+                    };
+                    window.setState(s => s.loading = true);
+                    window.EventBus.dispatch("COMPUTE_REQUEST", { module: "complex", data: payload });
+                    break;
+                }
+
+                // MATRIX PRO
+                case 'mat-det':
+                case 'mat-inv': {
+                    const size = parseInt(document.getElementById('matrix-size').value);
+                    const gridCells = document.querySelectorAll('#matrix-grid .grid-cell');
+                    let matrixData = [];
+                    let idx = 0;
+                    for (let r = 0; r < size; r++) {
+                        let row = [];
+                        for (let c = 0; c < size; c++) {
+                            row.push(parseFloat(gridCells[idx++].value) || 0);
+                        }
+                        matrixData.push(row);
+                    }
+                    const payload = {
+                        matrix: matrixData,
+                        operation: action === 'mat-det' ? 'determinant' : 'inverse'
+                    };
+                    window.setState(s => s.loading = true);
+                    window.EventBus.dispatch("COMPUTE_REQUEST", { module: "matrix", data: payload });
+                    break;
+                }
+
                 // VECTOR PRO
                 case 'vec-dot':
                 case 'vec-cross':
