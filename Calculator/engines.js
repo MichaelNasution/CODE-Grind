@@ -3,6 +3,8 @@ class ModuleEngines {
         // Subscribe to Compute Requests
         window.EventBus.subscribe("COMPUTE_REQUEST", (payload) => {
             switch(payload.module) {
+                case "complex": this.computeComplex(payload.data); break;
+                case "matrix": this.computeMatrix(payload.data); break;
                 case "vector": this.computeVector(payload.data); break;
                 case "table": this.generateTable(payload.data); break;
                 case "solver": this.solvePolynomial(payload.data); break;
@@ -11,6 +13,68 @@ class ModuleEngines {
                 case "inequality": this.solveInequality(payload.data); break;
             }
         });
+    }
+
+    // --- COMPLEX MODE ---
+    computeComplex(data) {
+        try {
+            const res = window.Core.evaluateWithLocal(data.expr, {});
+            if (res === undefined) throw new Error("Invalid complex expression");
+            
+            const cplx = math.complex(res);
+            let resultStr = "";
+            
+            if (data.format === 'polar') {
+                const r = cplx.toPolar();
+                const thetaDeg = r.phi * (180 / Math.PI);
+                resultStr = `${r.r.toFixed(4)} ∠ ${thetaDeg.toFixed(2)}°`;
+            } else {
+                resultStr = cplx.format(4);
+            }
+
+            window.EventBus.dispatch("COMPUTE_SUCCESS", {
+                module: "complex",
+                result: resultStr,
+                vizData: { type: "argand", re: cplx.re, im: cplx.im }
+            });
+        } catch (err) {
+            window.EventBus.dispatch("COMPUTE_ERROR", err.message);
+        }
+    }
+
+    // --- MATRIX PRO ---
+    computeMatrix(data) {
+        try {
+            const mat = math.matrix(data.matrix);
+            let result;
+            let vizData = { type: "none" };
+
+            if (data.operation === 'determinant') {
+                const det = math.det(mat);
+                result = `det(M) = ${det.toFixed(4)}`;
+            } else if (data.operation === 'inverse') {
+                const inv = math.inv(mat);
+                const invArray = inv.toArray();
+                let html = `<table style="margin: 0 auto; border-collapse: collapse; font-family: monospace;">`;
+                invArray.forEach(row => {
+                    html += `<tr>`;
+                    row.forEach(val => {
+                        html += `<td style="padding: 4px 12px; border: 1px solid #334155; color: var(--neon-cyan);">${val.toFixed(4)}</td>`;
+                    });
+                    html += `</tr>`;
+                });
+                html += `</table>`;
+                result = html;
+            }
+
+            window.EventBus.dispatch("COMPUTE_SUCCESS", {
+                module: "matrix",
+                result: result,
+                vizData: vizData
+            });
+        } catch (err) {
+            window.EventBus.dispatch("COMPUTE_ERROR", err.message);
+        }
     }
 
     // --- VECTOR PRO ---
