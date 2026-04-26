@@ -13,12 +13,24 @@
     <div class="app-shell" id="app-shell">
         <!-- Sidebar Modules -->
         <aside class="side-panel modules-panel">
-            <div class="panel-header">MODULES</div>
-            <div class="module-item active" data-module="calc">Scientific</div>
-            <div class="module-item" data-module="matrix">Matrix Engine</div>
-            <div class="module-item" data-module="sheet">Spreadsheet</div>
-            <div class="module-item" data-module="solver">Equation Solver</div>
-            <div class="module-item" data-module="stats">Statistics</div>
+            <div class="panel-header">NEO-FX OS</div>
+            <div class="module-group">
+                <div class="module-item active" data-module="sci">Scientific</div>
+                <div class="module-item" data-module="complex">Complex Mode</div>
+                <div class="module-item" data-module="base-n">Base-N</div>
+                <div class="module-item" data-module="matrix">Matrix Pro</div>
+                <div class="module-item" data-module="vector">Vector Pro</div>
+                <div class="module-item" data-module="table">Table Function</div>
+                <div class="module-item" data-module="solver">Eq. Solver</div>
+                <div class="module-item" data-module="inequality">Inequality</div>
+                <div class="module-item" data-module="stats">Statistics</div>
+                <div class="module-item" data-module="dist">Distribution</div>
+                <div class="module-item" data-module="ratio">Ratio / Prop</div>
+                <div class="module-item" data-module="numeric">Numerical (N-R)</div>
+                <div class="module-item" data-module="calculus">Integral/Diff</div>
+                <div class="module-item" data-module="physics">Physics Lib</div>
+                <div class="module-item" data-module="program">Program Engine</div>
+            </div>
             <div class="panel-footer">
                 <div class="mode-toggle" id="mode-toggle">
                     <span class="mode-label">EXAM</span>
@@ -29,109 +41,107 @@
         </aside>
 
         <main class="main-workspace">
-            <div class="calculator-container">
-                <div class="calculator-chassis">
-                    <!-- Screen Section -->
-                    <div class="screen-area">
-                        <div class="screen-bezel">
-                            <div class="screen-content">
-                                <div class="status-bar">
-                                    <span id="shift-indicator" class="indicator">S</span>
-                                    <span id="alpha-indicator" class="indicator">A</span>
-                                    <span class="indicator active">DEG</span>
-                                    <span class="indicator" id="mode-indicator">STD</span>
+            <div id="module-viewport" class="module-viewport">
+                <!-- SCIENTIFIC MODULE (Default) -->
+                <div class="calculator-container" id="sci-module">
+                    <div class="calculator-chassis">
+                        <div class="screen-area">
+                            <div class="screen-bezel">
+                                <div class="screen-content">
+                                    <div class="status-bar">
+                                        <span id="shift-indicator" class="indicator">S</span>
+                                        <span id="alpha-indicator" class="indicator">A</span>
+                                        <span class="indicator active">DEG</span>
+                                        <span class="indicator" id="mode-indicator">STD</span>
+                                    </div>
+                                    <div class="display-main">
+                                        <div id="input-line" class="input-line"><span class="cursor">|</span></div>
+                                        <div id="result-line" class="result-line">0</div>
+                                    </div>
+                                    <div class="scanlines"></div>
                                 </div>
-                                <div class="display-main">
-                                    <div id="input-line" class="input-line"></div>
-                                    <div id="result-line" class="result-line">0</div>
+                            </div>
+                        </div>
+
+                        <div class="controls-area">
+                            <div class="top-row">
+                                <button class="btn shift" data-action="shift" title="SHIFT"><span>SHIFT</span></button>
+                                <button class="btn alpha" data-action="alpha" title="ALPHA"><span>ALPHA</span></button>
+                                <div class="d-pad">
+                                    <button class="d-btn up" data-key="ArrowUp"></button>
+                                    <button class="d-btn left" data-key="ArrowLeft"></button>
+                                    <button class="d-btn right" data-key="ArrowRight"></button>
+                                    <button class="d-btn down" data-key="ArrowDown"></button>
+                                    <div class="d-pad-center"></div>
                                 </div>
-                                <div class="scanlines"></div>
+                                <button class="btn menu" data-action="menu" title="MENU"><span>MENU</span></button>
+                                <button class="btn on" data-action="on" title="POWER"><span>ON</span></button>
+                            </div>
+
+                            <div class="mid-row">
+                                <button class="btn func" data-key="optn"><span>OPTN</span></button>
+                                <button class="btn func" data-key="calc"><span>CALC</span></button>
+                                <button class="btn func" data-key="integral"><span>∫dx</span></button>
+                                <button class="btn func" data-key="diff"><span>d/dx</span></button>
+                                <button class="btn func" data-key="log-base"><span>logₐb</span></button>
+                            </div>
+
+                            <div class="sci-grid">
+                                <button class="btn sci" data-key="fraction"><span>■/□</span></button>
+                                <button class="btn sci" data-key="sqrt"><span>√■</span></button>
+                                <button class="btn sci" data-key="sqr"><span>x²</span></button>
+                                <button class="btn sci" data-key="pow"><span>x■</span></button>
+                                <button class="btn sci" data-key="log"><span>log</span></button>
+                                <button class="btn sci" data-key="ln"><span>ln</span></button>
+                                
+                                <button class="btn sci" data-key="minus-sign"><span>(–)</span></button>
+                                <button class="btn sci" data-key="degree"><span>° ' "</span></button>
+                                <button class="btn sci" data-key="hyp"><span>hyp</span></button>
+                                <button class="btn sci" data-key="sin"><span>sin</span></button>
+                                <button class="btn sci" data-key="cos"><span>cos</span></button>
+                                <button class="btn sci" data-key="tan"><span>tan</span></button>
+
+                                <button class="btn sci" data-key="nCr"><span>nCr</span></button>
+                                <button class="btn sci" data-key="pol"><span>Pol</span></button>
+                                <button class="btn sci" data-key="("><span>(</span></button>
+                                <button class="btn sci" data-key=")"><span>)</span></button>
+                                <button class="btn sci" data-key="abs"><span>Abs</span></button>
+                                <button class="btn sci" data-key="m-plus"><span>M+</span></button>
+                            </div>
+
+                            <div class="num-grid">
+                                <div class="main-nums">
+                                    <button class="btn num" data-val="7">7</button>
+                                    <button class="btn num" data-val="8">8</button>
+                                    <button class="btn num" data-val="9">9</button>
+                                    <button class="btn util del" data-action="del">DEL</button>
+                                    <button class="btn util ac" data-action="ac">AC</button>
+
+                                    <button class="btn num" data-val="4">4</button>
+                                    <button class="btn num" data-val="5">5</button>
+                                    <button class="btn num" data-val="6">6</button>
+                                    <button class="btn op" data-val="*">×</button>
+                                    <button class="btn op" data-val="/">÷</button>
+
+                                    <button class="btn num" data-val="1">1</button>
+                                    <button class="btn num" data-val="2">2</button>
+                                    <button class="btn num" data-val="3">3</button>
+                                    <button class="btn op" data-val="+">+</button>
+                                    <button class="btn op" data-val="-">−</button>
+
+                                    <button class="btn num" data-val="0">0</button>
+                                    <button class="btn num" data-val=".">.</button>
+                                    <button class="btn num" data-val="*10^">EXP</button>
+                                    <button class="btn num" data-val="ans">Ans</button>
+                                    <button class="btn op equal" data-action="equal">=</button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Controls Section -->
-                    <div class="controls-area">
-                        <!-- Top Row Functions -->
-                        <div class="top-row">
-                            <button class="btn shift" data-action="shift"><span>SHIFT</span></button>
-                            <button class="btn alpha" data-action="alpha"><span>ALPHA</span></button>
-                            <div class="d-pad">
-                                <button class="d-btn up" data-key="ArrowUp"></button>
-                                <button class="d-btn left" data-key="ArrowLeft"></button>
-                                <button class="d-btn right" data-key="ArrowRight"></button>
-                                <button class="d-btn down" data-key="ArrowDown"></button>
-                                <div class="d-pad-center"></div>
-                            </div>
-                            <button class="btn menu" data-action="menu"><span>MENU</span></button>
-                            <button class="btn on" data-action="on"><span>ON</span></button>
+                        
+                        <div class="branding">
+                            <span class="brand-name">NEO-FX EVOLUTION</span>
+                            <span class="model-number">MODULAR SYSTEM OS</span>
                         </div>
-
-                        <div class="mid-row">
-                            <button class="btn func" data-key="optn"><span>OPTN</span></button>
-                            <button class="btn func" data-key="calc"><span>CALC</span></button>
-                            <button class="btn func" data-key="integral"><span>∫dx</span></button>
-                            <button class="btn func" data-key="x-inv"><span>x⁻¹</span></button>
-                            <button class="btn func" data-key="log-base"><span>logₐb</span></button>
-                        </div>
-
-                        <!-- Scientific Block -->
-                        <div class="sci-grid">
-                            <button class="btn sci" data-key="fraction"><span><sup>■</sup>/<sub>□</sub></span></button>
-                            <button class="btn sci" data-key="sqrt"><span>√■</span></button>
-                            <button class="btn sci" data-key="sqr"><span>x²</span></button>
-                            <button class="btn sci" data-key="pow"><span>x<sup>■</sup></span></button>
-                            <button class="btn sci" data-key="log"><span>log</span></button>
-                            <button class="btn sci" data-key="ln"><span>ln</span></button>
-                            
-                            <button class="btn sci" data-key="minus-sign"><span>(–)</span></button>
-                            <button class="btn sci" data-key="degree"><span>° ' "</span></button>
-                            <button class="btn sci" data-key="hyp"><span>hyp</span></button>
-                            <button class="btn sci" data-key="sin"><span>sin</span></button>
-                            <button class="btn sci" data-key="cos"><span>cos</span></button>
-                            <button class="btn sci" data-key="tan"><span>tan</span></button>
-
-                            <button class="btn sci" data-key="sto"><span>STO</span></button>
-                            <button class="btn sci" data-key="eng"><span>ENG</span></button>
-                            <button class="btn sci" data-key="("><span>(</span></button>
-                            <button class="btn sci" data-key=")"><span>)</span></button>
-                            <button class="btn sci" data-key="s-d"><span>S⇔D</span></button>
-                            <button class="btn sci" data-key="m-plus"><span>M+</span></button>
-                        </div>
-
-                        <!-- Numeric Block -->
-                        <div class="num-grid">
-                            <div class="main-nums">
-                                <button class="btn num" data-val="7">7</button>
-                                <button class="btn num" data-val="8">8</button>
-                                <button class="btn num" data-val="9">9</button>
-                                <button class="btn util del" data-action="del">DEL</button>
-                                <button class="btn util ac" data-action="ac">AC</button>
-
-                                <button class="btn num" data-val="4">4</button>
-                                <button class="btn num" data-val="5">5</button>
-                                <button class="btn num" data-val="6">6</button>
-                                <button class="btn op" data-val="*">×</button>
-                                <button class="btn op" data-val="/">÷</button>
-
-                                <button class="btn num" data-val="1">1</button>
-                                <button class="btn num" data-val="2">2</button>
-                                <button class="btn num" data-val="3">3</button>
-                                <button class="btn op" data-val="+">+</button>
-                                <button class="btn op" data-val="-">−</button>
-
-                                <button class="btn num" data-val="0">0</button>
-                                <button class="btn num" data-val=".">.</button>
-                                <button class="btn num" data-val="*10^">×10<sup>x</sup></button>
-                                <button class="btn num" data-val="ans">Ans</button>
-                                <button class="btn op equal" data-action="equal">=</button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="branding">
-                        <span class="brand-name">NEO-FX EVOLUTION</span>
-                        <span class="model-number">MODULAR SYSTEM ARCHITECT</span>
                     </div>
                 </div>
             </div>
