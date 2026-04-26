@@ -274,21 +274,29 @@
                     <div class="card">
                         <div class="panel-header">EQUATION SOLVER</div>
                         <div class="input-area">
-                            <label>Mode:</label>
-                            <select id="solver-mode" class="input-field">
-                                <option value="poly2">Polynomial (Degree 2)</option>
-                                <option value="poly3">Polynomial (Degree 3)</option>
-                                <option value="poly4">Polynomial (Degree 4)</option>
-                                <option value="lin2">Linear System (2 Vars)</option>
-                                <option value="lin3">Linear System (3 Vars)</option>
-                            </select>
-                            <div id="solver-inputs" class="solver-inputs-grid"></div>
+                            <div class="input-group">
+                                <label>Solver Mode</label>
+                                <select id="solver-mode" class="input-field">
+                                    <option value="poly2">Polynomial (Degree 2)</option>
+                                    <option value="poly3">Polynomial (Degree 3)</option>
+                                    <option value="poly4">Polynomial (Degree 4)</option>
+                                    <option value="lin2">Linear System (2 Vars)</option>
+                                    <option value="lin3">Linear System (3 Vars)</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Coefficient Entry</label>
+                                <div id="solver-inputs" class="grid-editor">
+                                    <!-- Dynamic -->
+                                </div>
+                            </div>
                         </div>
                         <div class="action-area">
-                            <button class="btn-primary" data-action="solver-solve">Solve Equation</button>
+                            <button class="btn-primary" data-action="solver-solve">SOLVE SYSTEM</button>
                         </div>
                         <div class="result-area">
-                            <div class="result-box" id="solver-result">Roots will appear here...</div>
+                            <div class="result-header">REAL & COMPLEX ROOTS</div>
+                            <div class="result-box" id="solver-result">Awaiting input...</div>
                         </div>
                     </div>
                 </div>
@@ -298,14 +306,17 @@
                     <div class="card">
                         <div class="panel-header">INEQUALITY SOLVER</div>
                         <div class="input-area">
-                            <label>Expression (e.g. x^2 - 4 > 0):</label>
-                            <input type="text" id="ineq-expr" class="input-field" placeholder="f(x) > 0">
+                            <div class="input-group">
+                                <label>Expression</label>
+                                <input type="text" id="ineq-expr" class="input-field" placeholder="e.g. x^2 - 4 > 0">
+                            </div>
                         </div>
                         <div class="action-area">
-                            <button class="btn-primary" data-action="ineq-solve">Solve Inequality</button>
+                            <button class="btn-primary" data-action="ineq-solve">COMPUTE INTERVAL</button>
                         </div>
                         <div class="result-area">
-                            <div class="result-box" id="ineq-result">Interval will appear here...</div>
+                            <div class="result-header">SOLUTION SET</div>
+                            <div class="result-box" id="ineq-result">Ready...</div>
                         </div>
                     </div>
                 </div>
@@ -313,22 +324,25 @@
                 <!-- STATISTICS MODULE -->
                 <div class="module-content" id="stats-module">
                     <div class="card">
-                        <div class="panel-header">STATISTICS</div>
+                        <div class="panel-header">STATISTICS (1-VAR)</div>
                         <div class="input-area">
-                            <label>Data Points (X, Frequency):</label>
-                            <div id="stats-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 5px; max-height: 150px; overflow-y: auto; padding: 5px; background: rgba(15, 23, 42, 0.5); border-radius: 4px;">
-                                <div style="text-align: center; border-bottom: 1px solid #334155; color: #94a3b8; font-size: 0.8em;">X</div>
-                                <div style="text-align: center; border-bottom: 1px solid #334155; color: #94a3b8; font-size: 0.8em;">Freq</div>
-                                <input type="number" class="grid-cell stats-x" value="0">
-                                <input type="number" class="grid-cell stats-f" value="1">
+                            <div class="input-group">
+                                <label>Data Grid</label>
+                                <div id="stats-grid" class="grid-editor" style="grid-template-columns: 1fr 1fr; max-height: 150px; overflow-y: auto;">
+                                    <div class="grid-header">X</div>
+                                    <div class="grid-header">FREQ</div>
+                                    <input type="number" class="grid-cell stats-x" value="0">
+                                    <input type="number" class="grid-cell stats-f" value="1">
+                                </div>
                             </div>
-                            <button class="btn-secondary" id="add-stats-row" style="margin-top: 5px; width: 100%; font-size: 0.8em;">+ Add Row</button>
+                            <button class="btn-secondary" id="add-stats-row" style="margin-top: 5px; width: 100%;">+ ADD DATA ROW</button>
                         </div>
                         <div class="action-area">
-                            <button class="btn-primary" data-action="stats-calc">Calculate 1-Var Stats</button>
+                            <button class="btn-primary" data-action="stats-calc">CALCULATE STATS</button>
                         </div>
                         <div class="result-area">
-                            <div class="result-box" id="stats-result">Mean, Var, Sum...</div>
+                            <div class="result-header">DESCRIPTIVE SUMMARY</div>
+                            <div class="result-box" id="stats-result">Summary data...</div>
                         </div>
                     </div>
                 </div>
@@ -338,21 +352,27 @@
                     <div class="card">
                         <div class="panel-header">DISTRIBUTION</div>
                         <div class="input-area">
-                            <label>Type:</label>
-                            <select id="dist-type" class="input-field">
-                                <option value="norm-pd">Normal PD</option>
-                                <option value="norm-cd">Normal CD</option>
-                                <option value="binom-pd">Binomial PD</option>
-                                <option value="binom-cd">Binomial CD</option>
-                            </select>
-                            <div id="dist-inputs" class="dist-inputs-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
-                                <!-- Dynamic inputs based on type -->
+                            <div class="input-group">
+                                <label>Distribution Type</label>
+                                <select id="dist-type" class="input-field">
+                                    <option value="norm-pd">Normal PD</option>
+                                    <option value="norm-cd">Normal CD</option>
+                                    <option value="binom-pd">Binomial PD</option>
+                                    <option value="binom-cd">Binomial CD</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Parameters</label>
+                                <div id="dist-inputs" class="grid-editor" style="grid-template-columns: 1fr 1fr;">
+                                    <!-- Dynamic -->
+                                </div>
                             </div>
                         </div>
                         <div class="action-area">
-                            <button class="btn-primary" data-action="dist-solve">Solve Probability</button>
+                            <button class="btn-primary" data-action="dist-solve">SOLVE PROBABILITY</button>
                         </div>
                         <div class="result-area">
+                            <div class="result-header">CALCULATED VALUE</div>
                             <div class="result-box" id="dist-result">P = ?</div>
                         </div>
                     </div>
@@ -361,23 +381,29 @@
                 <!-- NUMERICAL METHODS MODULE -->
                 <div class="module-content" id="numeric-module">
                     <div class="card">
-                        <div class="panel-header">NUMERICAL SOLVER (N-R)</div>
+                        <div class="panel-header">NUMERICAL SOLVER</div>
                         <div class="input-area">
-                            <label>f(x) =</label>
-                            <input type="text" id="num-fx" class="input-field" placeholder="e.g. cos(x) - x">
-                            <div class="range-inputs">
-                                <input type="number" id="num-guess" class="input-field" placeholder="Initial Guess (x0)" value="1">
-                                <select id="num-method" class="input-field">
-                                    <option value="nr">Newton-Raphson</option>
-                                    <option value="bi">Bisection</option>
-                                </select>
+                            <div class="input-group">
+                                <label>Target Function f(x)</label>
+                                <input type="text" id="num-fx" class="input-field" placeholder="e.g. cos(x) - x">
+                            </div>
+                            <div class="input-group">
+                                <label>Method & Initial Guess</label>
+                                <div class="grid-editor" style="grid-template-columns: 1fr 1fr;">
+                                    <input type="number" id="num-guess" class="grid-cell" placeholder="x0" value="1">
+                                    <select id="num-method" class="grid-cell">
+                                        <option value="nr">Newton-Raphson</option>
+                                        <option value="bi">Bisection</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         <div class="action-area">
-                            <button class="btn-primary" data-action="num-solve">Find Root</button>
+                            <button class="btn-primary" data-action="num-solve">FIND ROOT</button>
                         </div>
                         <div class="result-area">
-                            <div class="result-box" id="num-result">Root and iterations will appear here...</div>
+                            <div class="result-header">ITERATION DATA</div>
+                            <div class="result-box" id="num-result">Ready for computation...</div>
                         </div>
                     </div>
                 </div>
@@ -387,22 +413,30 @@
                     <div class="card">
                         <div class="panel-header">INTEGRAL / DIFF</div>
                         <div class="input-area">
-                            <label>f(x) =</label>
-                            <input type="text" id="calc-fx" class="input-field" placeholder="e.g. x^2">
-                            <label>Mode:</label>
-                            <select id="calc-mode" class="input-field">
-                                <option value="int">Definite Integral (Simpson's)</option>
-                                <option value="diff">Derivative at point</option>
-                            </select>
-                            <div class="range-inputs" id="calc-bounds">
-                                <input type="number" id="calc-a" class="input-field" placeholder="Lower (a)">
-                                <input type="number" id="calc-b" class="input-field" placeholder="Upper (b)">
+                            <div class="input-group">
+                                <label>Function f(x)</label>
+                                <input type="text" id="calc-fx" class="input-field" placeholder="e.g. x^2">
+                            </div>
+                            <div class="input-group">
+                                <label>Operation Mode</label>
+                                <select id="calc-mode" class="input-field">
+                                    <option value="int">Definite Integral (Simpson's)</option>
+                                    <option value="diff">Derivative at point</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Bounds / Point</label>
+                                <div class="grid-editor" id="calc-bounds" style="grid-template-columns: 1fr 1fr;">
+                                    <input type="number" id="calc-a" class="grid-cell" placeholder="Lower (a)">
+                                    <input type="number" id="calc-b" class="grid-cell" placeholder="Upper (b)">
+                                </div>
                             </div>
                         </div>
                         <div class="action-area">
-                            <button class="btn-primary" data-action="calc-solve">Compute</button>
+                            <button class="btn-primary" data-action="calc-solve">COMPUTE</button>
                         </div>
                         <div class="result-area">
+                            <div class="result-header">RESULTANT VALUE</div>
                             <div class="result-box" id="calc-result">Result with error bounds...</div>
                         </div>
                     </div>
@@ -413,17 +447,24 @@
                     <div class="card">
                         <div class="panel-header">BASE-N CONVERTER</div>
                         <div class="input-area">
-                            <div class="base-selector" id="base-selector">
-                                <button class="tab-item active" data-base="16">HEX</button>
-                                <button class="tab-item" data-base="10">DEC</button>
-                                <button class="tab-item" data-base="8">OCT</button>
-                                <button class="tab-item" data-base="2">BIN</button>
+                            <div class="input-group">
+                                <label>Selected Base</label>
+                                <div class="base-selector" id="base-selector">
+                                    <button class="tab-item active" data-base="16">HEX</button>
+                                    <button class="tab-item" data-base="10">DEC</button>
+                                    <button class="tab-item" data-base="8">OCT</button>
+                                    <button class="tab-item" data-base="2">BIN</button>
+                                </div>
                             </div>
-                            <input type="text" class="input-field" id="base-input" placeholder="Enter value..." style="margin-top: 10px;">
+                            <div class="input-group">
+                                <label>Input Value</label>
+                                <input type="text" class="input-field" id="base-input" placeholder="Enter value...">
+                            </div>
                         </div>
                         <div class="result-area">
-                            <div class="conversion-list result-box" id="base-n-result">
-                                <!-- Results for all bases -->
+                            <div class="result-header">CONVERSION TABLE</div>
+                            <div class="result-box" id="base-n-result">
+                                <!-- Results -->
                             </div>
                         </div>
                     </div>
@@ -434,21 +475,24 @@
                     <div class="card">
                         <div class="panel-header">RATIO / PROPORTION</div>
                         <div class="input-area">
-                            <label>Format: a / b = X / d</label>
-                            <div class="ratio-grid" style="display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center;">
-                                <input type="number" id="ratio-a" class="input-field" placeholder="a">
-                                <span style="text-align: center;">/</span>
-                                <input type="number" id="ratio-b" class="input-field" placeholder="b">
-                                <span style="grid-column: 2; text-align: center;">=</span>
-                                <input type="text" disabled value="X" class="input-field" style="text-align: center; background: rgba(34, 211, 238, 0.1);">
-                                <span style="text-align: center;">/</span>
-                                <input type="number" id="ratio-d" class="input-field" placeholder="d">
+                            <div class="input-group">
+                                <label>Format: a / b = X / d</label>
+                                <div class="grid-editor" style="grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; align-items: center; gap: 5px;">
+                                    <input type="number" id="ratio-a" class="grid-cell" placeholder="a">
+                                    <span>/</span>
+                                    <input type="number" id="ratio-b" class="grid-cell" placeholder="b">
+                                    <span>=</span>
+                                    <input type="text" disabled value="X" class="grid-cell" style="background: rgba(34, 211, 238, 0.1);">
+                                    <span>/</span>
+                                    <input type="number" id="ratio-d" class="grid-cell" placeholder="d">
+                                </div>
                             </div>
                         </div>
                         <div class="action-area">
-                            <button class="btn-primary" data-action="ratio-solve">Solve for X</button>
+                            <button class="btn-primary" data-action="ratio-solve">SOLVE FOR X</button>
                         </div>
                         <div class="result-area">
+                            <div class="result-header">PROPORTION RESULT</div>
                             <div class="result-box" id="ratio-result">X = ?</div>
                         </div>
                     </div>
@@ -459,11 +503,15 @@
                     <div class="card">
                         <div class="panel-header">PHYSICS CONSTANTS</div>
                         <div class="input-area">
-                            <input type="text" class="input-field" placeholder="Search Constants..." id="const-search">
+                            <div class="input-group">
+                                <label>Search Constants</label>
+                                <input type="text" class="input-field" placeholder="e.g. Planck, Light, Grav..." id="const-search">
+                            </div>
                         </div>
                         <div class="result-area">
-                            <div class="module-group" id="const-list" style="max-height: 250px;">
-                                <!-- Constants injected here -->
+                            <div class="result-header">LIBRARY RESULTS</div>
+                            <div class="module-group" id="const-list" style="max-height: 250px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border-color);">
+                                <!-- Constants injected -->
                             </div>
                         </div>
                     </div>
@@ -474,15 +522,19 @@
                     <div class="card">
                         <div class="panel-header">PROGRAM ENGINE</div>
                         <div class="input-area">
-                            <textarea id="prog-script" class="input-field" style="height: 80px;" placeholder="Pipeline... e.g. A+1: Ans*2"></textarea>
+                            <div class="input-group">
+                                <label>Script Pipeline (colon separated)</label>
+                                <textarea id="prog-script" class="input-field" style="height: 100px; resize: none;" placeholder="A=5: B=10: A+B: Ans*2"></textarea>
+                            </div>
                         </div>
                         <div class="action-area">
-                            <button class="btn-primary" data-action="prog-step">Step</button>
-                            <button class="btn-primary" data-action="prog-run">Run All</button>
+                            <button class="btn-secondary" data-action="prog-step">STEP EXEC</button>
+                            <button class="btn-primary" data-action="prog-run">RUN PIPELINE</button>
                         </div>
                         <div class="result-area">
-                            <div class="var-monitor result-box" id="var-monitor">
-                                <!-- A-Z Values -->
+                            <div class="result-header">VARIABLE MONITOR & LOGS</div>
+                            <div class="result-box" id="var-monitor" style="justify-content: flex-start; align-items: flex-start; font-size: 13px;">
+                                <!-- A-Z -->
                             </div>
                         </div>
                     </div>

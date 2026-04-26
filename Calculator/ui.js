@@ -529,9 +529,14 @@ class UIController {
         const monitor = document.getElementById('var-monitor');
         if (!monitor) return;
         const vars = window.AppState.variables;
-        let html = '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; font-size: 0.8em;">';
+        let html = '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%;">';
         Object.keys(vars).sort().forEach(v => {
-            html += `<div><span style="color: #94a3b8">${v}:</span> <span style="color: var(--neon-cyan)">${typeof vars[v] === 'number' ? vars[v].toFixed(2) : vars[v]}</span></div>`;
+            html += `
+                <div style="background: rgba(255,255,255,0.02); padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                    <div style="font-size: 9px; color: var(--text-dim); text-transform: uppercase;">${v}</div>
+                    <div style="color: var(--neon-cyan); font-weight: 700;">${typeof vars[v] === 'number' ? vars[v].toFixed(2) : (vars[v] || '0')}</div>
+                </div>
+            `;
         });
         html += '</div>';
         monitor.innerHTML = html;
@@ -542,9 +547,7 @@ class UIController {
         const solverGrid = document.getElementById('solver-inputs');
         
         if(grid) {
-            grid.style.display = 'grid';
             grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
-            grid.style.gap = '5px';
             grid.innerHTML = '';
             for (let i = 0; i < size * size; i++) {
                 grid.innerHTML += `<input type="number" class="grid-cell" value="0">`;
@@ -559,10 +562,21 @@ class UIController {
                 solverGrid.innerHTML = '';
                 if(m.startsWith('poly')) {
                     const deg = parseInt(m.replace('poly', ''));
-                    solverGrid.style.display = 'flex';
-                    solverGrid.style.gap = '5px';
+                    solverGrid.style.gridTemplateColumns = `repeat(${deg + 1}, 1fr)`;
                     for(let i=deg; i>=0; i--) {
                         solverGrid.innerHTML += `<input type="number" id="poly-c${i}" class="grid-cell" placeholder="x^${i}">`;
+                    }
+                } else if(m.startsWith('lin')) {
+                    const vars = parseInt(m.replace('lin', ''));
+                    solverGrid.style.gridTemplateColumns = `repeat(${vars + 1}, 1fr)`;
+                    // Headers
+                    for(let i=0; i<vars; i++) solverGrid.innerHTML += `<div class="grid-header">${String.fromCharCode(88+i)}</div>`;
+                    solverGrid.innerHTML += `<div class="grid-header">Const</div>`;
+                    // Rows
+                    for(let r=0; r<vars; r++) {
+                        for(let c=0; c<=vars; c++) {
+                            solverGrid.innerHTML += `<input type="number" id="lin-r${r}c${c}" class="grid-cell" value="0">`;
+                        }
                     }
                 }
             });
