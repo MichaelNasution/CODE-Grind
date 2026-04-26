@@ -5,6 +5,8 @@ class ModuleEngines {
             switch(payload.module) {
                 case "complex": this.computeComplex(payload.data); break;
                 case "matrix": this.computeMatrix(payload.data); break;
+                case "base-n": this.computeBaseN(payload.data); break;
+                case "ratio": this.computeRatio(payload.data); break;
                 case "vector": this.computeVector(payload.data); break;
                 case "table": this.generateTable(payload.data); break;
                 case "solver": this.solvePolynomial(payload.data); break;
@@ -13,6 +15,60 @@ class ModuleEngines {
                 case "inequality": this.solveInequality(payload.data); break;
             }
         });
+    }
+
+    // --- BASE-N CONVERTER ---
+    computeBaseN(data) {
+        try {
+            const val = data.value.trim();
+            if (!val) throw new Error("Empty input");
+            
+            const base = parseInt(data.base);
+            const decVal = parseInt(val, base);
+            
+            if (isNaN(decVal)) throw new Error("Invalid value for base " + base);
+            
+            const results = {
+                hex: decVal.toString(16).toUpperCase(),
+                dec: decVal.toString(10),
+                oct: decVal.toString(8),
+                bin: decVal.toString(2)
+            };
+
+            let html = `<div style="text-align: left; font-family: monospace;">
+                HEX: <span style="color: var(--neon-cyan)">${results.hex}</span><br>
+                DEC: <span style="color: var(--neon-cyan)">${results.dec}</span><br>
+                OCT: <span style="color: var(--neon-cyan)">${results.oct}</span><br>
+                BIN: <span style="color: var(--neon-cyan)">${results.bin}</span>
+            </div>`;
+
+            window.EventBus.dispatch("COMPUTE_SUCCESS", {
+                module: "base-n",
+                result: html,
+                vizData: { type: "none" }
+            });
+        } catch (err) {
+            window.EventBus.dispatch("COMPUTE_ERROR", err.message);
+        }
+    }
+
+    // --- RATIO SOLVER ---
+    computeRatio(data) {
+        try {
+            const { a, b, d } = data;
+            if (b === 0) throw new Error("Division by zero (b)");
+            
+            // a/b = X/d  => X = (a * d) / b
+            const x = (a * d) / b;
+
+            window.EventBus.dispatch("COMPUTE_SUCCESS", {
+                module: "ratio",
+                result: `X = ${x.toFixed(4)}`,
+                vizData: { type: "none" }
+            });
+        } catch (err) {
+            window.EventBus.dispatch("COMPUTE_ERROR", err.message);
+        }
     }
 
     // --- COMPLEX MODE ---
