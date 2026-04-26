@@ -54,6 +54,12 @@ class UIController {
                     data: resultData.vizData
                 };
             });
+
+            // Program Step Tracking
+            if (resultData.module === 'program') {
+                this.currentProgStep = resultData.nextStep || 0;
+                this.updateVarMonitor();
+            }
             
             const activeResultBox = document.querySelector(`#${window.AppState.activeModule}-result`);
             if (window.AnimationSystem && window.FeedbackSystem) {
@@ -174,6 +180,102 @@ class UIController {
             this.renderMatrixGrid(3);
         }
 
+        // Base-N setup
+        const baseInput = document.getElementById('base-input');
+        if (baseInput) {
+            baseInput.addEventListener('input', () => {
+                const activeBase = document.querySelector('#base-selector .tab-item.active').getAttribute('data-base');
+                window.EventBus.dispatch("COMPUTE_REQUEST", { 
+                    module: "base-n", 
+                    data: { value: baseInput.value, base: activeBase } 
+                });
+            });
+        }
+        
+        document.querySelectorAll('#base-selector .tab-item').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('#base-selector .tab-item').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                if (baseInput.value) {
+                    window.EventBus.dispatch("COMPUTE_REQUEST", { 
+                        module: "base-n", 
+                        data: { value: baseInput.value, base: tab.getAttribute('data-base') } 
+                    });
+                }
+            });
+        });
+
+        // Statistics Row Addition
+        const addStatsRowBtn = document.getElementById('add-stats-row');
+        const statsGrid = document.getElementById('stats-grid');
+        if (addStatsRowBtn && statsGrid) {
+            addStatsRowBtn.addEventListener('click', () => {
+                const xInp = document.createElement('input');
+                xInp.type = 'number';
+                xInp.className = 'grid-cell stats-x';
+                xInp.value = '0';
+                const fInp = document.createElement('input');
+                fInp.type = 'number';
+                fInp.className = 'grid-cell stats-f';
+                fInp.value = '1';
+                statsGrid.appendChild(xInp);
+                statsGrid.appendChild(fInp);
+            });
+        }
+
+        // Distribution Dynamic Inputs
+        const distTypeSel = document.getElementById('dist-type');
+        const distInputsGrid = document.getElementById('dist-inputs');
+        if (distTypeSel && distInputsGrid) {
+            distTypeSel.addEventListener('change', () => {
+                const type = distTypeSel.value;
+                distInputsGrid.innerHTML = '';
+                if (type === 'norm-pd') {
+                    distInputsGrid.innerHTML = `
+                        <input type="number" id="dist-x" class="input-field" placeholder="x">
+                        <input type="number" id="dist-mu" class="input-field" placeholder="μ" value="0">
+                        <input type="number" id="dist-sigma" class="input-field" placeholder="σ" value="1">
+                    `;
+                } else if (type === 'norm-cd') {
+                    distInputsGrid.innerHTML = `
+                        <input type="number" id="dist-lower" class="input-field" placeholder="Lower">
+                        <input type="number" id="dist-upper" class="input-field" placeholder="Upper">
+                        <input type="number" id="dist-mu" class="input-field" placeholder="μ" value="0">
+                        <input type="number" id="dist-sigma" class="input-field" placeholder="σ" value="1">
+                    `;
+                } else if (type === 'binom-pd' || type === 'binom-cd') {
+                    distInputsGrid.innerHTML = `
+                        <input type="number" id="dist-n" class="input-field" placeholder="n">
+                        <input type="number" id="dist-p" class="input-field" placeholder="p">
+                        <input type="number" id="dist-k" class="input-field" placeholder="${type === 'binom-pd' ? 'k' : 'Lower k'}">
+                        ${type === 'binom-cd' ? '<input type="number" id="dist-k2" class="input-field" placeholder="Upper k">' : ''}
+                    `;
+                }
+            });
+            distTypeSel.dispatchEvent(new Event('change'));
+        }
+
+        // Physics Search
+        const constSearch = document.getElementById('const-search');
+        if (constSearch) {
+            constSearch.addEventListener('input', () => {
+                window.EventBus.dispatch("COMPUTE_REQUEST", { module: "physics", data: { query: constSearch.value } });
+            });
+        }
+
+        // Delegate Physics Item Click
+        document.getElementById('const-list')?.addEventListener('click', (e) => {
+            const item = e.target.closest('.physics-item');
+            if (item) {
+                const val = item.getAttribute('data-val');
+                if (!window.sciExpr) window.sciExpr = '';
+                window.sciExpr += val;
+                const exprElem = document.getElementById('input-line');
+                if (exprElem) exprElem.innerHTML = window.sciExpr + '<span class="cursor">|</span>';
+                if (window.FeedbackSystem) window.FeedbackSystem.hapticSimulate('light');
+            }
+        });
+
         // Draw initial grid
         window.Viz.clear();
     }
@@ -241,6 +343,94 @@ class UIController {
                     };
                     window.setState(s => s.loading = true);
                     window.EventBus.dispatch("COMPUTE_REQUEST", { module: "matrix", data: payload });
+                    break;
+                }
+
+                // PHYSICS SEARCH
+                case 'physics-search': {
+                    const query = document.getElementById('const-search').value;
+                    window.EventBus.dispatch("COMPUTE_REQUEST", { module: "physics", data: { query } });
+                    break;
+                }
+
+                // PROGRAM ENGINE
+                case 'prog-run':
+                case 'prog-step': {
+                    const script = document.getElementById('prog-script').value;
+                    const stepMode = action === 'prog-step';
+                    window.setState(s => s.loading = true);
+                    window.EventBus.dispatch("COMPUTE_REQUEST", { 
+                        module: "program", 
+                        data: { 
+                            script, 
+                            stepMode, 
+                            currentStep: stepMode ? (this.currentProgStep || 0) : 0 
+                        } 
+                    });
+                    break;
+                }
+
+                // STATISTICS
+                case 'stats-calc': {
+                    const xInps = document.querySelectorAll('.stats-x');
+                    const fInps = document.querySelectorAll('.stats-f');
+                    let points = [];
+                    xInps.forEach((xInp, i) => {
+                        points.push({
+                            x: parseFloat(xInp.value) || 0,
+                            f: parseFloat(fInps[i].value) || 0
+                        });
+                    });
+                    window.setState(s => s.loading = true);
+                    window.EventBus.dispatch("COMPUTE_REQUEST", { module: "stats", data: { points } });
+                    break;
+                }
+
+                // DISTRIBUTION
+                case 'dist-solve': {
+                    const type = document.getElementById('dist-type').value;
+                    let params = {};
+                    if (type === 'norm-pd') {
+                        params = { 
+                            x: parseFloat(document.getElementById('dist-x').value) || 0,
+                            mu: parseFloat(document.getElementById('dist-mu').value) || 0,
+                            sigma: parseFloat(document.getElementById('dist-sigma').value) || 1
+                        };
+                    } else if (type === 'norm-cd') {
+                        params = {
+                            lower: parseFloat(document.getElementById('dist-lower').value) || 0,
+                            upper: parseFloat(document.getElementById('dist-upper').value) || 0,
+                            mu: parseFloat(document.getElementById('dist-mu').value) || 0,
+                            sigma: parseFloat(document.getElementById('dist-sigma').value) || 1
+                        };
+                    } else if (type === 'binom-pd') {
+                        params = {
+                            n: parseInt(document.getElementById('dist-n').value) || 0,
+                            p: parseFloat(document.getElementById('dist-p').value) || 0,
+                            k: parseInt(document.getElementById('dist-k').value) || 0
+                        };
+                    } else if (type === 'binom-cd') {
+                        params = {
+                            n: parseInt(document.getElementById('dist-n').value) || 0,
+                            p: parseFloat(document.getElementById('dist-p').value) || 0,
+                            lower: parseInt(document.getElementById('dist-k').value) || 0,
+                            upper: parseInt(document.getElementById('dist-k2').value) || 0
+                        };
+                    }
+                    window.setState(s => s.loading = true);
+                    window.EventBus.dispatch("COMPUTE_REQUEST", { module: "dist", data: { type, params } });
+                    break;
+                }
+
+                // RATIO SOLVER
+                case 'ratio-solve': {
+                    const payload = {
+                        a: parseFloat(document.getElementById('ratio-a').value) || 0,
+                        b: parseFloat(document.getElementById('ratio-b').value) || 0,
+                        d: parseFloat(document.getElementById('ratio-d').value) || 0
+                    };
+                    window.setState(s => s.loading = true);
+                    window.EventBus.dispatch("COMPUTE_REQUEST", { module: "ratio", data: payload });
                     break;
                 }
 
@@ -333,6 +523,18 @@ class UIController {
         } catch(err) {
             this.showResult(`${this.activeModule}-result`, "Syntax ERROR: " + err.message, true);
         }
+    }
+
+    updateVarMonitor() {
+        const monitor = document.getElementById('var-monitor');
+        if (!monitor) return;
+        const vars = window.AppState.variables;
+        let html = '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; font-size: 0.8em;">';
+        Object.keys(vars).sort().forEach(v => {
+            html += `<div><span style="color: #94a3b8">${v}:</span> <span style="color: var(--neon-cyan)">${typeof vars[v] === 'number' ? vars[v].toFixed(2) : vars[v]}</span></div>`;
+        });
+        html += '</div>';
+        monitor.innerHTML = html;
     }
 
     renderMatrixGrid(size) {

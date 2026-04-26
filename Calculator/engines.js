@@ -7,6 +7,10 @@ class ModuleEngines {
                 case "matrix": this.computeMatrix(payload.data); break;
                 case "base-n": this.computeBaseN(payload.data); break;
                 case "ratio": this.computeRatio(payload.data); break;
+                case "stats": this.computeStats(payload.data); break;
+                case "dist": this.computeDist(payload.data); break;
+                case "physics": this.searchPhysics(payload.data); break;
+                case "program": this.runProgram(payload.data); break;
                 case "vector": this.computeVector(payload.data); break;
                 case "table": this.generateTable(payload.data); break;
                 case "solver": this.solvePolynomial(payload.data); break;
@@ -15,6 +19,155 @@ class ModuleEngines {
                 case "inequality": this.solveInequality(payload.data); break;
             }
         });
+    }
+
+    // --- PHYSICS LIBRARY ---
+    searchPhysics(data) {
+        const constants = [
+            { name: "Speed of Light", symbol: "c", value: "299792458", unit: "m/s", cat: "Universal" },
+            { name: "Planck Constant", symbol: "h", value: "6.62607015e-34", unit: "J⋅s", cat: "Quantum" },
+            { name: "Gravitational Constant", symbol: "G", value: "6.67430e-11", unit: "m³/kg/s²", cat: "Universal" },
+            { name: "Elementary Charge", symbol: "e", value: "1.602176634e-19", unit: "C", cat: "Electromagnetic" },
+            { name: "Avogadro Constant", symbol: "Na", value: "6.02214076e23", unit: "mol⁻¹", cat: "Atomic" },
+            { name: "Boltzmann Constant", symbol: "k", value: "1.380649e-23", unit: "J/K", cat: "Thermodynamic" }
+        ];
+
+        const query = data.query.toLowerCase();
+        const filtered = constants.filter(c => 
+            c.name.toLowerCase().includes(query) || 
+            c.symbol.toLowerCase().includes(query) ||
+            c.cat.toLowerCase().includes(query)
+        );
+
+        let html = filtered.map(c => `
+            <div class="module-item physics-item" style="padding: 10px; border-bottom: 1px solid #1e293b; cursor: pointer; transition: background 0.2s;" data-val="${c.value}">
+                <div style="font-weight: bold; color: var(--neon-cyan);">${c.name} (${c.symbol})</div>
+                <div style="font-size: 0.8em; color: #94a3b8;">${c.value} ${c.unit} | ${c.cat}</div>
+            </div>
+        `).join('');
+
+        window.EventBus.dispatch("COMPUTE_SUCCESS", {
+            module: "physics",
+            result: html || "No constants found",
+            vizData: { type: "none" }
+        });
+    }
+
+    // --- PROGRAM ENGINE ---
+    runProgram(data) {
+        try {
+            const lines = data.script.split(':').map(l => l.trim()).filter(l => l);
+            if (data.stepMode) {
+                const step = data.currentStep || 0;
+                if (step >= lines.length) {
+                    window.EventBus.dispatch("COMPUTE_SUCCESS", { module: "program", result: "Program Ended", vizData: { type: "none" } });
+                    return;
+                }
+                const res = window.Core.evaluate(lines[step]);
+                window.EventBus.dispatch("COMPUTE_SUCCESS", {
+                    module: "program",
+                    result: `Step ${step+1}: ${lines[step]} = ${res}`,
+                    nextStep: step + 1,
+                    vizData: { type: "none" }
+                });
+            } else {
+                let lastRes;
+                lines.forEach(l => { lastRes = window.Core.evaluate(l); });
+                window.EventBus.dispatch("COMPUTE_SUCCESS", {
+                    module: "program",
+                    result: `Program Executed. Last Result: ${lastRes}`,
+                    vizData: { type: "none" }
+                });
+            }
+        } catch (err) {
+            window.EventBus.dispatch("COMPUTE_ERROR", err.message);
+        }
+    }
+
+    // --- STATISTICS ---
+    computeStats(data) {
+        try {
+            const { points } = data;
+            let sumX = 0, sumX2 = 0, n = 0;
+            
+            points.forEach(p => {
+                const x = p.x;
+                const f = p.f;
+                n += f;
+                sumX += x * f;
+                sumX2 += x * x * f;
+            });
+
+            if (n === 0) throw new Error("No data points");
+
+            const mean = sumX / n;
+            const variance = (sumX2 / n) - (mean * mean);
+            const stdDev = Math.sqrt(variance);
+
+            let html = `<div style="text-align: left; font-size: 0.9em;">
+                n = ${n}<br>
+                x̄ = ${mean.toFixed(4)}<br>
+                Σx = ${sumX.toFixed(4)}<br>
+                Σx² = ${sumX2.toFixed(4)}<br>
+                σ²x = ${variance.toFixed(4)}<br>
+                σx = ${stdDev.toFixed(4)}
+            </div>`;
+
+            window.EventBus.dispatch("COMPUTE_SUCCESS", {
+                module: "stats",
+                result: html,
+                vizData: { type: "none" }
+            });
+        } catch (err) {
+            window.EventBus.dispatch("COMPUTE_ERROR", err.message);
+        }
+    }
+
+    // --- DISTRIBUTION ---
+    computeDist(data) {
+        try {
+            const { type, params } = data;
+            let result;
+
+            if (type === 'norm-pd') {
+                const { x, mu, sigma } = params;
+                // PDF = (1 / (sigma * sqrt(2*pi))) * exp(-0.5 * ((x-mu)/sigma)^2)
+                result = (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2));
+            } else if (type === 'norm-cd') {
+                const { lower, upper, mu, sigma } = params;
+                // Using error function approximation for CDF
+                const erf = (x) => {
+                    const a1 = 0.254829592, a2 = -0.284496736, a3 = 1.421413741, a4 = -1.453152027, a5 = 1.061405429, p = 0.3275911;
+                    const sign = x < 0 ? -1 : 1;
+                    const absX = Math.abs(x);
+                    const t = 1 / (1 + p * absX);
+                    const y = 1 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
+                    return sign * y;
+                };
+                const cdf = (x, m, s) => 0.5 * (1 + erf((x - m) / (s * Math.sqrt(2))));
+                result = cdf(upper, mu, sigma) - cdf(lower, mu, sigma);
+            } else if (type === 'binom-pd') {
+                const { k, n, p } = params;
+                const nCr = (n, r) => math.combinations(n, r);
+                result = nCr(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+            } else if (type === 'binom-cd') {
+                const { lower, upper, n, p } = params;
+                const nCr = (n, r) => math.combinations(n, r);
+                let sum = 0;
+                for (let k = lower; k <= upper; k++) {
+                    sum += nCr(n, k) * Math.pow(p, k) * Math.pow(1 - p, n - k);
+                }
+                result = sum;
+            }
+
+            window.EventBus.dispatch("COMPUTE_SUCCESS", {
+                module: "dist",
+                result: `P = ${result.toFixed(6)}`,
+                vizData: { type: "none" }
+            });
+        } catch (err) {
+            window.EventBus.dispatch("COMPUTE_ERROR", err.message);
+        }
     }
 
     // --- BASE-N CONVERTER ---
