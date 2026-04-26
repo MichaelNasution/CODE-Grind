@@ -10,10 +10,36 @@ class UIController {
             if (state.error) {
                 this.showResult(`${state.activeModule}-result`, "ERROR: " + state.error, true);
             } else if (state.lastResult !== null) {
-                this.showResult(`${state.activeModule}-result`, state.lastResult);
+                let formattedResult = state.lastResult;
+
+                // Special formatters for complex results
+                if (state.activeModule === 'table') {
+                    const data = state.lastResult;
+                    const gx = state.visualization?.data?.gxStr;
+                    formattedResult = `<table style="width:100%; text-align:center; border-collapse: collapse;">
+                                <tr><th style="border-bottom:1px solid #334155; padding:5px;">x</th>
+                                <th style="border-bottom:1px solid #334155; padding:5px;">f(x)</th>`;
+                    if(gx) formattedResult += `<th style="border-bottom:1px solid #334155; padding:5px;">g(x)</th>`;
+                    formattedResult += `</tr>`;
+                    data.forEach(r => {
+                        formattedResult += `<tr><td>${r.x}</td><td>${r.fx}</td>`;
+                        if(gx) formattedResult += `<td>${r.gx}</td>`;
+                        formattedResult += `</tr>`;
+                    });
+                    formattedResult += `</table>`;
+                } else if (state.activeModule === 'solver') {
+                    formattedResult = state.lastResult.map((r, i) => `x${i+1} = ${r}`).join('<br>') || "No roots found";
+                } else if (state.activeModule === 'numerical') {
+                    let res = state.lastResult;
+                    let html = `Root: <strong>${res.root}</strong><br><br>Steps:<br>`;
+                    res.steps.forEach(s => html += `x${s.step}: ${s.x.toFixed(4)} (f(x)=${s.fx.toExponential(2)})<br>`);
+                    formattedResult = `<div style="max-height:100px; overflow-y:auto; font-size:12px;">${html}</div>`;
+                }
+
+                this.showResult(`${state.activeModule}-result`, formattedResult);
             }
             
-            // Loading State (optional visual cue)
+            // Loading State
             if (state.loading) {
                 this.showLoading(`${state.activeModule}-result`);
             }
@@ -146,86 +172,62 @@ class UIController {
 
                 // TABLE FUNCTION
                 case 'table-gen': {
-                    const fx = document.getElementById('table-fx').value;
-                    const gx = document.getElementById('table-gx').value;
-                    const s = document.getElementById('table-start').value;
-                    const e = document.getElementById('table-end').value;
-                    const st = document.getElementById('table-step').value;
-                    
-                    const data = window.Engines.generateTable(fx, gx, s, e, st);
-                    let html = `<table style="width:100%; text-align:center; border-collapse: collapse;">
-                                <tr><th style="border-bottom:1px solid #334155; padding:5px;">x</th>
-                                <th style="border-bottom:1px solid #334155; padding:5px;">f(x)</th>`;
-                    if(gx) html += `<th style="border-bottom:1px solid #334155; padding:5px;">g(x)</th>`;
-                    html += `</tr>`;
-                    
-                    data.forEach(r => {
-                        html += `<tr><td>${r.x}</td><td>${r.fx}</td>`;
-                        if(gx) html += `<td>${r.gx}</td>`;
-                        html += `</tr>`;
-                    });
-                    html += `</table>`;
-                    this.showResult('table-result', html);
-                    window.Viz.drawFunctionGraph(fx, gx);
+                    const payload = {
+                        fxStr: document.getElementById('table-fx').value,
+                        gxStr: document.getElementById('table-gx').value,
+                        start: document.getElementById('table-start').value,
+                        end: document.getElementById('table-end').value,
+                        step: document.getElementById('table-step').value
+                    };
+                    window.setState(s => s.loading = true);
+                    window.EventBus.dispatch("COMPUTE_REQUEST", { module: "table", data: payload });
                     break;
                 }
 
                 // EQUATION SOLVER
                 case 'solver-solve': {
-                    this.showLoading('solver-result');
-                    setTimeout(() => { // Simulate processing for complex roots
-                        const mode = document.getElementById('solver-mode').value;
-                        if(mode.startsWith('poly')) {
-                            const deg = parseInt(mode.replace('poly', ''));
-                            let coeffs = [];
-                            for(let i=deg; i>=0; i--) {
-                                coeffs.push(parseFloat(document.getElementById(`poly-c${i}`).value)||0);
-                            }
-                            const roots = window.Engines.solvePolynomial(coeffs);
-                            let html = roots.map((r, i) => `x${i+1} = ${r}`).join('<br>');
-                            this.showResult('solver-result', html || "No roots found");
-                        }
-                    }, 100);
+                    const mode = document.getElementById('solver-mode').value;
+                    if(mode.startsWith('poly')) {
+                        const deg = parseInt(mode.replace('poly', ''));
+                        let coeffs = [];
+                        for(let i=deg; i>=0; i--) coeffs.push(parseFloat(document.getElementById(`poly-c${i}`).value)||0);
+                        
+                        window.setState(s => s.loading = true);
+                        window.EventBus.dispatch("COMPUTE_REQUEST", { module: "solver", data: { coeffs } });
+                    }
                     break;
                 }
 
                 // NUMERICAL N-R
                 case 'num-solve': {
-                    const fx = document.getElementById('num-fx').value;
-                    const g = document.getElementById('num-guess').value;
-                    const m = document.getElementById('num-method').value;
-                    const res = window.Engines.solveNumerical(fx, g, m);
-                    
-                    if(res.error) {
-                        this.showResult('num-result', res.error, true);
-                    } else {
-                        let html = `Root: <strong>${res.root}</strong><br><br>Steps:<br>`;
-                        res.steps.forEach(s => html += `x${s.step}: ${s.x.toFixed(4)} (f(x)=${s.fx.toExponential(2)})<br>`);
-                        this.showResult('num-result', `<div style="max-height:100px; overflow-y:auto; font-size:12px;">${html}</div>`);
-                        window.Viz.drawNewtonSteps(fx, res.root, res.steps);
-                    }
+                    const payload = {
+                        fxStr: document.getElementById('num-fx').value,
+                        guessStr: document.getElementById('num-guess').value,
+                        method: document.getElementById('num-method').value
+                    };
+                    window.setState(s => s.loading = true);
+                    window.EventBus.dispatch("COMPUTE_REQUEST", { module: "numerical", data: payload });
                     break;
                 }
 
                 // CALCULUS
                 case 'calc-solve': {
-                    const fx = document.getElementById('calc-fx').value;
-                    const m = document.getElementById('calc-mode').value;
-                    const a = document.getElementById('calc-a').value;
-                    const b = document.getElementById('calc-b').value;
-                    const res = window.Engines.computeCalculus(fx, m, a, b);
-                    this.showResult('calc-result', res);
-                    if(m === 'int') window.Viz.drawIntegralArea(fx, parseFloat(a), parseFloat(b));
-                    else window.Viz.drawFunctionGraph(fx);
+                    const payload = {
+                        fxStr: document.getElementById('calc-fx').value,
+                        mode: document.getElementById('calc-mode').value,
+                        aStr: document.getElementById('calc-a').value,
+                        bStr: document.getElementById('calc-b').value
+                    };
+                    window.setState(s => s.loading = true);
+                    window.EventBus.dispatch("COMPUTE_REQUEST", { module: "calculus", data: payload });
                     break;
                 }
                 
                 // INEQUALITY
                 case 'ineq-solve': {
-                    const expr = document.getElementById('ineq-expr').value;
-                    const res = window.Engines.solveInequality(expr);
-                    this.showResult('ineq-result', res);
-                    window.Viz.drawNumberLine(res);
+                    const payload = { expr: document.getElementById('ineq-expr').value };
+                    window.setState(s => s.loading = true);
+                    window.EventBus.dispatch("COMPUTE_REQUEST", { module: "inequality", data: payload });
                     break;
                 }
             }
