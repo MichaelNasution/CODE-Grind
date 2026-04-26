@@ -34,7 +34,7 @@ window.AnimationSystem = {
     moduleEnter(el) {
         if(!el) return;
         el.style.opacity = 0; 
-        el.style.display = 'block';
+        el.style.display = 'flex';
         
         anime({ 
             targets: el, 

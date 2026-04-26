@@ -41,11 +41,12 @@ body {
 
 .app-shell {
     display: grid;
-    grid-template-columns: 240px 1fr 320px;
+    grid-template-columns: 240px minmax(0, 1fr) 320px;
     height: 100vh;
     width: 100vw;
     background: rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(10px);
+    overflow: hidden;
 }
 
 /* Side Panels */
@@ -176,19 +177,22 @@ body {
 
 /* Module Viewport */
 .module-viewport {
+    flex: 1;
     width: 100%;
     height: 100%;
     position: relative;
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 40px;
+    align-items: flex-start; /* Better for scrollable content */
+    padding: 40px 20px;
     overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .module-content {
     width: 100%;
     max-width: 520px;
+    margin: 0 auto;
     display: none;
     flex-direction: column;
     gap: 20px;
@@ -340,9 +344,10 @@ body {
     min-height: 80px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     position: relative;
     box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
+    overflow-x: auto;
 }
 
 .result-box strong {
@@ -497,11 +502,11 @@ body {
 
 /* Main Workspace */
 .main-workspace {
+    grid-column: 2;
+    height: 100vh;
+    overflow: hidden;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    position: relative;
+    flex-direction: column;
 }
 
 /* Visualization Panel Specifics */
