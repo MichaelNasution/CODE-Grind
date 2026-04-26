@@ -10,7 +10,8 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-shell" id="app-shell">
+    <div class="app-wrapper">
+        <div class="app-shell" id="app-shell">
         <!-- Sidebar Modules -->
         <aside class="side-panel modules-panel">
             <div class="panel-header">NEO-FX OS</div>
@@ -49,15 +50,15 @@
                         <div class="input-area">
                             <div class="input-group">
                                 <label>Expression Pipeline</label>
-                                <div class="input-field" id="input-line" style="min-height: 60px; display: flex; align-items: center; font-size: 20px; font-family: var(--font-mono);">
+                                <div class="input-field large-display" id="input-line">
                                     <span class="cursor">|</span>
                                 </div>
                             </div>
                         </div>
 
 
-                        <div class="action-area" style="display: flex; flex-direction: column; gap: 12px;">
-                            <div class="sci-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px;">
+                        <div class="action-area">
+                            <div class="sci-grid">
                                 <button class="btn func" data-key="sin">sin</button>
                                 <button class="btn func" data-key="cos">cos</button>
                                 <button class="btn func" data-key="tan">tan</button>
@@ -72,7 +73,7 @@
                                 <button class="btn func" data-key="pi">π</button>
                             </div>
 
-                            <div class="num-grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
+                            <div class="num-grid">
                                 <button class="btn num" data-val="7">7</button>
                                 <button class="btn num" data-val="8">8</button>
                                 <button class="btn num" data-val="9">9</button>
@@ -98,7 +99,7 @@
 
                         <div class="result-area">
                             <div class="result-header"><span>RESULT</span><span id="sci-status">READY</span></div>
-                            <div class="result-box" id="result-line" style="font-size: 32px; text-align: right; font-weight: 800; color: var(--neon-cyan);">0</div>
+                            <div class="result-box" id="result-line">0</div>
                         </div>
                     </div>
                 </div>
@@ -172,7 +173,7 @@
                         <div class="input-area">
                             <div class="input-group">
                                 <label>Vector A (x, y, z)</label>
-                                <div class="grid-editor" style="grid-template-columns: 1fr 1fr 1fr;">
+                                <div class="grid-editor grid-3-cols">
                                     <input type="number" id="vecA-x" class="grid-cell" placeholder="x" value="0">
                                     <input type="number" id="vecA-y" class="grid-cell" placeholder="y" value="0">
                                     <input type="number" id="vecA-z" class="grid-cell" placeholder="z" value="0">
@@ -180,14 +181,14 @@
                             </div>
                             <div class="input-group">
                                 <label>Vector B (x, y, z)</label>
-                                <div class="grid-editor" style="grid-template-columns: 1fr 1fr 1fr;">
+                                <div class="grid-editor grid-3-cols">
                                     <input type="number" id="vecB-x" class="grid-cell" placeholder="x" value="0">
                                     <input type="number" id="vecB-y" class="grid-cell" placeholder="y" value="0">
                                     <input type="number" id="vecB-z" class="grid-cell" placeholder="z" value="0">
                                 </div>
                             </div>
                         </div>
-                        <div class="action-area grid-actions" style="gap: 5px;">
+                        <div class="action-area grid-actions">
                             <button class="btn-secondary" data-action="vec-dot">DOT</button>
                             <button class="btn-secondary" data-action="vec-cross">CROSS</button>
                             <button class="btn-secondary" data-action="vec-mag">MAG</button>
@@ -208,11 +209,11 @@
                             <div class="input-group">
                                 <label>Functions</label>
                                 <input type="text" id="table-fx" class="input-field" placeholder="f(x) = ... (e.g. x^2)">
-                                <input type="text" id="table-gx" class="input-field" style="margin-top: 5px;" placeholder="g(x) = ... (optional)">
+                                <input type="text" id="table-gx" class="input-field" placeholder="g(x) = ... (optional)">
                             </div>
                             <div class="input-group">
                                 <label>Range [Start, End, Step]</label>
-                                <div class="grid-editor" style="grid-template-columns: 1fr 1fr 1fr;">
+                                <div class="grid-editor grid-3-cols">
                                     <input type="number" id="table-start" class="grid-cell" placeholder="Start" value="-5">
                                     <input type="number" id="table-end" class="grid-cell" placeholder="End" value="5">
                                     <input type="number" id="table-step" class="grid-cell" placeholder="Step" value="1">
@@ -224,8 +225,8 @@
                         </div>
                         <div class="result-area">
                             <div class="result-header">DATASET</div>
-                            <div class="result-box" id="table-result" style="max-height: 200px; overflow-y: auto; justify-content: flex-start; padding: 0;">
-                                <div style="padding: 20px;">Ready for generation...</div>
+                            <div class="result-box" id="table-result">
+                                <div class="table-placeholder">Ready for generation...</div>
                             </div>
                         </div>
                     </div>
@@ -290,14 +291,14 @@
                         <div class="input-area">
                             <div class="input-group">
                                 <label>Data Grid</label>
-                                <div id="stats-grid" class="grid-editor" style="grid-template-columns: 1fr 1fr; max-height: 150px; overflow-y: auto;">
+                                <div id="stats-grid" class="grid-editor">
                                     <div class="grid-header">X</div>
                                     <div class="grid-header">FREQ</div>
                                     <input type="number" class="grid-cell stats-x" value="0">
                                     <input type="number" class="grid-cell stats-f" value="1">
                                 </div>
                             </div>
-                            <button class="btn-secondary" id="add-stats-row" style="margin-top: 5px; width: 100%;">+ ADD DATA ROW</button>
+                            <button class="btn-secondary" id="add-stats-row">+ ADD DATA ROW</button>
                         </div>
                         <div class="action-area">
                             <button class="btn-primary" data-action="stats-calc">CALCULATE STATS</button>
@@ -325,7 +326,7 @@
                             </div>
                             <div class="input-group">
                                 <label>Parameters</label>
-                                <div id="dist-inputs" class="grid-editor" style="grid-template-columns: 1fr 1fr;">
+                                <div id="dist-inputs" class="grid-editor">
                                     <!-- Dynamic -->
                                 </div>
                             </div>
@@ -351,7 +352,7 @@
                             </div>
                             <div class="input-group">
                                 <label>Method & Initial Guess</label>
-                                <div class="grid-editor" style="grid-template-columns: 1fr 1fr;">
+                                <div class="grid-editor">
                                     <input type="number" id="num-guess" class="grid-cell" placeholder="x0" value="1">
                                     <select id="num-method" class="grid-cell">
                                         <option value="nr">Newton-Raphson</option>
@@ -388,7 +389,7 @@
                             </div>
                             <div class="input-group">
                                 <label>Bounds / Point</label>
-                                <div class="grid-editor" id="calc-bounds" style="grid-template-columns: 1fr 1fr;">
+                                <div class="grid-editor" id="calc-bounds">
                                     <input type="number" id="calc-a" class="grid-cell" placeholder="Lower (a)">
                                     <input type="number" id="calc-b" class="grid-cell" placeholder="Upper (b)">
                                 </div>
@@ -439,12 +440,12 @@
                         <div class="input-area">
                             <div class="input-group">
                                 <label>Format: a / b = X / d</label>
-                                <div class="grid-editor" style="grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; align-items: center; gap: 5px;">
+                                <div class="grid-editor ratio-grid">
                                     <input type="number" id="ratio-a" class="grid-cell" placeholder="a">
                                     <span>/</span>
                                     <input type="number" id="ratio-b" class="grid-cell" placeholder="b">
                                     <span>=</span>
-                                    <input type="text" disabled value="X" class="grid-cell" style="background: rgba(34, 211, 238, 0.1);">
+                                    <input type="text" disabled value="X" class="grid-cell highlight">
                                     <span>/</span>
                                     <input type="number" id="ratio-d" class="grid-cell" placeholder="d">
                                 </div>
@@ -472,7 +473,7 @@
                         </div>
                         <div class="result-area">
                             <div class="result-header">LIBRARY RESULTS</div>
-                            <div class="module-group" id="const-list" style="max-height: 250px; background: var(--bg-color); border-radius: 8px; border: 1px solid var(--border-color);">
+                            <div class="const-list-container" id="const-list">
                                 <!-- Constants injected -->
                             </div>
                         </div>
@@ -486,7 +487,7 @@
                         <div class="input-area">
                             <div class="input-group">
                                 <label>Script Pipeline (colon separated)</label>
-                                <textarea id="prog-script" class="input-field" style="height: 100px; resize: none;" placeholder="A=5: B=10: A+B: Ans*2"></textarea>
+                                <textarea id="prog-script" class="input-field script-editor" placeholder="A=5: B=10: A+B: Ans*2"></textarea>
                             </div>
                         </div>
                         <div class="action-area">
@@ -495,7 +496,7 @@
                         </div>
                         <div class="result-area">
                             <div class="result-header">VARIABLE MONITOR & LOGS</div>
-                            <div class="result-box" id="var-monitor" style="justify-content: flex-start; align-items: flex-start; font-size: 13px;">
+                            <div class="result-box var-monitor" id="var-monitor">
                                 <!-- A-Z -->
                             </div>
                         </div>
@@ -522,6 +523,7 @@
             </div>
         </aside>
     </div>
+</div>
     
     <!-- External Dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>

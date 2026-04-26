@@ -1,4 +1,12 @@
 :root {
+    --grid-unit: 8px;
+    
+    --text-xs: 12px;
+    --text-sm: 14px;
+    --text-md: 16px;
+    --text-lg: 20px;
+    --text-xl: 28px;
+
     --bg-color: #020617;
     --surface-color: #0f172a;
     --card-bg: #1e293b;
@@ -28,36 +36,61 @@
 }
 
 body {
-    background-color: var(--bg-color);
+    background-color: #0f172a;
     background-image: 
         radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.05) 0%, transparent 50%),
         linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
     background-size: 100% 100%, 40px 40px, 40px 40px;
-    height: 100vh;
+    min-height: 100vh;
     margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     overflow: hidden;
 }
 
+.app-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    perspective: 1000px;
+}
+
 .app-shell {
+    width: 1400px;
+    max-width: 95vw;
+    height: 90vh;
+
     display: grid;
-    grid-template-columns: 240px minmax(0, 1fr) 320px;
-    height: 100vh;
-    width: 100vw;
-    background: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(10px);
+    grid-template-columns: 260px 1fr 320px;
+    gap: 16px;
+
+    border-radius: 16px;
+    padding: 16px;
+
+    background: #1e293b;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     overflow: hidden;
+    position: relative;
 }
 
 /* Side Panels */
 .side-panel {
-    background: rgba(10, 10, 10, 0.9);
-    border-right: 1px solid var(--glass-border);
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.05);
     display: flex;
     flex-direction: column;
-    padding: 15px;
+    padding: 16px;
     z-index: 10;
-    max-height: 100vh;
+    overflow: hidden;
+    border-radius: 12px;
+}
+
+.modules-panel {
+    width: 100%;
+    overflow-y: auto;
 }
 
 .module-group {
@@ -177,16 +210,9 @@ body {
 
 /* Module Viewport */
 .module-viewport {
-    flex: 1;
     width: 100%;
-    height: 100%;
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start; /* Better for scrollable content */
-    padding: 40px 20px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    max-width: 700px;
+    margin: 0 auto;
 }
 
 .module-content {
@@ -204,14 +230,16 @@ body {
 
 /* Card System & Vertical Layout */
 .card {
-    background: var(--surface-color);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
+    background: #0f172a;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
     padding: 24px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    display: grid;
+    grid-template-rows: auto auto auto 1fr;
+    gap: 16px;
+    width: 100%;
+    max-width: 700px;
     position: relative;
     overflow: hidden;
 }
@@ -239,7 +267,9 @@ body {
     gap: 10px;
 }
 
-.input-area {
+.input-area,
+.action-area,
+.result-area {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -248,15 +278,16 @@ body {
 .input-group {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
 }
 
 .input-area label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    opacity: 0.7;
 }
 
 .input-field {
@@ -265,7 +296,7 @@ body {
     border-radius: 8px;
     padding: 12px;
     color: var(--text-color);
-    font-size: 14px;
+    font-size: var(--text-sm);
     font-family: var(--font-mono);
     outline: none;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -277,10 +308,20 @@ body {
     box-shadow: 0 0 15px var(--neon-cyan-glow);
 }
 
+.input-field.large-display {
+    min-height: 80px;
+    font-size: 24px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.3);
+}
+
 .action-area {
     display: flex;
-    gap: 10px;
-    justify-content: flex-end;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: flex-start;
 }
 
 .grid-actions {
@@ -290,12 +331,14 @@ body {
 
 .btn-primary, .btn-secondary {
     padding: 10px 16px;
-    border-radius: 6px;
+    border-radius: 8px;
     font-weight: 600;
-    font-size: 12px;
+    font-size: var(--text-sm);
     cursor: pointer;
     border: none;
     transition: all 0.2s;
+    height: 44px;
+    width: 100%;
 }
 
 .btn-primary {
@@ -318,10 +361,9 @@ body {
 }
 
 .result-area {
-    margin-top: 5px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
 }
 
 .result-header {
@@ -339,12 +381,13 @@ body {
     border-radius: 12px;
     padding: 20px;
     font-family: var(--font-mono);
-    font-size: 15px;
+    font-size: var(--text-xl);
     color: var(--neon-cyan);
     min-height: 80px;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+    text-align: right;
     position: relative;
     box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
     overflow-x: auto;
@@ -405,7 +448,7 @@ body {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 8px;
-    gap: 4px;
+    gap: 8px;
 }
 
 .grid-cell {
@@ -432,6 +475,54 @@ body {
     color: var(--text-dim);
     text-align: center;
     padding-bottom: 4px;
+}
+
+.grid-3-cols {
+    grid-template-columns: repeat(3, 1fr) !important;
+}
+
+.ratio-grid {
+    grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr !important;
+    align-items: center;
+}
+
+.grid-cell.highlight {
+    background: rgba(34, 211, 238, 0.1);
+    border-color: var(--neon-cyan);
+}
+
+.table-placeholder {
+    padding: 20px;
+    opacity: 0.5;
+    font-size: var(--text-sm);
+}
+
+.const-list-container {
+    max-height: 250px;
+    background: var(--bg-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.script-editor {
+    height: 120px;
+    resize: none;
+    line-height: 1.6;
+}
+
+.var-monitor {
+    justify-content: flex-start;
+    align-items: flex-start;
+    font-size: var(--text-xs);
+    gap: 8px;
+}
+
+.grid-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
 }
 
 /* Graph Panel Enhancements */
@@ -502,11 +593,11 @@ body {
 
 /* Main Workspace */
 .main-workspace {
-    grid-column: 2;
-    height: 100vh;
-    overflow: hidden;
     display: flex;
-    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    overflow-y: auto;
+    padding: 32px 0;
 }
 
 /* Visualization Panel Specifics */
@@ -773,6 +864,7 @@ input[type="range"]::-webkit-slider-thumb {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     gap: 8px;
+    width: 100%;
 }
 
 .btn.sci {
@@ -782,13 +874,10 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .num-grid {
-    margin-top: 10px;
-}
-
-.main-nums {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
+    gap: 8px;
+    width: 100%;
 }
 
 .btn.num {
@@ -884,4 +973,20 @@ input[type="range"]::-webkit-slider-thumb {
     background: var(--neon-magenta);
     color: #fff;
     box-shadow: 0 0 15px var(--neon-magenta);
+}
+
+/* Responsive Control (Desktop Priority) */
+@media (max-width: 1200px) {
+    .app-shell {
+        grid-template-columns: 220px 1fr;
+    }
+
+    .viz-panel {
+        display: none;
+    }
+}
+
+/* Debug Mode Utility */
+.debug * {
+    outline: 1px solid rgba(255, 0, 0, 0.2);
 }
