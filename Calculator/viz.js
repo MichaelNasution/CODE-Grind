@@ -22,7 +22,23 @@ class VisualizationEngine {
             case 'vector':
                 this.drawVector(viz.data.A[0], viz.data.A[1], viz.data.B[0], viz.data.B[1]);
                 break;
-            // Add other cases here as they are refactored
+            case 'graph':
+                this.drawFunctionGraph(viz.data.fxStr, viz.data.gxStr);
+                break;
+            case 'integral':
+                this.drawIntegralArea(viz.data.fxStr, viz.data.a, viz.data.b);
+                break;
+            case 'newton':
+                this.drawNewtonSteps(viz.data.fxStr, viz.data.root, viz.data.steps);
+                break;
+            case 'numberLine':
+                this.drawNumberLine(viz.data.interval);
+                break;
+            case 'roots':
+                // In a full implementation, this would plot the complex roots on a plane
+                // For now, we clear the canvas as polynomials don't have a simple 2D f(x) graph payload
+                this.clear(); 
+                break;
         }
     }
 
