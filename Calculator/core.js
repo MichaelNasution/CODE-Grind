@@ -58,6 +58,22 @@ class CoreEngine {
         }
     }
 
+    // Pure functional evaluation without side effects
+    evaluateWithLocal(expression, localScope) {
+        try {
+            const scope = { ...this.memory, ...localScope };
+            scope.Ans = parseFloat(this.ansHistory[0] || '0');
+            
+            let processed = expression
+                .replace(/π/g, 'pi')
+                .replace(/EXP/g, '*10^');
+
+            return math.evaluate(processed, scope);
+        } catch (e) {
+            return NaN; // Fail gracefully for plotting
+        }
+    }
+
     formatResult(result) {
         if (typeof result === 'number') {
             if (Math.abs(result) < 1e-12 && result !== 0) return '0';
