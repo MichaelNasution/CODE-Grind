@@ -43,7 +43,7 @@
         <main class="main-workspace">
             <div id="module-viewport" class="module-viewport">
                 <!-- SCIENTIFIC MODULE (Default) -->
-                <div class="calculator-container" id="sci-module">
+                <div class="module-content active" id="sci-module">
                     <div class="calculator-chassis">
                         <div class="screen-area">
                             <div class="screen-bezel">
@@ -87,10 +87,10 @@
                             </div>
 
                             <div class="sci-grid">
-                                <button class="btn sci" data-key="fraction"><span>■/□</span></button>
+                                <button class="btn sci" data-key="fraction"><span><sup>■</sup>/<sub>□</sub></span></button>
                                 <button class="btn sci" data-key="sqrt"><span>√■</span></button>
                                 <button class="btn sci" data-key="sqr"><span>x²</span></button>
-                                <button class="btn sci" data-key="pow"><span>x■</span></button>
+                                <button class="btn sci" data-key="pow"><span>x<sup>■</sup></span></button>
                                 <button class="btn sci" data-key="log"><span>log</span></button>
                                 <button class="btn sci" data-key="ln"><span>ln</span></button>
                                 
@@ -144,7 +144,67 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- MATRIX PRO MODULE -->
+                <div class="module-content" id="matrix-module">
+                    <div class="panel-header">MATRIX PRO ENGINE</div>
+                    <div class="matrix-controls">
+                        <select id="matrix-size">
+                            <option value="2">2x2</option>
+                            <option value="3" selected>3x3</option>
+                            <option value="4">4x4</option>
+                        </select>
+                        <button class="viz-btn" data-action="mat-det">DETERMINANT</button>
+                        <button class="viz-btn" data-action="mat-inv">INVERSE</button>
+                    </div>
+                    <div class="matrix-editor" id="matrix-grid">
+                        <!-- Dynamic cells -->
+                    </div>
+                    <div class="result-display" id="matrix-result">
+                        RESULT: [ ]
+                    </div>
+                </div>
+
+                <!-- BASE-N MODULE -->
+                <div class="module-content" id="base-n-module">
+                    <div class="panel-header">BASE-N CONVERTER</div>
+                    <div class="base-selector">
+                        <button class="tab-item active" data-base="16">HEX</button>
+                        <button class="tab-item" data-base="10">DEC</button>
+                        <button class="tab-item" data-base="8">OCT</button>
+                        <button class="tab-item" data-base="2">BIN</button>
+                    </div>
+                    <input type="text" class="grid-cell" id="base-input" style="width: 100%; margin: 20px 0;">
+                    <div class="conversion-list" id="base-results">
+                        <!-- Results for all bases -->
+                    </div>
+                </div>
+
+                <!-- PHYSICS LIB MODULE -->
+                <div class="module-content" id="physics-module">
+                    <div class="panel-header">PHYSICS CONSTANTS</div>
+                    <input type="text" class="viz-btn" placeholder="Search Constants..." id="const-search">
+                    <div class="module-group" id="const-list" style="max-height: 300px;">
+                        <!-- Constants injected here -->
+                    </div>
+                </div>
+
+                <!-- PROGRAM ENGINE MODULE -->
+                <div class="module-content" id="program-module">
+                    <div class="panel-header">PROGRAM ENGINE</div>
+                    <div class="program-editor">
+                        <textarea id="prog-script" placeholder="Write expression pipeline... e.g., A+1 -> B : B*2 -> C"></textarea>
+                    </div>
+                    <div class="prog-controls">
+                        <button class="viz-btn" data-action="prog-step">STEP</button>
+                        <button class="viz-btn" data-action="prog-run">RUN ALL</button>
+                    </div>
+                    <div class="var-monitor" id="var-monitor">
+                        <!-- A-Z Values -->
+                    </div>
+                </div>
             </div>
+        </main>
         </main>
 
         <!-- Visualization Panel -->
