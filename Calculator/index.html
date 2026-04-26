@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neo-Future ClassWiz | Scientific Calculator</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Neo-FX Evolution | Modular OS</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-shell" id="app-shell">
@@ -150,19 +150,24 @@
                     <div class="card">
                         <div class="panel-header">COMPLEX NUMBERS</div>
                         <div class="input-area">
-                            <label>Expression (e.g. 3 + 4i or 5 e^(i pi/4)):</label>
-                            <input type="text" id="complex-expr" class="input-field" placeholder="2 + 3i * (4 - i)">
-                            <label>Output Format:</label>
-                            <select id="complex-format" class="input-field">
-                                <option value="cartesian">Cartesian (a + bi)</option>
-                                <option value="polar">Polar (r ∠ θ)</option>
-                            </select>
+                            <div class="input-group">
+                                <label>Expression (Cartesian or Polar)</label>
+                                <input type="text" id="complex-expr" class="input-field" placeholder="e.g. 2 + 3i * (4 - i) or 5 ∠ 45">
+                            </div>
+                            <div class="input-group">
+                                <label>Display Mode</label>
+                                <select id="complex-format" class="input-field">
+                                    <option value="cartesian">Cartesian (a + bi)</option>
+                                    <option value="polar">Polar (r ∠ θ)</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="action-area">
-                            <button class="btn-primary" data-action="complex-solve">Evaluate</button>
+                            <button class="btn-primary" data-action="complex-solve">EVALUATE</button>
                         </div>
                         <div class="result-area">
-                            <div class="result-box" id="complex-result">Result will appear here...</div>
+                            <div class="result-header">ARGAND PLANE DATA</div>
+                            <div class="result-box" id="complex-result">Ready for evaluation...</div>
                         </div>
                     </div>
                 </div>
@@ -172,20 +177,28 @@
                     <div class="card">
                         <div class="panel-header">MATRIX PRO ENGINE</div>
                         <div class="input-area">
-                            <label>Dimension:</label>
-                            <select id="matrix-size" class="input-field">
-                                <option value="2">2x2</option>
-                                <option value="3" selected>3x3</option>
-                                <option value="4">4x4</option>
-                            </select>
-                            <div class="matrix-editor" id="matrix-grid"></div>
+                            <div class="input-group">
+                                <label>Matrix Configuration</label>
+                                <select id="matrix-size" class="input-field">
+                                    <option value="2">2 x 2</option>
+                                    <option value="3" selected>3 x 3</option>
+                                    <option value="4">4 x 4</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label>Data Entry</label>
+                                <div id="matrix-grid" class="grid-editor">
+                                    <!-- Dynamic -->
+                                </div>
+                            </div>
                         </div>
                         <div class="action-area">
-                            <button class="btn-primary" data-action="mat-det">Determinant</button>
-                            <button class="btn-primary" data-action="mat-inv">Inverse</button>
+                            <button class="btn-secondary" data-action="mat-det">DETERMINANT</button>
+                            <button class="btn-primary" data-action="mat-inv">INVERSE</button>
                         </div>
                         <div class="result-area">
-                            <div class="result-box" id="matrix-result">Result will appear here...</div>
+                            <div class="result-header">SOLUTION MATRIX</div>
+                            <div class="result-box" id="matrix-result">Input data to solve...</div>
                         </div>
                     </div>
                 </div>
@@ -195,29 +208,32 @@
                     <div class="card">
                         <div class="panel-header">VECTOR PRO</div>
                         <div class="input-area">
-                            <label>Vector A (x, y, z):</label>
-                            <div class="vector-inputs">
-                                <input type="number" id="vecA-x" class="input-field" placeholder="X" value="0">
-                                <input type="number" id="vecA-y" class="input-field" placeholder="Y" value="0">
-                                <input type="number" id="vecA-z" class="input-field" placeholder="Z" value="0">
+                            <div class="input-group">
+                                <label>Vector A (x, y, z)</label>
+                                <div class="grid-editor" style="grid-template-columns: 1fr 1fr 1fr;">
+                                    <input type="number" id="vecA-x" class="grid-cell" placeholder="x" value="0">
+                                    <input type="number" id="vecA-y" class="grid-cell" placeholder="y" value="0">
+                                    <input type="number" id="vecA-z" class="grid-cell" placeholder="z" value="0">
+                                </div>
                             </div>
-                            <label>Vector B (x, y, z):</label>
-                            <div class="vector-inputs">
-                                <input type="number" id="vecB-x" class="input-field" placeholder="X" value="0">
-                                <input type="number" id="vecB-y" class="input-field" placeholder="Y" value="0">
-                                <input type="number" id="vecB-z" class="input-field" placeholder="Z" value="0">
+                            <div class="input-group">
+                                <label>Vector B (x, y, z)</label>
+                                <div class="grid-editor" style="grid-template-columns: 1fr 1fr 1fr;">
+                                    <input type="number" id="vecB-x" class="grid-cell" placeholder="x" value="0">
+                                    <input type="number" id="vecB-y" class="grid-cell" placeholder="y" value="0">
+                                    <input type="number" id="vecB-z" class="grid-cell" placeholder="z" value="0">
+                                </div>
                             </div>
                         </div>
-                        <div class="action-area grid-actions">
-                            <button class="btn-primary" data-action="vec-dot">Dot Product</button>
-                            <button class="btn-primary" data-action="vec-cross">Cross Product</button>
-                            <button class="btn-secondary" data-action="vec-mag">Mag (A)</button>
-                            <button class="btn-secondary" data-action="vec-ang">Angle</button>
-                            <button class="btn-secondary" data-action="vec-proj">Proj(A→B)</button>
-                            <button class="btn-secondary" data-action="vec-unit">Unit(A)</button>
+                        <div class="action-area grid-actions" style="gap: 5px;">
+                            <button class="btn-secondary" data-action="vec-dot">DOT</button>
+                            <button class="btn-secondary" data-action="vec-cross">CROSS</button>
+                            <button class="btn-secondary" data-action="vec-mag">MAG</button>
+                            <button class="btn-secondary" data-action="vec-ang">ANGLE</button>
                         </div>
                         <div class="result-area">
-                            <div class="result-box" id="vector-result">Result will appear here...</div>
+                            <div class="result-header"><span>OUTPUT</span><span id="vec-op-label"></span></div>
+                            <div class="result-box" id="vector-result">Compute to see vector data...</div>
                         </div>
                     </div>
                 </div>
@@ -227,21 +243,28 @@
                     <div class="card">
                         <div class="panel-header">TABLE FUNCTION</div>
                         <div class="input-area">
-                            <label>f(x) =</label>
-                            <input type="text" id="table-fx" class="input-field" placeholder="e.g. x^2 - 4">
-                            <label>g(x) = (optional)</label>
-                            <input type="text" id="table-gx" class="input-field" placeholder="e.g. sin(x)">
-                            <div class="range-inputs">
-                                <input type="number" id="table-start" class="input-field" placeholder="Start" value="-5">
-                                <input type="number" id="table-end" class="input-field" placeholder="End" value="5">
-                                <input type="number" id="table-step" class="input-field" placeholder="Step" value="1">
+                            <div class="input-group">
+                                <label>Functions</label>
+                                <input type="text" id="table-fx" class="input-field" placeholder="f(x) = ... (e.g. x^2)">
+                                <input type="text" id="table-gx" class="input-field" style="margin-top: 5px;" placeholder="g(x) = ... (optional)">
+                            </div>
+                            <div class="input-group">
+                                <label>Range [Start, End, Step]</label>
+                                <div class="grid-editor" style="grid-template-columns: 1fr 1fr 1fr;">
+                                    <input type="number" id="table-start" class="grid-cell" placeholder="Start" value="-5">
+                                    <input type="number" id="table-end" class="grid-cell" placeholder="End" value="5">
+                                    <input type="number" id="table-step" class="grid-cell" placeholder="Step" value="1">
+                                </div>
                             </div>
                         </div>
                         <div class="action-area">
-                            <button class="btn-primary" data-action="table-gen">Generate Table</button>
+                            <button class="btn-primary" data-action="table-gen">GENERATE TABLE</button>
                         </div>
                         <div class="result-area">
-                            <div class="table-container result-box" id="table-result">Table will appear here...</div>
+                            <div class="result-header">DATASET</div>
+                            <div class="result-box" id="table-result" style="max-height: 200px; overflow-y: auto; justify-content: flex-start; padding: 0;">
+                                <div style="padding: 20px;">Ready for generation...</div>
+                            </div>
                         </div>
                     </div>
                 </div>
