@@ -74,9 +74,12 @@ class ModuleEngines {
             for(let x = s; x <= e; x += d) {
                 let row = { x: x.toFixed(2) };
                 try {
-                    window.Core.memory['x'] = x;
-                    row.fx = window.Core.evaluate(data.fxStr);
-                    if (data.gxStr) row.gx = window.Core.evaluate(data.gxStr);
+                    let fxRes = window.Core.evaluateWithLocal(data.fxStr, { x: x });
+                    row.fx = isNaN(fxRes) ? "Error" : fxRes;
+                    if (data.gxStr) {
+                        let gxRes = window.Core.evaluateWithLocal(data.gxStr, { x: x });
+                        row.gx = isNaN(gxRes) ? "Error" : gxRes;
+                    }
                 } catch(err) {
                     row.fx = "Error";
                 }
@@ -169,10 +172,7 @@ class ModuleEngines {
     solveNumerical(data) {
         try {
             let x0 = parseFloat(data.guessStr);
-            const f = (x) => {
-                window.Core.memory['x'] = x;
-                return parseFloat(window.Core.evaluate(data.fxStr));
-            };
+            const f = (x) => parseFloat(window.Core.evaluateWithLocal(data.fxStr, { x: x }));
             const df = (x) => {
                 const h = 1e-7;
                 return (f(x + h) - f(x - h)) / (2 * h);
@@ -216,10 +216,7 @@ class ModuleEngines {
     // --- CALCULUS (Simpson's Rule) ---
     computeCalculus(data) {
         try {
-            const f = (x) => {
-                window.Core.memory['x'] = x;
-                return parseFloat(window.Core.evaluate(data.fxStr));
-            };
+            const f = (x) => parseFloat(window.Core.evaluateWithLocal(data.fxStr, { x: x }));
 
             let result = "";
             let vizType = "graph";
