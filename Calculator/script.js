@@ -4,15 +4,22 @@ class Calculator {
         this.resultLine = document.getElementById('result-line');
         this.shiftIndicator = document.getElementById('shift-indicator');
         this.alphaIndicator = document.getElementById('alpha-indicator');
+        this.modeIndicator = document.getElementById('mode-indicator');
         this.chassis = document.querySelector('.calculator-chassis');
+        this.appShell = document.getElementById('app-shell');
+        this.modeToggle = document.getElementById('mode-toggle');
+        this.canvas = document.getElementById('graph-canvas');
+        this.ctx = this.canvas.getContext('2d');
 
         this.expression = '';
         this.result = '0';
         this.ans = '0';
         this.isShift = false;
         this.isAlpha = false;
+        this.isAdvanced = false;
 
         this.init();
+        this.drawGrid();
     }
 
     init() {
@@ -27,10 +34,26 @@ class Calculator {
             });
         });
 
-        // Keyboard support
-        window.addEventListener('keydown', (e) => {
-            this.handleKeyboard(e);
+        if (this.modeToggle) {
+            this.modeToggle.addEventListener('click', () => this.toggleAdvancedMode());
+        }
+
+        // Module switching
+        document.querySelectorAll('.module-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.module-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
         });
+
+        window.addEventListener('keydown', (e) => this.handleKeyboard(e));
+    }
+
+    toggleAdvancedMode() {
+        this.isAdvanced = !this.isAdvanced;
+        this.appShell.classList.toggle('advanced-mode', this.isAdvanced);
+        this.modeIndicator.textContent = this.isAdvanced ? 'ADV' : 'STD';
+        this.updateDisplay();
     }
 
     handleInput(val, key, action) {
@@ -81,10 +104,9 @@ class Calculator {
             case 'sqrt': this.appendToExpression('sqrt('); break;
             case 'sqr': this.appendToExpression('^2'); break;
             case 'pow': this.appendToExpression('^'); break;
-            case 'pi': this.appendToExpression('π'); break;
             case '(': this.appendToExpression('('); break;
             case ')': this.appendToExpression(')'); break;
-            // Add more as needed
+            case 'optn': if(this.isAdvanced) this.appendToExpression(':'); break;
         }
     }
 
@@ -118,43 +140,50 @@ class Calculator {
     updateDisplay() {
         this.inputLine.textContent = this.expression;
         this.resultLine.textContent = this.result;
+        if (this.isAdvanced && this.expression.includes('x')) {
+            this.drawGraph();
+        }
     }
 
     calculate() {
         try {
-            let expr = this.expression;
+            // Support multi-statement using :
+            const statements = this.expression.split(':');
+            let finalResult = 0;
+
+            statements.forEach(stmt => {
+                let processedExpr = stmt
+                    .replace(/×/g, '*')
+                    .replace(/÷/g, '/')
+                    .replace(/−/g, '-')
+                    .replace(/π/g, 'Math.PI')
+                    .replace(/Ans/g, this.ans);
+
+                // Handle power operator ^
+                while(processedExpr.includes('^')) {
+                    processedExpr = processedExpr.replace(/([0-9.]+|\([^)]+\))\^([0-9.]+|\([^)]+\))/g, 'Math.pow($1, $2)');
+                }
+
+                // Scientific functions
+                processedExpr = processedExpr.replace(/sin\(([^)]+)\)/g, (m, p1) => `Math.sin((${p1}) * Math.PI / 180)`);
+                processedExpr = processedExpr.replace(/cos\(([^)]+)\)/g, (m, p1) => `Math.cos((${p1}) * Math.PI / 180)`);
+                processedExpr = processedExpr.replace(/tan\(([^)]+)\)/g, (m, p1) => `Math.tan((${p1}) * Math.PI / 180)`);
+                processedExpr = processedExpr.replace(/log\(([^)]+)\)/g, (m, p1) => `Math.log10(${p1})`);
+                processedExpr = processedExpr.replace(/ln\(([^)]+)\)/g, (m, p1) => `Math.log(${p1})`);
+                processedExpr = processedExpr.replace(/sqrt\(([^)]+)\)/g, (m, p1) => `Math.sqrt(${p1})`);
+
+                // Implicit multiplication
+                processedExpr = processedExpr.replace(/(\d)\(/g, '$1*(');
+                processedExpr = processedExpr.replace(/\)(\d)/g, ')*$1');
+
+                finalResult = eval(processedExpr);
+                this.ans = finalResult; // Update Ans for next statement
+            });
             
-            // Substitutions
-            let processedExpr = expr
-                .replace(/×/g, '*')
-                .replace(/÷/g, '/')
-                .replace(/−/g, '-')
-                .replace(/π/g, 'Math.PI')
-                .replace(/Ans/g, this.ans);
-
-            // Handle power operator ^
-            while(processedExpr.includes('^')) {
-                processedExpr = processedExpr.replace(/([0-9.]+|\([^)]+\))\^([0-9.]+|\([^)]+\))/g, 'Math.pow($1, $2)');
-            }
-
-            // Scientific functions
-            processedExpr = processedExpr.replace(/sin\(([^)]+)\)/g, (m, p1) => `Math.sin((${p1}) * Math.PI / 180)`);
-            processedExpr = processedExpr.replace(/cos\(([^)]+)\)/g, (m, p1) => `Math.cos((${p1}) * Math.PI / 180)`);
-            processedExpr = processedExpr.replace(/tan\(([^)]+)\)/g, (m, p1) => `Math.tan((${p1}) * Math.PI / 180)`);
-            processedExpr = processedExpr.replace(/log\(([^)]+)\)/g, (m, p1) => `Math.log10(${p1})`);
-            processedExpr = processedExpr.replace(/ln\(([^)]+)\)/g, (m, p1) => `Math.log(${p1})`);
-            processedExpr = processedExpr.replace(/sqrt\(([^)]+)\)/g, (m, p1) => `Math.sqrt(${p1})`);
-
-            // Implicit multiplication
-            processedExpr = processedExpr.replace(/(\d)\(/g, '$1*(');
-            processedExpr = processedExpr.replace(/\)(\d)/g, ')*$1');
-
-            const resultValue = eval(processedExpr);
-            
-            if (isNaN(resultValue) || !isFinite(resultValue)) {
+            if (isNaN(finalResult) || !isFinite(finalResult)) {
                 this.result = 'Math ERROR';
             } else {
-                this.result = this.formatResult(resultValue);
+                this.result = this.formatResult(finalResult);
                 this.ans = this.result;
             }
             this.updateDisplay();
@@ -169,9 +198,35 @@ class Calculator {
         if (Math.abs(num) < 1e-10 && num !== 0) return '0';
         const str = num.toString();
         if (str.length > 12) {
-            return num.toPrecision(8);
+            return parseFloat(num).toPrecision(8);
         }
         return str;
+    }
+
+    drawGrid() {
+        if (!this.canvas) return;
+        const { width, height } = this.canvas;
+        this.ctx.clearRect(0, 0, width, height);
+        this.ctx.strokeStyle = '#222';
+        this.ctx.lineWidth = 1;
+        
+        for(let i = 0; i < width; i += 20) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(i, 0);
+            this.ctx.lineTo(i, height);
+            this.ctx.stroke();
+        }
+        for(let i = 0; i < height; i += 20) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, i);
+            this.ctx.lineTo(width, i);
+            this.ctx.stroke();
+        }
+    }
+
+    drawGraph() {
+        this.drawGrid();
+        // Visualization placeholder
     }
 
     handleKeyboard(e) {
