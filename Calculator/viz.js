@@ -6,6 +6,24 @@ class VisualizationEngine {
             this.width = this.canvas.width = this.canvas.offsetWidth;
             this.height = this.canvas.height = this.canvas.offsetHeight;
         }
+
+        // Event-Driven Visualization
+        window.EventBus.subscribe("STATE_UPDATED", (state) => {
+            if (state.visualization && state.visualization.type) {
+                this.render(state.visualization);
+            } else {
+                this.clear(); // Clear canvas if no viz data
+            }
+        });
+    }
+
+    render(viz) {
+        switch(viz.type) {
+            case 'vector':
+                this.drawVector(viz.data.A[0], viz.data.A[1], viz.data.B[0], viz.data.B[1]);
+                break;
+            // Add other cases here as they are refactored
+        }
     }
 
     clear() {
