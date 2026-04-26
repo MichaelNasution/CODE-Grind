@@ -1,68 +1,70 @@
 class CoreEngine {
     constructor() {
-        this.memory = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0, X: 0, Y: 0, Z: 0 };
         this.ansHistory = ['0'];
+    }
+
+    get memory() {
+        return window.AppState ? window.AppState.variables : {};
     }
 
     evaluate(expression) {
         try {
+            // Build evaluation scope from AppState
+            const scope = { ...this.memory };
+            scope.Ans = parseFloat(this.ansHistory[0] || '0');
+            
+            // Allow shorthand π and EXP
             let processed = expression
-                .replace(/Ans/g, `(${this.ansHistory[0] || '0'})`)
-                .replace(/π/g, 'Math.PI')
+                .replace(/π/g, 'pi')
                 .replace(/EXP/g, '*10^');
 
-            // Handle memory variables
-            for (const v in this.memory) {
-                const regex = new RegExp(`\\b${v}\\b`, 'g');
-                processed = processed.replace(regex, `(${this.memory[v]})`);
+            // Evaluate using robust math.js AST parser
+            const resultValue = math.evaluate(processed, scope);
+            
+            // Sync any variable mutations back to AppState (e.g. if user types A = 5)
+            if (window.AppState) {
+                window.setState(state => {
+                    for (const key in state.variables) {
+                        if (scope[key] !== undefined) state.variables[key] = scope[key];
+                    }
+                    // Handle dynamic variable creation if needed
+                    if (scope.x !== undefined) state.variables.x = scope.x;
+                });
+            }
+            
+            // Extract numeric value if result is a math.js object (e.g., Complex number)
+            let numericResult;
+            if (typeof resultValue === 'number') {
+                numericResult = resultValue;
+            } else if (resultValue && resultValue.isComplex) {
+                numericResult = resultValue; // math.js handles complex formatting
+            } else if (resultValue && typeof resultValue.valueOf === 'function') {
+                numericResult = resultValue.valueOf();
+            } else {
+                numericResult = parseFloat(resultValue);
             }
 
-            processed = this.processScientific(processed);
-            
-            const resultValue = eval(processed);
-            
-            if (isNaN(resultValue) || !isFinite(resultValue)) {
+            if (typeof numericResult === 'number' && (isNaN(numericResult) || !isFinite(numericResult))) {
                 throw new Error("Math ERROR");
             }
             
-            const formatted = this.formatResult(resultValue);
+            const formatted = this.formatResult(numericResult);
             this.pushAns(formatted);
             return formatted;
 
         } catch (e) {
             console.error(e);
-            throw new Error(e.message === "Math ERROR" ? "Math ERROR" : "Syntax ERROR");
+            throw new Error(e.message.includes("Math ERROR") ? "Math ERROR" : "Syntax ERROR: " + e.message);
         }
     }
 
-    processScientific(expr) {
-        // Handle powers (x^y)
-        while(expr.includes('^')) {
-            expr = expr.replace(/([0-9.e-]+|\([^)]+\))\^([0-9.e-]+|\([^)]+\))/g, 'Math.pow($1, $2)');
+    formatResult(result) {
+        if (typeof result === 'number') {
+            if (Math.abs(result) < 1e-12 && result !== 0) return '0';
+            return result.toString().length > 12 ? parseFloat(result).toPrecision(10) : result.toString();
         }
-        
-        // Functions mapping
-        const functions = { 
-            'sin': 'Math.sin', 'cos': 'Math.cos', 'tan': 'Math.tan', 
-            'log': 'Math.log10', 'ln': 'Math.log', 'sqrt': 'Math.sqrt', 
-            'abs': 'Math.abs' 
-        };
-        
-        for (let [key, val] of Object.entries(functions)) {
-            // Need to handle nested parentheses better in a real parser, but this works for basic cases
-            expr = expr.replace(new RegExp(`${key}\\(([^)]+)\\)`, 'g'), (m, p1) => {
-                if (['sin', 'cos', 'tan'].includes(key)) {
-                    return `${val}((${p1}) * Math.PI / 180)`; // Default to Degrees
-                }
-                return `${val}(${p1})`;
-            });
-        }
-        return expr;
-    }
-
-    formatResult(num) {
-        if (Math.abs(num) < 1e-12 && num !== 0) return '0';
-        return num.toString().length > 12 ? parseFloat(num).toPrecision(10) : num.toString();
+        // Let math.js format complex numbers, matrices, etc.
+        return math.format(result, { precision: 10 });
     }
 
     pushAns(val) {
