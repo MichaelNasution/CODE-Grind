@@ -297,9 +297,8 @@ class UIController {
     showResult(resultBoxId, htmlContent, isError = false) {
         const box = document.getElementById(resultBoxId);
         if(box) {
-            box.style.color = isError ? '#f43f5e' : 'var(--neon-cyan)';
+            box.style.color = isError ? 'var(--danger)' : 'var(--primary)';
             box.innerHTML = htmlContent;
-            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     }
 
