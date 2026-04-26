@@ -1,13 +1,51 @@
 class UIController {
     constructor() {
-        this.activeModule = 'sci';
         this.init();
+        this.setupSubscriptions();
+    }
+
+    setupSubscriptions() {
+        window.EventBus.subscribe("STATE_UPDATED", (state) => {
+            // Render Result
+            if (state.error) {
+                this.showResult(`${state.activeModule}-result`, "ERROR: " + state.error, true);
+            } else if (state.lastResult !== null) {
+                this.showResult(`${state.activeModule}-result`, state.lastResult);
+            }
+            
+            // Loading State (optional visual cue)
+            if (state.loading) {
+                this.showLoading(`${state.activeModule}-result`);
+            }
+        });
+
+        window.EventBus.subscribe("COMPUTE_SUCCESS", (resultData) => {
+            window.setState(state => {
+                state.lastResult = resultData.result;
+                state.error = null;
+                state.visualization = {
+                    type: resultData.vizData?.type,
+                    data: resultData.vizData
+                };
+            });
+        });
+
+        window.EventBus.subscribe("COMPUTE_ERROR", (errorMsg) => {
+            window.setState(state => {
+                state.error = errorMsg;
+                state.lastResult = null;
+            });
+        });
     }
 
     init() {
         // Module Navigation
         document.querySelectorAll('.module-item').forEach(item => {
-            item.addEventListener('click', () => this.switchModule(item.getAttribute('data-module')));
+            item.addEventListener('click', () => {
+                const mod = item.getAttribute('data-module');
+                this.switchModule(mod);
+                window.setState(state => { state.activeModule = mod; state.lastResult = null; state.error = null; });
+            });
         });
 
         // Scientific Keys
@@ -25,9 +63,11 @@ class UIController {
         // Enter key to compute
         document.addEventListener('keydown', (e) => {
             if(e.key === 'Enter') {
-                if(this.activeModule === 'sci') this.executeSciCompute();
+                const activeMod = window.AppState.activeModule;
+                if(activeMod === 'sci') this.executeSciCompute();
                 else {
-                    const activeContent = document.getElementById(`${this.activeModule}-module`);
+                    const activeContent = document.getElementById(`${activeMod}-module`);
+                    if(!activeContent) return;
                     const primaryBtn = activeContent.querySelector('.btn-primary');
                     if(primaryBtn) primaryBtn.click();
                 }
@@ -47,13 +87,13 @@ class UIController {
 
     switchModule(moduleID) {
         document.querySelectorAll('.module-item').forEach(i => i.classList.remove('active'));
-        document.querySelector(`[data-module="${moduleID}"]`).classList.add('active');
+        const navItem = document.querySelector(`[data-module="${moduleID}"]`);
+        if(navItem) navItem.classList.add('active');
         
         document.querySelectorAll('.module-content').forEach(c => c.classList.remove('active'));
         const target = document.getElementById(`${moduleID}-module`);
         if (target) target.classList.add('active');
 
-        this.activeModule = moduleID;
         window.Viz.clear(); // Reset canvas
     }
 
@@ -86,15 +126,21 @@ class UIController {
                 case 'vec-ang':
                 case 'vec-proj':
                 case 'vec-unit': {
-                    const ax = document.getElementById('vecA-x').value;
-                    const ay = document.getElementById('vecA-y').value;
-                    const az = document.getElementById('vecA-z').value;
-                    const bx = document.getElementById('vecB-x').value;
-                    const by = document.getElementById('vecB-y').value;
-                    const bz = document.getElementById('vecB-z').value;
-                    const res = window.Engines.computeVector(ax, ay, az, bx, by, bz, action.split('-')[1]);
-                    this.showResult('vector-result', res);
-                    window.Viz.drawVector(ax, ay, bx, by);
+                    const payload = {
+                        ax: document.getElementById('vecA-x').value,
+                        ay: document.getElementById('vecA-y').value,
+                        az: document.getElementById('vecA-z').value,
+                        bx: document.getElementById('vecB-x').value,
+                        by: document.getElementById('vecB-y').value,
+                        bz: document.getElementById('vecB-z').value,
+                        operation: action.split('-')[1]
+                    };
+                    
+                    window.setState(s => s.loading = true);
+                    window.EventBus.dispatch("COMPUTE_REQUEST", {
+                        module: "vector",
+                        data: payload
+                    });
                     break;
                 }
 
