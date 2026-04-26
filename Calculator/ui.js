@@ -54,6 +54,14 @@ class UIController {
                     data: resultData.vizData
                 };
             });
+            
+            const activeResultBox = document.querySelector(`#${window.AppState.activeModule}-result`);
+            if (window.AnimationSystem && window.FeedbackSystem) {
+                setTimeout(() => { // Small delay to let Reactivity update DOM first
+                    window.AnimationSystem.resultReveal(activeResultBox);
+                    window.FeedbackSystem.success(activeResultBox);
+                }, 50);
+            }
         });
 
         window.EventBus.subscribe("COMPUTE_ERROR", (errorMsg) => {
@@ -61,16 +69,75 @@ class UIController {
                 state.error = errorMsg;
                 state.lastResult = null;
             });
+            
+            const activeResultBox = document.querySelector(`#${window.AppState.activeModule}-result`);
+            if (window.FeedbackSystem) {
+                setTimeout(() => {
+                    window.FeedbackSystem.error(activeResultBox);
+                    window.FeedbackSystem.hapticSimulate('heavy');
+                }, 50);
+            }
+        });
+
+        // Module Transition via Event
+        window.EventBus.subscribe("MODULE_CHANGE", (payload) => {
+            const oldEl = document.getElementById(`${payload.oldModule}-module`);
+            const newEl = document.getElementById(`${payload.newModule}-module`);
+            const navOld = document.querySelector(`[data-module="${payload.oldModule}"]`);
+            const navNew = document.querySelector(`[data-module="${payload.newModule}"]`);
+            
+            if (navOld) navOld.classList.remove('active');
+            if (navNew) navNew.classList.add('active');
+
+            if (window.AnimationSystem) {
+                window.AnimationSystem.moduleExit(oldEl);
+                setTimeout(() => {
+                    if(oldEl) oldEl.classList.remove('active');
+                    if(newEl) {
+                        newEl.classList.add('active');
+                        window.AnimationSystem.moduleEnter(newEl);
+                    }
+                }, 200);
+            } else {
+                if(oldEl) oldEl.classList.remove('active');
+                if(newEl) newEl.classList.add('active');
+            }
         });
     }
 
     init() {
+        // Apply Global Animations to Buttons
+        document.querySelectorAll('.btn, .btn-primary, .btn-secondary, .tab-item, .d-btn').forEach(btn => {
+            if (window.MicroInteractionSystem) {
+                window.MicroInteractionSystem.attachRipple(btn);
+            }
+            btn.addEventListener('mousedown', () => {
+                if (window.AnimationSystem) window.AnimationSystem.buttonPress(btn);
+                if (window.FeedbackSystem) window.FeedbackSystem.hapticSimulate('light');
+            });
+            btn.addEventListener('mouseup', () => {
+                if (window.AnimationSystem) window.AnimationSystem.buttonRelease(btn);
+            });
+            btn.addEventListener('mouseleave', () => {
+                if (window.AnimationSystem) window.AnimationSystem.buttonRelease(btn);
+            });
+        });
+
+        // Apply Global Animations to Inputs
+        document.querySelectorAll('.input-field').forEach(input => {
+            if (window.MicroInteractionSystem) {
+                window.MicroInteractionSystem.inputFocus(input);
+            }
+        });
+
         // Module Navigation
         document.querySelectorAll('.module-item').forEach(item => {
             item.addEventListener('click', () => {
-                const mod = item.getAttribute('data-module');
-                this.switchModule(mod);
-                window.setState(state => { state.activeModule = mod; state.lastResult = null; state.error = null; });
+                const newMod = item.getAttribute('data-module');
+                const oldMod = window.AppState.activeModule;
+                if (newMod === oldMod) return;
+                
+                this.switchModule(oldMod, newMod);
             });
         });
 
@@ -111,16 +178,14 @@ class UIController {
         window.Viz.clear();
     }
 
-    switchModule(moduleID) {
-        document.querySelectorAll('.module-item').forEach(i => i.classList.remove('active'));
-        const navItem = document.querySelector(`[data-module="${moduleID}"]`);
-        if(navItem) navItem.classList.add('active');
-        
-        document.querySelectorAll('.module-content').forEach(c => c.classList.remove('active'));
-        const target = document.getElementById(`${moduleID}-module`);
-        if (target) target.classList.add('active');
-
-        window.Viz.clear(); // Reset canvas
+    switchModule(oldMod, newMod) {
+            window.setState(state => { 
+                state.activeModule = newMod; 
+                state.lastResult = null; 
+                state.error = null; 
+            });
+            window.EventBus.dispatch("MODULE_CHANGE", { oldModule: oldMod, newModule: newMod });
+            window.Viz.clear(); // Reset canvas
     }
 
     showLoading(resultBoxId) {
