@@ -145,6 +145,28 @@
                     </div>
                 </div>
 
+                <!-- COMPLEX MODE MODULE -->
+                <div class="module-content" id="complex-module">
+                    <div class="card">
+                        <div class="panel-header">COMPLEX NUMBERS</div>
+                        <div class="input-area">
+                            <label>Expression (e.g. 3 + 4i or 5 e^(i pi/4)):</label>
+                            <input type="text" id="complex-expr" class="input-field" placeholder="2 + 3i * (4 - i)">
+                            <label>Output Format:</label>
+                            <select id="complex-format" class="input-field">
+                                <option value="cartesian">Cartesian (a + bi)</option>
+                                <option value="polar">Polar (r ∠ θ)</option>
+                            </select>
+                        </div>
+                        <div class="action-area">
+                            <button class="btn-primary" data-action="complex-solve">Evaluate</button>
+                        </div>
+                        <div class="result-area">
+                            <div class="result-box" id="complex-result">Result will appear here...</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- MATRIX PRO MODULE -->
                 <div class="module-content" id="matrix-module">
                     <div class="card">
