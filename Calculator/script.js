@@ -29,45 +29,89 @@ class NeoFXSystem {
         // Universal Button Listener
         document.addEventListener('click', (e) => {
             const btn = e.target.closest('.btn');
-            if (!btn) return;
+            if (btn) {
+                const val = btn.getAttribute('data-val');
+                const key = btn.getAttribute('data-key');
+                const action = btn.getAttribute('data-action');
+                this.handleInput(val, key, action);
+                this.vibrate();
+            }
 
-            const val = btn.getAttribute('data-val');
-            const key = btn.getAttribute('data-key');
-            const action = btn.getAttribute('data-action');
-            
-            this.handleInput(val, key, action);
-            this.vibrate();
+            const vizBtn = e.target.closest('.viz-btn');
+            if (vizBtn) {
+                const action = vizBtn.getAttribute('data-action');
+                this.handleVizAction(action);
+            }
+
+            const tab = e.target.closest('.tab-item');
+            if (tab) {
+                this.handleTabSwitch(tab);
+            }
         });
 
-        // Mode Switching
-        if (this.modeToggle) {
-            this.modeToggle.addEventListener('click', () => this.toggleAdvancedMode());
-        }
+        if (this.modeToggle) this.modeToggle.addEventListener('click', () => this.toggleAdvancedMode());
 
-        // Module Navigation
         document.querySelectorAll('.module-item').forEach(item => {
-            item.addEventListener('click', () => {
-                this.switchModule(item.getAttribute('data-module'));
-            });
+            item.addEventListener('click', () => this.switchModule(item.getAttribute('data-module')));
         });
 
         window.addEventListener('keydown', (e) => this.handleKeyboard(e));
         if (this.ctx) this.drawGrid();
+
+        // Initial setup for specific modules
+        this.initMatrix(3);
+        this.initPhysics();
     }
 
     switchModule(moduleID) {
         document.querySelectorAll('.module-item').forEach(i => i.classList.remove('active'));
         document.querySelector(`[data-module="${moduleID}"]`).classList.add('active');
         
-        // Logic to hide/show module-specific UI elements would go here
+        document.querySelectorAll('.module-content').forEach(c => c.classList.remove('active'));
+        const target = document.getElementById(`${moduleID}-module`);
+        if (target) target.classList.add('active');
+
         this.activeModule = moduleID;
         this.updateDisplay();
     }
 
-    toggleAdvancedMode() {
-        this.isAdvanced = !this.isAdvanced;
-        this.appShell.classList.toggle('advanced-mode', this.isAdvanced);
-        this.modeIndicator.textContent = this.isAdvanced ? 'ADV' : 'STD';
+    // Matrix Module Logic
+    initMatrix(size) {
+        const grid = document.getElementById('matrix-grid');
+        if (!grid) return;
+        grid.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+        grid.innerHTML = '';
+        for (let i = 0; i < size * size; i++) {
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.className = 'grid-cell';
+            input.value = '0';
+            grid.appendChild(input);
+        }
+    }
+
+    // Physics Constants Logic
+    initPhysics() {
+        const list = document.getElementById('const-list');
+        if (!list) return;
+        const constants = [
+            { name: "Speed of Light (c)", val: 299792458 },
+            { name: "Planck Constant (h)", val: "6.626e-34" },
+            { name: "Gravitational (G)", val: "6.674e-11" },
+            { name: "Electron Mass (me)", val: "9.109e-31" },
+            { name: "Avogadro (Na)", val: "6.022e23" }
+        ];
+        list.innerHTML = constants.map(c => `
+            <div class="module-item" onclick="neofx.insertConstant('${c.val}')">
+                <span>${c.name}</span>
+                <span style="color: #444; font-size: 10px;">${c.val}</span>
+            </div>
+        `).join('');
+    }
+
+    insertConstant(val) {
+        this.expression += val;
+        this.switchModule('sci');
         this.updateDisplay();
     }
 
@@ -84,24 +128,11 @@ class NeoFXSystem {
 
     handleAction(action) {
         switch (action) {
-            case 'ac':
-                this.expression = '';
-                this.result = '0';
-                break;
-            case 'del':
-                this.expression = this.expression.slice(0, -1);
-                break;
-            case 'equal':
-                this.calculate();
-                break;
-            case 'shift':
-                this.isShift = !this.isShift;
-                this.isAlpha = false;
-                break;
-            case 'alpha':
-                this.isAlpha = !this.isAlpha;
-                this.isShift = false;
-                break;
+            case 'ac': this.expression = ''; this.result = '0'; break;
+            case 'del': this.expression = this.expression.slice(0, -1); break;
+            case 'equal': this.calculate(); break;
+            case 'shift': this.isShift = !this.isShift; this.isAlpha = false; break;
+            case 'alpha': this.isAlpha = !this.isAlpha; this.isShift = false; break;
         }
         this.updateIndicators();
     }
@@ -111,47 +142,31 @@ class NeoFXSystem {
             'sin': 'sin(', 'cos': 'cos(', 'tan': 'tan(',
             'log': 'log(', 'ln': 'ln(', 'sqrt': 'sqrt(',
             'sqr': '^2', 'pow': '^', 'abs': 'abs(',
-            'integral': '∫(', 'diff': 'd/dx(', 'nCr': 'C',
-            'pol': 'Pol(', '(': '(', ')': ')'
+            'nCr': 'C', 'pol': 'Pol(', '(': '(', ')': ')'
         };
         if (keyMap[key]) this.appendToExpression(keyMap[key]);
     }
 
     appendToExpression(val) {
-        if (val === 'ans') {
-            this.expression += 'Ans';
-        } else {
-            this.expression += val;
-        }
-    }
-
-    updateIndicators() {
-        this.shiftIndicator.classList.toggle('active', this.isShift);
-        this.alphaIndicator.classList.toggle('active', this.isAlpha);
-        this.chassis.classList.toggle('shift-active', this.isShift);
-        this.chassis.classList.toggle('alpha-active', this.isAlpha);
+        if (val === 'ans') this.expression += 'Ans';
+        else this.expression += val;
     }
 
     updateDisplay() {
-        this.inputLine.innerHTML = this.expression + '<span class="cursor">|</span>';
-        this.resultLine.textContent = this.result;
+        if (this.activeModule === 'sci') {
+            this.inputLine.innerHTML = this.expression + '<span class="cursor">|</span>';
+            this.resultLine.textContent = this.result;
+        }
     }
 
     calculate() {
         try {
-            let expr = this.expression;
-            
-            // Substitutions for Evaluation
-            let processedExpr = expr
-                .replace(/×/g, '*')
-                .replace(/÷/g, '/')
-                .replace(/−/g, '-')
+            let processedExpr = this.expression
+                .replace(/Ans/g, this.ansHistory[0])
                 .replace(/π/g, 'Math.PI')
-                .replace(/Ans/g, this.ansHistory[0]);
+                .replace(/EXP/g, '*10^');
 
-            // Advanced Math Processing
             processedExpr = this.processScientific(processedExpr);
-
             const resultValue = eval(processedExpr);
             
             if (isNaN(resultValue) || !isFinite(resultValue)) {
@@ -161,77 +176,35 @@ class NeoFXSystem {
                 this.ansHistory.unshift(this.result);
                 if (this.ansHistory.length > 10) this.ansHistory.pop();
             }
-        } catch (e) {
-            this.result = 'Syntax ERROR';
-        }
+        } catch (e) { this.result = 'Syntax ERROR'; }
         this.updateDisplay();
     }
 
     processScientific(expr) {
-        // Handle powers
         while(expr.includes('^')) {
-            expr = expr.replace(/([0-9.]+|\([^)]+\))\^([0-9.]+|\([^)]+\))/g, 'Math.pow($1, $2)');
+            expr = expr.replace(/([0-9.e-]+|\([^)]+\))\^([0-9.e-]+|\([^)]+\))/g, 'Math.pow($1, $2)');
         }
-
-        // Functions mapping
-        const functions = {
-            'sin': 'Math.sin', 'cos': 'Math.cos', 'tan': 'Math.tan',
-            'log': 'Math.log10', 'ln': 'Math.log', 'sqrt': 'Math.sqrt',
-            'abs': 'Math.abs'
-        };
-
+        const functions = { 'sin': 'Math.sin', 'cos': 'Math.cos', 'tan': 'Math.tan', 'log': 'Math.log10', 'ln': 'Math.log', 'sqrt': 'Math.sqrt', 'abs': 'Math.abs' };
         for (let [key, val] of Object.entries(functions)) {
-            let regex = new RegExp(`${key}\\(([^)]+)\\)`, 'g');
-            expr = expr.replace(regex, (m, p1) => {
-                // Convert trig to radians if in DEG mode
-                if (['sin', 'cos', 'tan'].includes(key)) {
-                    return `${val}((${p1}) * Math.PI / 180)`;
-                }
-                return `${val}(${p1})`;
-            });
+            expr = expr.replace(new RegExp(`${key}\\(([^)]+)\\)`, 'g'), (m, p1) => `${val}((${p1}) * Math.PI / 180)`);
         }
-
-        // Implicit multiplication (e.g., 2(3) -> 2*(3))
-        expr = expr.replace(/(\d)\(/g, '$1*(');
-        expr = expr.replace(/\)(\d)/g, ')*$1');
-
         return expr;
     }
 
     formatResult(num) {
         if (Math.abs(num) < 1e-12 && num !== 0) return '0';
-        let str = num.toString();
-        if (str.length > 12) return parseFloat(num).toPrecision(10);
-        return str;
-    }
-
-    drawGrid() {
-        const { width, height } = this.canvas;
-        this.ctx.clearRect(0, 0, width, height);
-        this.ctx.strokeStyle = '#1a1a1a';
-        this.ctx.lineWidth = 1;
-        for(let i = 0; i < width; i += 20) {
-            this.ctx.beginPath(); this.ctx.moveTo(i, 0); this.ctx.lineTo(i, height); this.ctx.stroke();
-        }
-        for(let i = 0; i < height; i += 20) {
-            this.ctx.beginPath(); this.ctx.moveTo(0, i); this.ctx.lineTo(width, i); this.ctx.stroke();
-        }
+        return num.toString().length > 12 ? parseFloat(num).toPrecision(10) : num.toString();
     }
 
     handleKeyboard(e) {
         const key = e.key;
-        if (/[0-9]/.test(key)) this.handleInput(key);
-        if (['+', '-', '*', '/'].includes(key)) this.handleInput(key);
+        if (/[0-9]/.test(key) || ['+', '-', '*', '/', '(', ')', '^'].includes(key)) this.handleInput(key);
         if (key === 'Enter') this.calculate();
         if (key === 'Backspace') this.handleAction('del');
         if (key === 'Escape') this.handleAction('ac');
     }
 
-    vibrate() {
-        if (navigator.vibrate) navigator.vibrate(5);
-    }
+    vibrate() { if (navigator.vibrate) navigator.vibrate(5); }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    window.neofx = new NeoFXSystem();
-});
+document.addEventListener('DOMContentLoaded', () => { window.neofx = new NeoFXSystem(); });
