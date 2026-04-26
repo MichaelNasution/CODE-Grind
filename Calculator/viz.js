@@ -22,6 +22,9 @@ class VisualizationEngine {
             case 'vector':
                 this.drawVector(viz.data.A[0], viz.data.A[1], viz.data.B[0], viz.data.B[1]);
                 break;
+            case 'argand':
+                this.drawArgand(viz.data.re, viz.data.im);
+                break;
             case 'graph':
                 this.drawFunctionGraph(viz.data.fxStr, viz.data.gxStr);
                 break;
@@ -119,6 +122,41 @@ class VisualizationEngine {
 
         if(ax !== undefined && ay !== undefined) drawArrow(ax, ay, '#38bdf8');
         if(bx !== undefined && by !== undefined) drawArrow(bx, by, '#f43f5e');
+    }
+
+    drawArgand(re, im) {
+        this.clear();
+        let pt = this.mapPt(re, im, 20);
+        let origin = this.mapPt(0,0);
+        
+        // Draw dashed projection lines
+        this.ctx.beginPath();
+        this.ctx.setLineDash([5, 5]);
+        this.ctx.moveTo(pt.px, origin.py);
+        this.ctx.lineTo(pt.px, pt.py);
+        this.ctx.lineTo(origin.px, pt.py);
+        this.ctx.strokeStyle = '#475569';
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+        
+        // Draw Vector from Origin
+        this.ctx.beginPath();
+        this.ctx.moveTo(origin.px, origin.py);
+        this.ctx.lineTo(pt.px, pt.py);
+        this.ctx.strokeStyle = '#22d3ee'; // Cyan
+        this.ctx.lineWidth = 3;
+        this.ctx.stroke();
+        
+        // Draw point
+        this.ctx.beginPath();
+        this.ctx.arc(pt.px, pt.py, 5, 0, Math.PI*2);
+        this.ctx.fillStyle = '#f43f5e'; // Rose
+        this.ctx.fill();
+
+        // Labels
+        this.ctx.fillStyle = '#cbd5e1';
+        this.ctx.font = '12px Inter';
+        this.ctx.fillText(`${re.toFixed(1)} + ${im.toFixed(1)}i`, pt.px + 10, pt.py - 10);
     }
 
     drawNumberLine(interval) {
