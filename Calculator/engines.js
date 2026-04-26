@@ -1,38 +1,59 @@
 class ModuleEngines {
-    // --- VECTOR PRO ---
-    computeVector(ax, ay, az, bx, by, bz, operation) {
-        const A = [parseFloat(ax)||0, parseFloat(ay)||0, parseFloat(az)||0];
-        const B = [parseFloat(bx)||0, parseFloat(by)||0, parseFloat(bz)||0];
-        
-        const mag = (v) => Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-        const dot = (v1, v2) => v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
-        const format = (v) => `[${v[0].toFixed(2)}, ${v[1].toFixed(2)}, ${v[2].toFixed(2)}]`;
+    constructor() {
+        // Subscribe to Compute Requests
+        window.EventBus.subscribe("COMPUTE_REQUEST", (payload) => {
+            if (payload.module === "vector") {
+                this.computeVector(payload.data);
+            }
+        });
+    }
 
-        switch(operation) {
-            case 'dot': return dot(A, B).toFixed(4);
-            case 'cross': return format([
-                A[1]*B[2] - A[2]*B[1],
-                A[2]*B[0] - A[0]*B[2],
-                A[0]*B[1] - A[1]*B[0]
-            ]);
-            case 'mag': return mag(A).toFixed(4);
-            case 'ang': {
-                const mA = mag(A); const mB = mag(B);
-                if (mA===0 || mB===0) return "Undefined";
-                return (Math.acos(dot(A,B)/(mA*mB)) * 180 / Math.PI).toFixed(2) + "°";
+    // --- VECTOR PRO ---
+    computeVector(data) {
+        try {
+            const A = [parseFloat(data.ax)||0, parseFloat(data.ay)||0, parseFloat(data.az)||0];
+            const B = [parseFloat(data.bx)||0, parseFloat(data.by)||0, parseFloat(data.bz)||0];
+            
+            const mag = (v) => Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+            const dot = (v1, v2) => v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
+            const format = (v) => `[${v[0].toFixed(2)}, ${v[1].toFixed(2)}, ${v[2].toFixed(2)}]`;
+
+            let result = "";
+            switch(data.operation) {
+                case 'dot': result = dot(A, B).toFixed(4); break;
+                case 'cross': result = format([A[1]*B[2] - A[2]*B[1], A[2]*B[0] - A[0]*B[2], A[0]*B[1] - A[1]*B[0]]); break;
+                case 'mag': result = mag(A).toFixed(4); break;
+                case 'ang': {
+                    const mA = mag(A); const mB = mag(B);
+                    if (mA===0 || mB===0) throw new Error("Undefined Angle");
+                    result = (Math.acos(dot(A,B)/(mA*mB)) * 180 / Math.PI).toFixed(2) + "°";
+                    break;
+                }
+                case 'proj': {
+                    const mB2 = dot(B, B);
+                    if (mB2===0) throw new Error("Undefined Projection");
+                    const scalar = dot(A, B) / mB2;
+                    result = format([B[0]*scalar, B[1]*scalar, B[2]*scalar]);
+                    break;
+                }
+                case 'unit': {
+                    const mA = mag(A);
+                    if (mA===0) throw new Error("Undefined Unit Vector");
+                    result = format([A[0]/mA, A[1]/mA, A[2]/mA]);
+                    break;
+                }
+                default: throw new Error("Unknown Operation");
             }
-            case 'proj': {
-                const mB2 = dot(B, B);
-                if (mB2===0) return "Undefined";
-                const scalar = dot(A, B) / mB2;
-                return format([B[0]*scalar, B[1]*scalar, B[2]*scalar]);
-            }
-            case 'unit': {
-                const mA = mag(A);
-                if (mA===0) return "Undefined";
-                return format([A[0]/mA, A[1]/mA, A[2]/mA]);
-            }
-            default: return "Error";
+
+            // Engine dispatches SUCCESS, NOT returning directly to UI
+            window.EventBus.dispatch("COMPUTE_SUCCESS", {
+                module: "vector",
+                result: result,
+                vizData: { type: "vector", A: A, B: B }
+            });
+
+        } catch (err) {
+            window.EventBus.dispatch("COMPUTE_ERROR", err.message);
         }
     }
 
