@@ -21,41 +21,22 @@ window.AnimationSystem = {
     },
     moduleExit(el) {
         if(!el) return;
-        anime({ 
-            targets: el, 
-            opacity: 0, 
-            scale: 0.98,
-            translateY: -10, 
-            filter: 'blur(10px)', 
-            duration: 300, 
-            easing: 'easeInCubic' 
-        });
+        // The CSS transition handles the base exit (opacity/scale)
+        // We can add extra flair here if needed, but keeping it simple for stability
     },
     moduleEnter(el) {
         if(!el) return;
-        el.style.opacity = 0; 
-        el.style.display = 'flex';
         
-        anime({ 
-            targets: el, 
-            opacity: [0, 1], 
-            translateY: [30, 0], 
-            scale: [0.95, 1],
-            filter: ['blur(10px)', 'blur(0px)'], 
-            duration: 600, 
-            easing: 'easeOutExpo' 
-        });
-
         // Stagger reveal buttons if they exist
         const buttons = el.querySelectorAll('.btn, .btn-primary, .btn-secondary, .grid-cell');
         if(buttons.length > 0) {
             anime({
                 targets: buttons,
                 opacity: [0, 1],
-                scale: [0.5, 1],
-                translateY: [20, 0],
+                scale: [0.8, 1],
+                translateY: [10, 0],
                 delay: anime.stagger(15, {start: 100}),
-                duration: 500,
+                duration: 400,
                 easing: 'easeOutBack'
             });
         }

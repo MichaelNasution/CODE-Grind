@@ -95,18 +95,14 @@ class UIController {
             if (navOld) navOld.classList.remove('active');
             if (navNew) navNew.classList.add('active');
 
-            if (window.AnimationSystem) {
-                window.AnimationSystem.moduleExit(oldEl);
-                setTimeout(() => {
-                    if(oldEl) oldEl.classList.remove('active');
-                    if(newEl) {
-                        newEl.classList.add('active');
-                        window.AnimationSystem.moduleEnter(newEl);
-                    }
-                }, 200);
-            } else {
-                if(oldEl) oldEl.classList.remove('active');
-                if(newEl) newEl.classList.add('active');
+            // Sequential cross-fade for maximum stability
+            if(oldEl) oldEl.classList.remove('active');
+            
+            if(newEl) {
+                newEl.classList.add('active');
+                if (window.AnimationSystem) {
+                    window.AnimationSystem.moduleEnter(newEl);
+                }
             }
         });
     }
