@@ -41,6 +41,7 @@
 
   function reveal(state, index) {
     if (!state.board.length) createBoard(state, index);
+    if (state.status === "ready" && state.board[index].mine) createBoard(state, index);
     const tile = state.board[index];
     if (!tile || tile.revealed || tile.flagged || state.status === "lost" || state.status === "won") return [];
 

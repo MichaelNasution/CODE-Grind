@@ -99,7 +99,22 @@
   function isInCheck(board, color) {
     const kingIndex = board.findIndex((piece) => piece?.type === "king" && piece.color === color);
     const enemy = color === "white" ? "black" : "white";
-    return board.some((piece, index) => piece?.color === enemy && pseudoMoves(board, index).some((move) => move.to === kingIndex));
+    return board.some((piece, index) => piece?.color === enemy && attacksSquare(board, index, kingIndex));
+  }
+
+  function attacksSquare(board, from, target) {
+    const piece = board[from];
+    const row = Math.floor(from / 8);
+    const col = from % 8;
+    const targetRow = Math.floor(target / 8);
+    const targetCol = target % 8;
+
+    if (piece.type === "pawn") {
+      const dir = piece.color === "white" ? -1 : 1;
+      return targetRow === row + dir && Math.abs(targetCol - col) === 1;
+    }
+
+    return pseudoMoves(board, from).some((move) => move.to === target);
   }
 
   function evaluate(stateOrBoard) {

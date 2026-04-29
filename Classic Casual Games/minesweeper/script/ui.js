@@ -75,9 +75,9 @@
   }
 
   function reveal(index) {
-    startTimer();
     GameKit.playClick();
     window.MinesweeperGame.reveal(state, index);
+    if (state.status !== "lost" && state.status !== "won") startTimer();
     finishIfNeeded();
     render();
   }
