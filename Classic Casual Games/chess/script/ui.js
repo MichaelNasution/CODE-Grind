@@ -10,6 +10,8 @@
   const statusCopy = GameKit.qs("#status-copy");
   const whiteCaptures = GameKit.qs("#white-captures");
   const blackCaptures = GameKit.qs("#black-captures");
+  let dragFrom = null;
+  let suppressClick = false;
 
   boot();
 
@@ -54,6 +56,9 @@
         pieceEl.textContent = window.ChessGame.symbols[piece.color][piece.type];
         square.appendChild(pieceEl);
       }
+      square.addEventListener("pointerdown", (event) => onPointerDown(event, index));
+      square.addEventListener("pointerup", (event) => onPointerUp(event, index));
+      square.addEventListener("pointercancel", onPointerCancel);
       square.addEventListener("click", () => onSquare(index));
       boardEl.appendChild(square);
     });
@@ -86,7 +91,48 @@
       : "Two players share the board locally. Select a piece to see legal moves.";
   }
 
+
+  function onPointerDown(event, index) {
+    if (dragFrom !== null) return;
+    if (state.status === "checkmate" || state.status === "stalemate") return;
+    if (state.mode === "ai" && state.turn === "black") return;
+    const piece = state.board[index];
+    if (!piece || piece.color !== state.turn) return;
+    dragFrom = index;
+    state.selected = index;
+    state.legalMoves = window.ChessGame.legalMoves(state, index);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    render();
+  }
+
+  function onPointerUp(event, index) {
+    if (dragFrom === null) return;
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    const from = dragFrom;
+    dragFrom = null;
+    suppressClick = true;
+    if (index === from) return;
+    const move = window.ChessGame.legalMoves(state, from).find((candidate) => candidate.to === index);
+    if (!move) return;
+    window.ChessGame.applyMove(state, { from, ...move });
+    state.selected = null;
+    state.legalMoves = [];
+    GameKit.playClick();
+    render();
+    if (state.mode === "ai" && state.turn === "black" && state.status !== "checkmate") window.setTimeout(runAiMove, 260);
+  }
+
+  function onPointerCancel() {
+    dragFrom = null;
+  }
+
   function onSquare(index) {
+    if (suppressClick) {
+      suppressClick = false;
+      return;
+    }
     if (state.status === "checkmate" || state.status === "stalemate") return;
     if (state.mode === "ai" && state.turn === "black") return;
     const piece = state.board[index];
