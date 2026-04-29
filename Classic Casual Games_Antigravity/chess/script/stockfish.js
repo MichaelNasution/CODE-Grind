@@ -9,56 +9,82 @@
   let pendingResolve = null;
 
   function init() {
-    if (worker) return Promise.resolve();
-    if (loading) return new Promise((resolve) => { const check = setInterval(() => { if (ready) { clearInterval(check); resolve(); } }, 100); });
+    if (worker && ready) return Promise.resolve();
+    if (loading) {
+      return new Promise((resolve) => {
+        const check = setInterval(() => {
+          if (ready) { clearInterval(check); resolve(); }
+        }, 100);
+      });
+    }
 
     loading = true;
     return new Promise((resolve, reject) => {
-      try {
-        worker = new Worker(CDN_URL);
-      } catch (error) {
-        loading = false;
-        reject(new Error("Failed to create Stockfish worker: " + error.message));
-        return;
-      }
+      /*
+       * Browsers block new Worker(crossOriginURL) due to same-origin policy.
+       * Workaround: fetch the script, wrap it in a Blob, and create the Worker from the Blob URL.
+       */
+      fetch(CDN_URL)
+        .then((response) => {
+          if (!response.ok) throw new Error("Failed to download Stockfish: " + response.status);
+          return response.text();
+        })
+        .then((scriptText) => {
+          const blob = new Blob([scriptText], { type: "application/javascript" });
+          const blobURL = URL.createObjectURL(blob);
 
-      worker.onerror = (error) => {
-        loading = false;
-        worker = null;
-        reject(new Error("Stockfish worker error: " + (error.message || "unknown")));
-      };
+          try {
+            worker = new Worker(blobURL);
+          } catch (error) {
+            URL.revokeObjectURL(blobURL);
+            loading = false;
+            reject(new Error("Failed to create Stockfish worker: " + error.message));
+            return;
+          }
 
-      let initStep = 0;
+          worker.onerror = (error) => {
+            loading = false;
+            worker = null;
+            URL.revokeObjectURL(blobURL);
+            reject(new Error("Stockfish worker error: " + (error.message || "unknown")));
+          };
 
-      worker.onmessage = (event) => {
-        const line = typeof event.data === "string" ? event.data : String(event.data);
+          let initStep = 0;
 
-        /* Initialization handshake */
-        if (initStep === 0 && line.indexOf("uciok") !== -1) {
-          initStep = 1;
-          worker.postMessage("isready");
-          return;
-        }
-        if (initStep === 1 && line.indexOf("readyok") !== -1) {
-          initStep = 2;
-          ready = true;
+          worker.onmessage = (event) => {
+            const line = typeof event.data === "string" ? event.data : String(event.data);
+
+            /* Initialization handshake */
+            if (initStep === 0 && line.indexOf("uciok") !== -1) {
+              initStep = 1;
+              worker.postMessage("isready");
+              return;
+            }
+            if (initStep === 1 && line.indexOf("readyok") !== -1) {
+              initStep = 2;
+              ready = true;
+              loading = false;
+              resolve();
+              return;
+            }
+
+            /* During play — listen for bestmove */
+            if (pendingResolve && line.indexOf("bestmove") === 0) {
+              const parts = line.split(" ");
+              const moveStr = parts[1];
+              const cb = pendingResolve;
+              pendingResolve = null;
+              cb(moveStr);
+            }
+          };
+
+          /* Start UCI init */
+          worker.postMessage("uci");
+        })
+        .catch((error) => {
           loading = false;
-          resolve();
-          return;
-        }
-
-        /* During play — listen for bestmove */
-        if (pendingResolve && line.indexOf("bestmove") === 0) {
-          const parts = line.split(" ");
-          const moveStr = parts[1];
-          const cb = pendingResolve;
-          pendingResolve = null;
-          cb(moveStr);
-        }
-      };
-
-      /* Start UCI init */
-      worker.postMessage("uci");
+          reject(new Error("Stockfish download failed: " + error.message));
+        });
     });
   }
 
@@ -74,8 +100,8 @@
 
   function stop() {
     if (worker) {
-      worker.postMessage("stop");
-      worker.postMessage("quit");
+      try { worker.postMessage("stop"); } catch (e) { /* ignore */ }
+      try { worker.postMessage("quit"); } catch (e) { /* ignore */ }
       worker.terminate();
       worker = null;
       ready = false;
