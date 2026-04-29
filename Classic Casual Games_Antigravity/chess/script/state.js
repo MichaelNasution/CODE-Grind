@@ -13,6 +13,15 @@
         lastMove: null,
         captured: { white: [], black: [] },
         status: "playing",
+        /* Castling rights — true until king or corresponding rook moves */
+        castling: { K: true, Q: true, k: true, q: true },
+        /* En passant target square index (null if none) */
+        enPassant: null,
+        halfMoveClock: 0,
+        fullMoveNumber: 1,
+        /* Stockfish engine state */
+        engineLoading: false,
+        engineReady: false,
       };
     },
   };
