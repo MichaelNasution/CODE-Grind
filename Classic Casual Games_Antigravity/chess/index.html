@@ -19,7 +19,7 @@
         <div>
           <p class="eyebrow">advanced AI</p>
           <h1>Chess</h1>
-          <p class="game-subtitle">Play white against a depth-based AI with legal move highlighting, captures, and check feedback.</p>
+          <p class="game-subtitle">Play white against a depth-based AI with legal move highlighting, captures, castling, and check feedback. Or challenge Stockfish 16 NNUE.</p>
         </div>
         <div class="stat-grid chess-stats">
           <article class="stat-card"><span>Turn</span><strong id="turn">White</strong></article>
@@ -48,6 +48,7 @@
               <button class="segment" data-difficulty="easy" aria-pressed="false">Easy</button>
               <button class="segment active" data-difficulty="medium" aria-pressed="true">Medium</button>
               <button class="segment" data-difficulty="hard" aria-pressed="false">Hard</button>
+              <button class="segment stockfish-btn" data-difficulty="stockfish" aria-pressed="false">Stockfish</button>
             </div>
           </fieldset>
           <div class="toolbar">
@@ -83,6 +84,7 @@
   <script src="../shared/scripts/ai-utils.js"></script>
   <script src="script/state.js"></script>
   <script src="script/game.js"></script>
+  <script src="script/stockfish.js"></script>
   <script src="script/ai.js"></script>
   <script src="script/ui.js"></script>
 </body>

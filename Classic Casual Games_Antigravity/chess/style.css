@@ -38,6 +38,7 @@
 }
 
 .chess-board {
+  position: relative;
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   grid-template-rows: repeat(8, 1fr);
@@ -49,6 +50,27 @@
   border-radius: 18px;
   background: rgba(2, 6, 23, 0.74);
   box-shadow: 0 22px 60px rgba(0, 0, 0, 0.36);
+  transition: filter var(--motion-normal) var(--ease-out);
+}
+
+/* ── Thinking overlay ── */
+.chess-board.thinking {
+  pointer-events: none;
+}
+
+.chess-board.thinking::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: rgba(2, 6, 23, 0.38);
+  backdrop-filter: blur(2px);
+  animation: thinking-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes thinking-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
 }
 
 .chess-square {
@@ -193,6 +215,33 @@
   font-family: "Segoe UI Symbol", "Noto Sans Symbols 2", "Arial Unicode MS", serif;
   font-size: 24px;
   line-height: 1;
+}
+
+/* ── Stockfish button ── */
+.stockfish-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.stockfish-btn::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(239, 68, 68, 0.12));
+  opacity: 0;
+  transition: opacity var(--motion-normal) var(--ease-out);
+}
+
+.stockfish-btn.active::before,
+.stockfish-btn[aria-pressed="true"]::before {
+  opacity: 1;
+}
+
+.stockfish-btn.active,
+.stockfish-btn[aria-pressed="true"] {
+  color: #1c1202;
+  background: linear-gradient(135deg, #f59e0b, #f97316);
+  font-weight: 950;
 }
 
 @media (max-width: 980px) {
