@@ -1,0 +1,49 @@
+.chess-board {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  width: min(640px, 86vw);
+  aspect-ratio: 1;
+  padding: 10px;
+  border-radius: var(--radius-xl);
+  background: rgba(0, 0, 0, 0.26);
+}
+
+.chess-square {
+  display: grid;
+  place-items: center;
+  border: 0;
+  color: var(--color-text);
+  font-size: clamp(28px, 6vw, 54px);
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.chess-square.light {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.chess-square.dark {
+  background: rgba(20, 184, 166, 0.18);
+}
+
+.chess-square.selected {
+  box-shadow: inset 0 0 0 4px var(--color-warning);
+}
+
+.chess-square.legal {
+  box-shadow: inset 0 0 0 4px var(--color-primary);
+}
+
+.chess-square.last {
+  background: rgba(245, 158, 11, 0.22);
+}
+
+.piece-white {
+  color: #f8fafc;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.46);
+}
+
+.piece-black {
+  color: #020617;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.2);
+}

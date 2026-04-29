@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess | Classic Casual Games</title>
+  <link rel="stylesheet" href="../shared/styles/tokens.css">
+  <link rel="stylesheet" href="../shared/styles/base.css">
+  <link rel="stylesheet" href="../shared/styles/components.css">
+  <link rel="stylesheet" href="../shared/styles/layout.css">
+  <link rel="stylesheet" href="../shared/styles/animations.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="game-stage">
+      <div class="topbar">
+        <div><p class="eyebrow">advanced AI</p><h1>Chess</h1></div>
+        <div class="stat-grid">
+          <article class="stat-card"><span>Turn</span><strong id="turn">White</strong></article>
+          <article class="stat-card"><span>Mode</span><strong id="mode-label">AI</strong></article>
+          <article class="stat-card"><span>Depth</span><strong id="depth">2</strong></article>
+        </div>
+      </div>
+      <div class="play-layout">
+        <aside class="panel control-panel">
+          <div class="status-box"><span class="badge">Status</span><strong id="status-title">Ready</strong><p id="status-copy">Select a piece to highlight legal moves.</p></div>
+          <fieldset class="field-group"><legend>Mode</legend><div class="segmented-control"><button class="segment active" data-mode="ai" aria-pressed="true">Player vs AI</button><button class="segment" data-mode="local" aria-pressed="false">2 Players</button></div></fieldset>
+          <fieldset class="field-group"><legend>AI level</legend><div class="segmented-control"><button class="segment" data-difficulty="easy" aria-pressed="false">Easy</button><button class="segment active" data-difficulty="medium" aria-pressed="true">Medium</button><button class="segment" data-difficulty="hard" aria-pressed="false">Hard</button></div></fieldset>
+          <div class="toolbar"><button class="btn primary" id="new-game">New Game</button><button class="btn secondary" id="ai-move">AI Move</button><a class="btn ghost" href="../index.html">Library</a></div>
+        </aside>
+        <section class="panel board-wrap">
+          <div class="board-glow"></div>
+          <div id="board" class="chess-board game-board"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script src="../shared/scripts/utils.js"></script>
+  <script src="../shared/scripts/sound.js"></script>
+  <script src="../shared/scripts/ai-utils.js"></script>
+  <script src="script/state.js"></script>
+  <script src="script/game.js"></script>
+  <script src="script/ai.js"></script>
+  <script src="script/ui.js"></script>
+</body>
+</html>
