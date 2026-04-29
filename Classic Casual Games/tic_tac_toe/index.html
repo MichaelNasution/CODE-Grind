@@ -1,88 +1,94 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tic Tac Toe Neon Desk</title>
+  <title>Tic Tac Toe | Classic Casual Games</title>
   <link rel="preconnect" href="https://cdn.jsdelivr.net">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="../shared/styles/tokens.css">
+  <link rel="stylesheet" href="../shared/styles/base.css">
+  <link rel="stylesheet" href="../shared/styles/components.css">
+  <link rel="stylesheet" href="../shared/styles/layout.css">
+  <link rel="stylesheet" href="../shared/styles/animations.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="app-shell">
     <section class="game-stage" aria-labelledby="game-title">
       <div class="topbar">
         <div>
-          <p class="eyebrow">desktop game</p>
+          <p class="eyebrow">strategy desk</p>
           <h1 id="game-title">Tic Tac Toe</h1>
         </div>
 
-        <div class="scoreboard" aria-label="Papan skor">
-          <article class="score-card score-x">
-            <span class="score-label">X</span>
+        <div class="stat-grid scoreboard" aria-label="Scoreboard">
+          <article class="stat-card score-x">
+            <span>X</span>
             <strong id="score-x">0</strong>
           </article>
-          <article class="score-card score-draw">
-            <span class="score-label">Draw</span>
+          <article class="stat-card score-draw">
+            <span>Draw</span>
             <strong id="score-draw">0</strong>
           </article>
-          <article class="score-card score-o">
-            <span class="score-label">O</span>
+          <article class="stat-card score-o">
+            <span>O</span>
             <strong id="score-o">0</strong>
           </article>
         </div>
       </div>
 
       <div class="play-layout">
-        <aside class="control-panel" aria-label="Pengaturan permainan">
+        <aside class="panel control-panel" aria-label="Game controls">
           <div class="status-box">
-            <span class="status-kicker">Giliran</span>
-            <strong id="turn-label">X bermain</strong>
-            <p id="status-message">Pilih kotak untuk mulai.</p>
+            <span class="badge">Turn</span>
+            <strong id="turn-label">X to move</strong>
+            <p id="status-message">Choose a square to start.</p>
           </div>
 
-          <fieldset>
+          <fieldset class="field-group">
             <legend>Mode</legend>
             <div class="segmented-control" id="mode-control">
               <button class="segment active" type="button" data-mode="ai" aria-pressed="true">Player vs AI</button>
-              <button class="segment" type="button" data-mode="local" aria-pressed="false">2 Pemain</button>
+              <button class="segment" type="button" data-mode="local" aria-pressed="false">2 Players</button>
             </div>
           </fieldset>
 
-          <fieldset>
-            <legend>Pemain awal</legend>
+          <fieldset class="field-group">
+            <legend>First player</legend>
             <div class="segmented-control" id="starter-control">
               <button class="segment active" type="button" data-starter="X" aria-pressed="true">X</button>
               <button class="segment" type="button" data-starter="O" aria-pressed="false">O</button>
             </div>
           </fieldset>
 
-          <fieldset class="ai-level-field">
-            <legend>Level AI</legend>
+          <fieldset class="field-group ai-level-field">
+            <legend>AI level</legend>
             <div class="segmented-control difficulty-control" id="difficulty-control">
-              <button class="segment" type="button" data-difficulty="easy" aria-pressed="false">Mudah</button>
-              <button class="segment active" type="button" data-difficulty="medium" aria-pressed="true">Sedang</button>
-              <button class="segment" type="button" data-difficulty="hard" aria-pressed="false">Sulit</button>
+              <button class="segment" type="button" data-difficulty="easy" aria-pressed="false">Easy</button>
+              <button class="segment active" type="button" data-difficulty="medium" aria-pressed="true">Medium</button>
+              <button class="segment" type="button" data-difficulty="hard" aria-pressed="false">Hard</button>
             </div>
           </fieldset>
 
-          <div class="button-row">
-            <button class="action-btn primary" id="reset-round" type="button">Reset ronde</button>
-            <button class="action-btn ghost" id="reset-score" type="button">Reset skor</button>
+          <div class="toolbar">
+            <button class="btn primary" id="reset-round" type="button">Reset Round</button>
+            <button class="btn ghost" id="reset-score" type="button">Reset Score</button>
+            <a class="btn ghost" href="../index.html">Library</a>
           </div>
         </aside>
 
-        <section class="board-wrap" aria-label="Area permainan">
+        <section class="panel board-wrap" aria-label="Game area">
           <div class="board-glow" aria-hidden="true"></div>
-          <div class="board" id="board" role="grid" aria-label="Papan Tic Tac Toe">
-            <button class="cell" type="button" role="gridcell" data-index="0" aria-label="Kotak 1"></button>
-            <button class="cell" type="button" role="gridcell" data-index="1" aria-label="Kotak 2"></button>
-            <button class="cell" type="button" role="gridcell" data-index="2" aria-label="Kotak 3"></button>
-            <button class="cell" type="button" role="gridcell" data-index="3" aria-label="Kotak 4"></button>
-            <button class="cell" type="button" role="gridcell" data-index="4" aria-label="Kotak 5"></button>
-            <button class="cell" type="button" role="gridcell" data-index="5" aria-label="Kotak 6"></button>
-            <button class="cell" type="button" role="gridcell" data-index="6" aria-label="Kotak 7"></button>
-            <button class="cell" type="button" role="gridcell" data-index="7" aria-label="Kotak 8"></button>
-            <button class="cell" type="button" role="gridcell" data-index="8" aria-label="Kotak 9"></button>
+          <div class="board game-board" id="board" role="grid" aria-label="Tic Tac Toe board">
+            <button class="cell tile-button" type="button" role="gridcell" data-index="0" aria-label="Square 1"></button>
+            <button class="cell tile-button" type="button" role="gridcell" data-index="1" aria-label="Square 2"></button>
+            <button class="cell tile-button" type="button" role="gridcell" data-index="2" aria-label="Square 3"></button>
+            <button class="cell tile-button" type="button" role="gridcell" data-index="3" aria-label="Square 4"></button>
+            <button class="cell tile-button" type="button" role="gridcell" data-index="4" aria-label="Square 5"></button>
+            <button class="cell tile-button" type="button" role="gridcell" data-index="5" aria-label="Square 6"></button>
+            <button class="cell tile-button" type="button" role="gridcell" data-index="6" aria-label="Square 7"></button>
+            <button class="cell tile-button" type="button" role="gridcell" data-index="7" aria-label="Square 8"></button>
+            <button class="cell tile-button" type="button" role="gridcell" data-index="8" aria-label="Square 9"></button>
             <span class="win-line" id="win-line" aria-hidden="true"></span>
           </div>
         </section>
@@ -91,6 +97,13 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/animejs/dist/bundles/anime.umd.min.js"></script>
-  <script src="script.js"></script>
+  <script src="../shared/scripts/utils.js"></script>
+  <script src="../shared/scripts/storage.js"></script>
+  <script src="../shared/scripts/sound.js"></script>
+  <script src="../shared/scripts/ai-utils.js"></script>
+  <script src="script/state.js"></script>
+  <script src="script/game.js"></script>
+  <script src="script/ai.js"></script>
+  <script src="script/ui.js"></script>
 </body>
 </html>

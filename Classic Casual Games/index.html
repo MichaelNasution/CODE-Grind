@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classic Casual Games</title>
+  <link rel="stylesheet" href="shared/styles/tokens.css">
+  <link rel="stylesheet" href="shared/styles/base.css">
+  <link rel="stylesheet" href="shared/styles/components.css">
+  <link rel="stylesheet" href="shared/styles/layout.css">
+  <link rel="stylesheet" href="shared/styles/animations.css">
+  <style>
+    .platform-hero {
+      display: grid;
+      gap: var(--space-3);
+      margin-bottom: var(--space-4);
+      padding: var(--space-4);
+    }
+
+    .platform-hero p {
+      max-width: 720px;
+      font-size: 18px;
+    }
+
+    .game-library {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: var(--space-2);
+    }
+
+    .game-card {
+      min-height: 230px;
+      display: grid;
+      align-content: space-between;
+      gap: var(--space-3);
+    }
+
+    .game-card h2 {
+      margin-bottom: 8px;
+    }
+
+    .game-card p {
+      margin-bottom: 0;
+    }
+
+    .game-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <main class="platform-shell">
+    <section class="platform-hero card animate-in" aria-labelledby="platform-title">
+      <div>
+        <p class="eyebrow">mini game platform</p>
+        <h1 id="platform-title">Classic Casual Games</h1>
+        <p>A polished collection of familiar board and arcade games with one shared dark glass design system, persistent scores, and AI difficulty modes.</p>
+      </div>
+      <div class="game-meta" aria-label="Platform features">
+        <span class="badge">6 games</span>
+        <span class="badge">PvP</span>
+        <span class="badge">Player vs AI</span>
+        <span class="badge">Shared UI system</span>
+      </div>
+    </section>
+
+    <section class="game-library" aria-label="Game library">
+      <a class="game-card card hover-glow" href="tic_tac_toe/index.html">
+        <div><span class="badge">strategy</span><h2>Tic Tac Toe</h2><p>Classic three-in-a-row with local and AI modes.</p></div>
+        <span class="btn ghost">Play</span>
+      </a>
+      <a class="game-card card hover-glow" href="minesweeper/index.html">
+        <div><span class="badge">logic</span><h2>Minesweeper</h2><p>Reveal safe tiles, flag mines, and race the clock.</p></div>
+        <span class="btn ghost">Play</span>
+      </a>
+      <a class="game-card card hover-glow" href="snake/index.html">
+        <div><span class="badge">arcade</span><h2>Snake</h2><p>Grow longer, move faster, and survive clean turns.</p></div>
+        <span class="btn ghost">Play</span>
+      </a>
+      <a class="game-card card hover-glow" href="solitaire/index.html">
+        <div><span class="badge">cards</span><h2>Solitaire</h2><p>Drag cards, build foundations, and optimize every move.</p></div>
+        <span class="btn ghost">Play</span>
+      </a>
+      <a class="game-card card hover-glow" href="chess/index.html">
+        <div><span class="badge">advanced AI</span><h2>Chess</h2><p>Legal moves, board evaluation, minimax, and alpha-beta pruning.</p></div>
+        <span class="btn ghost">Play</span>
+      </a>
+      <a class="game-card card hover-glow" href="scrabble/index.html">
+        <div><span class="badge">word AI</span><h2>Scrabble</h2><p>Rack generation, scoring bonuses, dictionary checks, and board-aware AI.</p></div>
+        <span class="btn ghost">Play</span>
+      </a>
+    </section>
+  </main>
+</body>
+</html>
