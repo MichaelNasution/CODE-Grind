@@ -3,8 +3,8 @@
 
   const values = { pawn: 1, knight: 3, bishop: 3, rook: 5, queen: 9, king: 100 };
   const symbols = {
-    white: { king: "K", queen: "Q", rook: "R", bishop: "B", knight: "N", pawn: "P" },
-    black: { king: "k", queen: "q", rook: "r", bishop: "b", knight: "n", pawn: "p" },
+    white: { king: "♔", queen: "♕", rook: "♖", bishop: "♗", knight: "♘", pawn: "♙" },
+    black: { king: "♚", queen: "♛", rook: "♜", bishop: "♝", knight: "♞", pawn: "♟" },
   };
 
   function legalMoves(state, from) {
@@ -80,6 +80,8 @@
 
   function applyMove(state, move) {
     const piece = state.board[move.from];
+    const captured = state.board[move.to];
+    if (captured && state.captured) state.captured[piece.color].push(captured);
     state.board = applyMoveToBoard(state.board, move);
     state.lastMove = move;
     state.turn = piece.color === "white" ? "black" : "white";

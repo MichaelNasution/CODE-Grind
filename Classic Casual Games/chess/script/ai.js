@@ -55,6 +55,10 @@
       ...state,
       board: state.board.map((piece) => piece ? { ...piece } : null),
       lastMove: state.lastMove ? { ...state.lastMove } : null,
+      captured: {
+        white: state.captured?.white ? state.captured.white.map((piece) => ({ ...piece })) : [],
+        black: state.captured?.black ? state.captured.black.map((piece) => ({ ...piece })) : [],
+      },
       legalMoves: [],
     };
   }

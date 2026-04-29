@@ -11,6 +11,7 @@
         selected: null,
         legalMoves: [],
         lastMove: null,
+        captured: { white: [], black: [] },
         status: "playing",
       };
     },

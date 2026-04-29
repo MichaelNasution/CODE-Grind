@@ -12,27 +12,68 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <a class="back-link" href="../index.html" aria-label="Back to game library">‹</a>
+  <a class="back-link" href="../index.html" aria-label="Back to game library">&lsaquo;</a>
   <main class="app-shell">
     <section class="game-stage">
-      <div class="topbar">
-        <div><p class="eyebrow">advanced AI</p><h1>Chess</h1></div>
-        <div class="stat-grid">
+      <div class="topbar chess-topbar">
+        <div>
+          <p class="eyebrow">advanced AI</p>
+          <h1>Chess</h1>
+          <p class="game-subtitle">Play white against a depth-based AI with legal move highlighting, captures, and check feedback.</p>
+        </div>
+        <div class="stat-grid chess-stats">
           <article class="stat-card"><span>Turn</span><strong id="turn">White</strong></article>
           <article class="stat-card"><span>Mode</span><strong id="mode-label">AI</strong></article>
           <article class="stat-card"><span>Depth</span><strong id="depth">2</strong></article>
         </div>
       </div>
-      <div class="play-layout">
+
+      <div class="chess-layout">
         <aside class="panel control-panel">
-          <div class="status-box"><span class="badge">Status</span><strong id="status-title">Ready</strong><p id="status-copy">Select a piece to highlight legal moves.</p></div>
-          <fieldset class="field-group"><legend>Mode</legend><div class="segmented-control"><button class="segment active" data-mode="ai" aria-pressed="true">Player vs AI</button><button class="segment" data-mode="local" aria-pressed="false">2 Players</button></div></fieldset>
-          <fieldset class="field-group"><legend>AI level</legend><div class="segmented-control"><button class="segment" data-difficulty="easy" aria-pressed="false">Easy</button><button class="segment active" data-difficulty="medium" aria-pressed="true">Medium</button><button class="segment" data-difficulty="hard" aria-pressed="false">Hard</button></div></fieldset>
-          <div class="toolbar"><button class="btn primary" id="new-game">New Game</button><button class="btn secondary" id="ai-move">AI Move</button></div>
+          <div class="status-box">
+            <span class="badge">Status</span>
+            <strong id="status-title">Ready</strong>
+            <p id="status-copy">Select a piece to highlight legal moves.</p>
+          </div>
+          <fieldset class="field-group">
+            <legend>Mode</legend>
+            <div class="segmented-control">
+              <button class="segment active" data-mode="ai" aria-pressed="true">Player vs AI</button>
+              <button class="segment" data-mode="local" aria-pressed="false">2 Players</button>
+            </div>
+          </fieldset>
+          <fieldset class="field-group">
+            <legend>AI level</legend>
+            <div class="segmented-control">
+              <button class="segment" data-difficulty="easy" aria-pressed="false">Easy</button>
+              <button class="segment active" data-difficulty="medium" aria-pressed="true">Medium</button>
+              <button class="segment" data-difficulty="hard" aria-pressed="false">Hard</button>
+            </div>
+          </fieldset>
+          <div class="toolbar">
+            <button class="btn primary" id="new-game">New Game</button>
+            <button class="btn secondary" id="ai-move">AI Move</button>
+          </div>
         </aside>
-        <section class="panel board-wrap">
-          <div class="board-glow"></div>
-          <div id="board" class="chess-board game-board"></div>
+
+        <section class="panel chess-board-panel">
+          <div class="captured-row" aria-label="Captured by black">
+            <span>Black captures</span>
+            <div id="black-captures" class="captured-pieces"></div>
+          </div>
+          <div class="chess-board-shell">
+            <div class="rank-labels" aria-hidden="true">
+              <span>8</span><span>7</span><span>6</span><span>5</span><span>4</span><span>3</span><span>2</span><span>1</span>
+            </div>
+            <div id="board" class="chess-board game-board" aria-label="Chess board"></div>
+          </div>
+          <div class="file-labels" aria-hidden="true">
+            <span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span>
+          </div>
+          <div class="captured-row" aria-label="Captured by white">
+            <span>White captures</span>
+            <div id="white-captures" class="captured-pieces"></div>
+          </div>
         </section>
       </div>
     </section>
