@@ -41,25 +41,26 @@ p {
 }
 
 h1 {
-  margin-bottom: var(--space-1);
+  margin-bottom: 12px;
   font-size: var(--title-size);
   line-height: 1;
   letter-spacing: 0;
 }
 
 h2 {
-  margin-bottom: var(--space-1);
+  margin-bottom: 12px;
   font-size: var(--subtitle-size);
   line-height: 1.15;
 }
 
 p {
+  margin-bottom: 0;
   color: var(--color-muted);
   line-height: 1.55;
 }
 
 .eyebrow {
-  margin-bottom: 6px;
+  margin-bottom: 12px;
   color: var(--color-accent);
   font-size: 12px;
   font-weight: 900;

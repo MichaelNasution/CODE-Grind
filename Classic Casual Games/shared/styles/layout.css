@@ -31,7 +31,7 @@
   align-items: end;
   justify-content: space-between;
   gap: var(--space-3);
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
 }
 
 .play-layout {
@@ -72,7 +72,7 @@
 
 .field-group {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .field-group label,

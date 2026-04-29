@@ -80,6 +80,7 @@
 .badge {
   display: inline-flex;
   align-items: center;
+  width: fit-content;
   min-height: 28px;
   border: 1px solid var(--color-border);
   border-radius: 999px;
@@ -89,6 +90,18 @@
   font-size: 12px;
   font-weight: 900;
   text-transform: uppercase;
+}
+
+.badge + h1,
+.badge + h2,
+.badge + h3 {
+  margin-top: 14px;
+}
+
+.eyebrow + h1,
+.eyebrow + h2,
+.eyebrow + h3 {
+  margin-top: 0;
 }
 
 .segmented-control {
@@ -149,7 +162,7 @@
 
 .status-box {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   border-radius: var(--radius-lg);
   padding: var(--space-3);
   background:
@@ -159,12 +172,18 @@
 
 .status-box strong {
   font-size: 24px;
+  line-height: 1.15;
+}
+
+.status-box .badge {
+  margin-bottom: 2px;
 }
 
 .toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-1);
+  gap: 10px;
+  margin-top: auto;
 }
 
 .back-link {
