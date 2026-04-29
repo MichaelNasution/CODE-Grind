@@ -8,6 +8,7 @@
     for (let index = 0; index < word.length; index += 1) {
       const r = row + (direction === "vertical" ? index : 0);
       const c = col + (direction === "horizontal" ? index : 0);
+      if (r < 0 || r >= 15 || c < 0 || c >= 15) return null;
       const existing = state.board[r][c];
       if (existing) continue;
       const tile = rack.find((item) => item.letter === word[index] && !usedIds.includes(item.id));
@@ -29,6 +30,7 @@
     window.ScrabbleRack.removeTiles(state.racks[player], placement.usedIds);
     state.scores[player] += placement.score;
     window.ScrabbleRack.drawTiles(state, player);
+    state.lastMove = { player, word, score: placement.score, tiles: placement.tiles };
     state.turn = state.turn === "player" ? "ai" : "player";
     return { ok: true, placement };
   }

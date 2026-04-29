@@ -13,6 +13,7 @@
         direction: "horizontal",
         selectedRackIds: [],
         selectedCell: { row: 7, col: 7 },
+        lastMove: null,
         turn: "player",
       };
       window.ScrabbleRack.drawTiles(state, "player");
