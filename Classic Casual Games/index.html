@@ -10,92 +10,446 @@
   <link rel="stylesheet" href="shared/styles/layout.css">
   <link rel="stylesheet" href="shared/styles/animations.css">
   <style>
-    .platform-hero {
-      display: grid;
-      gap: var(--space-3);
-      margin-bottom: var(--space-4);
-      padding: var(--space-4);
+    body {
+      background:
+        linear-gradient(135deg, rgba(20, 184, 166, 0.14), transparent 34%),
+        linear-gradient(225deg, rgba(245, 158, 11, 0.1), transparent 30%),
+        linear-gradient(180deg, #07111f 0%, #0f172a 46%, #020617 100%);
     }
 
-    .platform-hero p {
-      max-width: 720px;
+    .platform-shell {
+      width: min(1240px, 100%);
+      display: grid;
+      gap: var(--space-4);
+      padding-top: var(--space-5);
+    }
+
+    .platform-hero {
+      min-height: 360px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 430px);
+      gap: var(--space-4);
+      align-items: center;
+      padding: clamp(28px, 5vw, 56px);
+      overflow: hidden;
+    }
+
+    .hero-copy {
+      display: grid;
+      align-content: center;
+      gap: var(--space-2);
+    }
+
+    .hero-copy h1 {
+      max-width: 760px;
+      font-size: clamp(46px, 8vw, 88px);
+      line-height: 0.9;
+    }
+
+    .hero-copy p {
+      max-width: 680px;
       font-size: 18px;
+    }
+
+    .hero-actions,
+    .game-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .hero-actions .btn {
+      min-width: 150px;
+    }
+
+    .hero-board {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+      padding: var(--space-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      background: rgba(2, 6, 23, 0.32);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+      transform: rotate(1.5deg);
+    }
+
+    .hero-tile {
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      color: #f8fafc;
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+      font-size: clamp(20px, 3vw, 34px);
+      font-weight: 950;
+    }
+
+    .hero-tile.primary {
+      color: #07111f;
+      background: var(--color-primary);
+    }
+
+    .hero-tile.accent {
+      color: #07111f;
+      background: var(--color-accent);
+    }
+
+    .hero-tile.warning {
+      color: #1c1202;
+      background: var(--color-warning);
+    }
+
+    .hero-tile.danger {
+      background: #e11d48;
+    }
+
+    .library-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: var(--space-3);
+    }
+
+    .library-header h2 {
+      font-size: clamp(26px, 4vw, 38px);
     }
 
     .game-library {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-columns: repeat(12, 1fr);
       gap: var(--space-3);
     }
 
     .game-card {
-      min-height: 230px;
+      --accent: var(--color-accent);
+      min-height: 320px;
+      grid-column: span 4;
+      position: relative;
       display: grid;
-      align-content: space-between;
-      gap: var(--space-3);
+      grid-template-rows: 132px 1fr auto;
+      gap: var(--space-2);
+      overflow: hidden;
+      isolation: isolate;
+      transition:
+        transform var(--motion-normal) var(--ease-out),
+        box-shadow var(--motion-normal) var(--ease-out),
+        border-color var(--motion-normal) var(--ease-out);
     }
 
-    .game-card > div {
+    .game-card.featured {
+      grid-column: span 6;
+    }
+
+    .game-card:hover {
+      transform: translateY(-7px);
+      border-color: color-mix(in srgb, var(--accent), white 18%);
+      box-shadow: var(--shadow-soft), 0 0 42px color-mix(in srgb, var(--accent), transparent 68%);
+    }
+
+    .game-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background:
+        linear-gradient(160deg, color-mix(in srgb, var(--accent), transparent 78%), transparent 52%),
+        rgba(255, 255, 255, 0.015);
+      opacity: 0.9;
+    }
+
+    .game-visual {
+      min-height: 132px;
       display: grid;
+      place-items: center;
+      border-radius: var(--radius-lg);
+      background: rgba(2, 6, 23, 0.36);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+      overflow: hidden;
+    }
+
+    .game-info {
+      display: grid;
+      gap: 10px;
       align-content: start;
-      gap: 0;
     }
 
-    .game-card h2 {
-      margin-bottom: 10px;
+    .game-info h3 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1;
     }
 
-    .game-card p {
-      margin-bottom: 0;
+    .game-info p {
+      margin: 0;
     }
 
-    .game-meta {
+    .game-card .btn {
+      width: 100%;
+      color: #061019;
+      background: var(--accent);
+    }
+
+    .mini-grid,
+    .mini-mine,
+    .mini-board {
+      display: grid;
+      gap: 5px;
+    }
+
+    .mini-grid {
+      grid-template-columns: repeat(3, 42px);
+    }
+
+    .mini-grid span,
+    .mini-mine span,
+    .mini-board span {
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      font-weight: 950;
+    }
+
+    .mini-grid span:nth-child(1),
+    .mini-grid span:nth-child(5),
+    .mini-grid span:nth-child(9) {
+      color: #061019;
+      background: var(--accent);
+    }
+
+    .mini-mine {
+      grid-template-columns: repeat(5, 28px);
+    }
+
+    .mini-mine span:nth-child(3),
+    .mini-mine span:nth-child(12),
+    .mini-mine span:nth-child(21) {
+      color: #061019;
+      background: var(--accent);
+    }
+
+    .mini-snake {
+      width: 190px;
+      height: 86px;
+      position: relative;
+      border-radius: 999px;
+      border: 12px solid var(--accent);
+      border-left-color: transparent;
+    }
+
+    .mini-snake::after {
+      content: "";
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: var(--color-warning);
+      transform: translateY(-50%);
+      box-shadow: 0 0 22px rgba(245, 158, 11, 0.48);
+    }
+
+    .mini-cards {
+      position: relative;
+      width: 190px;
+      height: 112px;
+    }
+
+    .mini-cards span {
+      position: absolute;
+      width: 72px;
+      height: 100px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      color: #111827;
+      background: #f8fafc;
+      box-shadow: 0 16px 30px rgba(0, 0, 0, 0.3);
+      font-size: 28px;
+      font-weight: 950;
+    }
+
+    .mini-cards span:nth-child(1) {
+      left: 16px;
+      top: 8px;
+      transform: rotate(-12deg);
+    }
+
+    .mini-cards span:nth-child(2) {
+      left: 62px;
+      top: 0;
+      color: #dc2626;
+      transform: rotate(4deg);
+    }
+
+    .mini-cards span:nth-child(3) {
+      left: 108px;
+      top: 10px;
+      transform: rotate(14deg);
+    }
+
+    .mini-board {
+      grid-template-columns: repeat(4, 32px);
+    }
+
+    .mini-board span:nth-child(odd) {
+      background: color-mix(in srgb, var(--accent), transparent 32%);
+    }
+
+    .mini-board span:nth-child(even) {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .mini-rack {
       display: flex;
-      flex-wrap: wrap;
       gap: 8px;
+      padding: 14px;
+      border-radius: var(--radius-lg);
+      background: rgba(2, 6, 23, 0.42);
+    }
+
+    .mini-rack span {
+      width: 38px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 9px;
+      color: #2a1a08;
+      background: linear-gradient(145deg, #fff4c4, #e8bd6f);
+      box-shadow: 0 10px 18px rgba(0, 0, 0, 0.28);
+      font-weight: 950;
+    }
+
+    .tic { --accent: #22c55e; }
+    .mine { --accent: #38bdf8; }
+    .snake { --accent: #a3e635; }
+    .solitaire { --accent: #fb7185; }
+    .chess { --accent: #f59e0b; }
+    .scrabble { --accent: #14b8a6; }
+
+    @media (max-width: 1000px) {
+      .platform-hero,
+      .library-header {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-board {
+        transform: none;
+      }
+
+      .game-card,
+      .game-card.featured {
+        grid-column: span 6;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .platform-shell {
+        padding: var(--space-2);
+      }
+
+      .platform-hero {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+
+      .hero-board {
+        grid-template-columns: repeat(4, 1fr);
+      }
+
+      .game-card,
+      .game-card.featured {
+        grid-column: span 12;
+      }
     }
   </style>
 </head>
 <body>
   <main class="platform-shell">
     <section class="platform-hero card animate-in" aria-labelledby="platform-title">
-      <div>
-        <p class="eyebrow">mini game platform</p>
-        <h1 id="platform-title">Classic Casual Games</h1>
-        <p>A polished collection of familiar board and arcade games with one shared dark glass design system, persistent scores, and AI difficulty modes.</p>
+      <div class="hero-copy">
+        <div>
+          <p class="eyebrow">mini game platform</p>
+          <h1 id="platform-title">Classic Casual Games</h1>
+          <p>A polished arcade table for fast classics, tactical boards, word battles, and AI opponents.</p>
+        </div>
+        <div class="hero-actions">
+          <a class="btn primary" href="chess/index.html">Play Chess</a>
+          <a class="btn secondary" href="scrabble/index.html">Play Scrabble</a>
+        </div>
+        <div class="game-meta" aria-label="Platform features">
+          <span class="badge">6 games</span>
+          <span class="badge">PvP</span>
+          <span class="badge">AI modes</span>
+          <span class="badge">shared system</span>
+        </div>
       </div>
-      <div class="game-meta" aria-label="Platform features">
-        <span class="badge">6 games</span>
-        <span class="badge">PvP</span>
-        <span class="badge">Player vs AI</span>
-        <span class="badge">Shared UI system</span>
+      <div class="hero-board" aria-hidden="true">
+        <span class="hero-tile primary">X</span>
+        <span class="hero-tile">7</span>
+        <span class="hero-tile accent">S</span>
+        <span class="hero-tile">♞</span>
+        <span class="hero-tile warning">A</span>
+        <span class="hero-tile">•</span>
+        <span class="hero-tile">♙</span>
+        <span class="hero-tile danger">*</span>
+        <span class="hero-tile">9</span>
+        <span class="hero-tile primary">O</span>
+        <span class="hero-tile">♜</span>
+        <span class="hero-tile accent">E</span>
+        <span class="hero-tile warning">K</span>
+        <span class="hero-tile">3</span>
+        <span class="hero-tile">♛</span>
+        <span class="hero-tile primary">+</span>
+        <span class="hero-tile">Q</span>
+        <span class="hero-tile danger">!</span>
       </div>
     </section>
 
+    <section class="library-header" aria-label="Game library heading">
+      <div>
+        <p class="eyebrow">choose your table</p>
+        <h2>Pick a game, set the mood, jump in.</h2>
+      </div>
+      <span class="badge">static, fast, no install</span>
+    </section>
+
     <section class="game-library" aria-label="Game library">
-      <a class="game-card card hover-glow" href="tic_tac_toe/index.html">
-        <div><span class="badge">strategy</span><h2>Tic Tac Toe</h2><p>Classic three-in-a-row with local and AI modes.</p></div>
-        <span class="btn ghost">Play</span>
+      <a class="game-card card tic" href="tic_tac_toe/index.html">
+        <div class="game-visual"><div class="mini-grid"><span>X</span><span></span><span>O</span><span></span><span>X</span><span></span><span>O</span><span></span><span>X</span></div></div>
+        <div class="game-info"><span class="badge">strategy</span><h3>Tic Tac Toe</h3><p>Clean three-in-a-row with local play and AI pressure.</p></div>
+        <span class="btn">Play</span>
       </a>
-      <a class="game-card card hover-glow" href="minesweeper/index.html">
-        <div><span class="badge">logic</span><h2>Minesweeper</h2><p>Reveal safe tiles, flag mines, and race the clock.</p></div>
-        <span class="btn ghost">Play</span>
+      <a class="game-card card mine" href="minesweeper/index.html">
+        <div class="game-visual"><div class="mini-mine"><span></span><span>1</span><span>!</span><span>2</span><span></span><span></span><span></span><span>3</span><span></span><span>1</span><span>2</span><span>!</span><span></span><span></span><span></span><span></span><span>1</span><span></span><span>2</span><span></span><span>!</span><span></span><span></span><span>1</span><span></span></div></div>
+        <div class="game-info"><span class="badge">logic</span><h3>Minesweeper</h3><p>Reveal, flag, and race the field with sharper deduction.</p></div>
+        <span class="btn">Play</span>
       </a>
-      <a class="game-card card hover-glow" href="snake/index.html">
-        <div><span class="badge">arcade</span><h2>Snake</h2><p>Grow longer, move faster, and survive clean turns.</p></div>
-        <span class="btn ghost">Play</span>
+      <a class="game-card card snake" href="snake/index.html">
+        <div class="game-visual"><div class="mini-snake"></div></div>
+        <div class="game-info"><span class="badge">arcade</span><h3>Snake</h3><p>Fast turns, growing risk, and an AI pilot option.</p></div>
+        <span class="btn">Play</span>
       </a>
-      <a class="game-card card hover-glow" href="solitaire/index.html">
-        <div><span class="badge">cards</span><h2>Solitaire</h2><p>Drag cards, build foundations, and optimize every move.</p></div>
-        <span class="btn ghost">Play</span>
+      <a class="game-card card solitaire" href="solitaire/index.html">
+        <div class="game-visual"><div class="mini-cards"><span>K</span><span>A</span><span>Q</span></div></div>
+        <div class="game-info"><span class="badge">cards</span><h3>Solitaire</h3><p>Drag, stack, and clear the table with crisp card flow.</p></div>
+        <span class="btn">Play</span>
       </a>
-      <a class="game-card card hover-glow" href="chess/index.html">
-        <div><span class="badge">advanced AI</span><h2>Chess</h2><p>Legal moves, board evaluation, minimax, and alpha-beta pruning.</p></div>
-        <span class="btn ghost">Play</span>
+      <a class="game-card card chess featured" href="chess/index.html">
+        <div class="game-visual"><div class="mini-board"><span>♜</span><span>♞</span><span>♝</span><span>♛</span><span>♟</span><span>♟</span><span>♟</span><span>♟</span><span></span><span></span><span></span><span></span><span>♙</span><span>♘</span><span>♕</span><span>♔</span></div></div>
+        <div class="game-info"><span class="badge">advanced AI</span><h3>Chess</h3><p>Legal moves, captures, board evaluation, and depth-based AI.</p></div>
+        <span class="btn">Play</span>
       </a>
-      <a class="game-card card hover-glow" href="scrabble/index.html">
-        <div><span class="badge">word AI</span><h2>Scrabble</h2><p>Rack generation, scoring bonuses, dictionary checks, and board-aware AI.</p></div>
-        <span class="btn ghost">Play</span>
+      <a class="game-card card scrabble featured" href="scrabble/index.html">
+        <div class="game-visual"><div class="mini-rack"><span>S</span><span>C</span><span>O</span><span>R</span><span>E</span></div></div>
+        <div class="game-info"><span class="badge">word AI</span><h3>Scrabble</h3><p>Build words, chase premium squares, and challenge the AI rack.</p></div>
+        <span class="btn">Play</span>
       </a>
     </section>
   </main>
