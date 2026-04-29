@@ -1,0 +1,104 @@
+.solitaire-shell {
+  width: min(1280px, 100%);
+}
+
+.solitaire-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.solitaire-table {
+  min-height: 680px;
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  overflow-x: auto;
+}
+
+.top-piles {
+  display: grid;
+  grid-template-columns: 96px 96px 1fr;
+  gap: var(--space-2);
+  align-items: start;
+}
+
+.foundation-row,
+.tableau {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.foundation-row {
+  grid-template-columns: repeat(4, 96px);
+  justify-content: end;
+}
+
+.tableau {
+  grid-template-columns: repeat(7, 96px);
+  align-items: start;
+}
+
+.pile,
+.card-slot {
+  min-height: 132px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.pile {
+  color: var(--color-muted);
+  font-weight: 900;
+}
+
+.tableau-pile {
+  min-height: 420px;
+  position: relative;
+}
+
+.playing-card {
+  width: 96px;
+  height: 132px;
+  display: grid;
+  align-content: space-between;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 14px;
+  padding: 10px;
+  color: #101827;
+  background: #f8fafc;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.24);
+  cursor: grab;
+  font-weight: 950;
+  user-select: none;
+}
+
+.playing-card.red {
+  color: #dc2626;
+}
+
+.playing-card.face-down {
+  color: transparent;
+  background: linear-gradient(145deg, #0f766e, #134e4a);
+  cursor: default;
+}
+
+.playing-card.dragging {
+  opacity: 0.42;
+}
+
+.tableau-pile .playing-card {
+  position: absolute;
+  left: 0;
+}
+
+.pile.valid-target,
+.tableau-pile.valid-target {
+  box-shadow: var(--shadow-glow);
+}
+
+@media (max-width: 900px) {
+  .solitaire-layout {
+    grid-template-columns: 1fr;
+  }
+}
