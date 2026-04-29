@@ -12,6 +12,7 @@
   const blackCaptures = GameKit.qs("#black-captures");
   let dragFrom = null;
   let suppressClick = false;
+  let aiThinking = false;
 
   boot();
 
@@ -22,6 +23,7 @@
       state = window.ChessState.create();
       state.mode = mode;
       state.difficulty = difficulty;
+      aiThinking = false;
       render();
     });
     GameKit.qs("#ai-move").addEventListener("click", runAiMove);
@@ -30,9 +32,24 @@
       GameKit.setPressed(GameKit.qsa("[data-mode]"), state.mode, "mode");
       render();
     }));
-    GameKit.qsa("[data-difficulty]").forEach((button) => button.addEventListener("click", () => {
+    GameKit.qsa("[data-difficulty]").forEach((button) => button.addEventListener("click", async () => {
       state.difficulty = button.dataset.difficulty;
       GameKit.setPressed(GameKit.qsa("[data-difficulty]"), state.difficulty, "difficulty");
+
+      /* Pre-load Stockfish engine when selected */
+      if (state.difficulty === "stockfish" && !window.StockfishEngine.isReady() && !window.StockfishEngine.isLoading()) {
+        state.engineLoading = true;
+        render();
+        try {
+          await window.StockfishEngine.init();
+          state.engineReady = true;
+        } catch (error) {
+          console.error("Stockfish init failed:", error);
+          state.difficulty = "hard";
+          GameKit.setPressed(GameKit.qsa("[data-difficulty]"), state.difficulty, "difficulty");
+        }
+        state.engineLoading = false;
+      }
       render();
     }));
     render();
@@ -45,11 +62,12 @@
       square.className = `chess-square ${(Math.floor(index / 8) + index) % 2 ? "dark" : "light"}`;
       square.classList.toggle("selected", state.selected === index);
       square.classList.toggle("legal", state.legalMoves.some((move) => move.to === index));
-      square.classList.toggle("capture-target", state.legalMoves.some((move) => move.to === index && state.board[index]));
+      square.classList.toggle("capture-target", state.legalMoves.some((move) => move.to === index && (state.board[index] || move.enPassant)));
       square.classList.toggle("last", Boolean(state.lastMove && (state.lastMove.from === index || state.lastMove.to === index)));
       square.type = "button";
       square.dataset.index = index;
       square.setAttribute("aria-label", piece ? `${piece.color} ${piece.type} on ${squareName(index)}` : `Empty square ${squareName(index)}`);
+      if (aiThinking) square.disabled = true;
       if (piece) {
         const pieceEl = document.createElement("span");
         pieceEl.className = `chess-piece piece-${piece.color}`;
@@ -62,10 +80,24 @@
       square.addEventListener("click", () => onSquare(index));
       boardEl.appendChild(square);
     });
+
+    /* Thinking overlay */
+    if (aiThinking) {
+      boardEl.classList.add("thinking");
+    } else {
+      boardEl.classList.remove("thinking");
+    }
+
     turnEl.textContent = state.turn === "white" ? "White" : "Black";
     modeLabel.textContent = state.mode === "ai" ? "AI" : "PvP";
-    depthEl.textContent = { easy: 1, medium: 2, hard: 3 }[state.difficulty];
-    statusTitle.textContent = state.status === "checkmate" ? "Checkmate" : state.status === "stalemate" ? "Stalemate" : state.status === "check" ? "Check" : "Playing";
+    depthEl.textContent = state.difficulty === "stockfish" ? "SF" : { easy: 1, medium: 2, hard: 3 }[state.difficulty];
+    statusTitle.textContent = aiThinking
+      ? (state.difficulty === "stockfish" ? "Stockfish Thinking…" : "AI Thinking…")
+      : state.status === "checkmate" ? "Checkmate"
+      : state.status === "stalemate" ? "Stalemate"
+      : state.status === "check" ? "Check"
+      : state.engineLoading ? "Loading Stockfish…"
+      : "Playing";
     statusCopy.textContent = statusMessage();
     renderCaptures();
   }
@@ -80,6 +112,12 @@
   }
 
   function statusMessage() {
+    if (state.engineLoading) return "Downloading Stockfish NNUE engine (~2.5 MB)… This only happens once.";
+    if (aiThinking) {
+      return state.difficulty === "stockfish"
+        ? "Stockfish 16 NNUE is analyzing the position at depth 15…"
+        : "Built-in AI is calculating…";
+    }
     if (state.selected !== null) {
       return `${squareName(state.selected)} selected. ${state.legalMoves.length} legal move${state.legalMoves.length === 1 ? "" : "s"} available.`;
     }
@@ -93,6 +131,7 @@
 
 
   function onPointerDown(event, index) {
+    if (aiThinking) return;
     if (dragFrom !== null) return;
     if (state.status === "checkmate" || state.status === "stalemate") return;
     if (state.mode === "ai" && state.turn === "black") return;
@@ -114,14 +153,7 @@
     dragFrom = null;
     suppressClick = true;
     if (index === from) return;
-    const move = window.ChessGame.legalMoves(state, from).find((candidate) => candidate.to === index);
-    if (!move) return;
-    window.ChessGame.applyMove(state, { from, ...move });
-    state.selected = null;
-    state.legalMoves = [];
-    GameKit.playClick();
-    render();
-    if (state.mode === "ai" && state.turn === "black" && state.status !== "checkmate") window.setTimeout(runAiMove, 260);
+    executeMove(from, index);
   }
 
   function onPointerCancel() {
@@ -129,6 +161,7 @@
   }
 
   function onSquare(index) {
+    if (aiThinking) return;
     if (suppressClick) {
       suppressClick = false;
       return;
@@ -138,12 +171,7 @@
     const piece = state.board[index];
     const chosenMove = state.legalMoves.find((move) => move.to === index);
     if (chosenMove && state.selected !== null) {
-      window.ChessGame.applyMove(state, { from: state.selected, ...chosenMove });
-      state.selected = null;
-      state.legalMoves = [];
-      GameKit.playClick();
-      render();
-      if (state.mode === "ai" && state.turn === "black" && state.status !== "checkmate") window.setTimeout(runAiMove, 260);
+      executeMove(state.selected, index);
       return;
     }
     if (piece?.color === state.turn) {
@@ -156,14 +184,44 @@
     render();
   }
 
-  function runAiMove() {
-    if (state.turn !== "black") return;
-    const move = window.ChessAI.chooseMove(state);
-    if (move) {
-      window.ChessGame.applyMove(state, move);
-      GameKit.playClick();
-      render();
+  function executeMove(from, to) {
+    const move = window.ChessGame.legalMoves(state, from).find((m) => m.to === to);
+    if (!move) return;
+    window.ChessGame.applyMove(state, { from, ...move });
+    state.selected = null;
+    state.legalMoves = [];
+    GameKit.playClick();
+    render();
+    if (state.mode === "ai" && state.turn === "black" && state.status !== "checkmate" && state.status !== "stalemate") {
+      window.setTimeout(runAiMove, 260);
     }
+  }
+
+  async function runAiMove() {
+    if (state.turn !== "black") return;
+    if (aiThinking) return;
+
+    aiThinking = true;
+    render();
+
+    try {
+      const move = await window.ChessAI.chooseMoveAsync(state);
+      if (move) {
+        window.ChessGame.applyMove(state, move);
+        GameKit.playClick();
+      }
+    } catch (error) {
+      console.error("AI move error:", error);
+      /* Fallback to built-in AI */
+      const fallback = window.ChessAI.chooseMove(state);
+      if (fallback) {
+        window.ChessGame.applyMove(state, fallback);
+        GameKit.playClick();
+      }
+    }
+
+    aiThinking = false;
+    render();
   }
 
   function squareName(index) {
