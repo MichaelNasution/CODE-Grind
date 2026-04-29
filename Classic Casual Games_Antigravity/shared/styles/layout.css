@@ -1,0 +1,126 @@
+.app-shell {
+  width: min(1180px, 100%);
+  min-height: 100vh;
+  display: grid;
+  align-content: center;
+  gap: var(--space-3);
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+
+.platform-shell {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+
+.game-stage {
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-4);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+    rgba(15, 23, 42, 0.66);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(18px);
+}
+
+.topbar {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.play-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: stretch;
+}
+
+.control-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.board-wrap {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 560px;
+  overflow: hidden;
+}
+
+.board-glow {
+  position: absolute;
+  width: min(420px, 72%);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(34, 197, 94, 0.18), transparent 66%);
+  filter: blur(12px);
+  pointer-events: none;
+}
+
+.game-board {
+  position: relative;
+  z-index: 1;
+}
+
+.field-group {
+  display: grid;
+  gap: 12px;
+}
+
+.field-group label,
+.field-group legend {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+@media (max-width: 900px) {
+  .app-shell,
+  .platform-shell {
+    padding: var(--space-2);
+  }
+
+  .game-stage {
+    padding: var(--space-2);
+  }
+
+  .topbar,
+  .play-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .board-wrap {
+    min-height: auto;
+    padding: var(--space-2);
+  }
+}
+
+@media (max-width: 560px) {
+  .segmented-control {
+    grid-auto-flow: row;
+  }
+
+  .back-link {
+    left: var(--space-2);
+    top: var(--space-2);
+    width: 42px;
+    height: 42px;
+  }
+}

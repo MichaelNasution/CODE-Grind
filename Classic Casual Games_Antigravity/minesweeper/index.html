@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minesweeper | Classic Casual Games</title>
+  <link rel="stylesheet" href="../shared/styles/tokens.css">
+  <link rel="stylesheet" href="../shared/styles/base.css">
+  <link rel="stylesheet" href="../shared/styles/components.css">
+  <link rel="stylesheet" href="../shared/styles/layout.css">
+  <link rel="stylesheet" href="../shared/styles/animations.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="back-link" href="../index.html" aria-label="Back to game library">‹</a>
+  <main class="app-shell">
+    <section class="game-stage">
+      <div class="topbar">
+        <div><p class="eyebrow">logic field</p><h1>Minesweeper</h1></div>
+        <div class="stat-grid">
+          <article class="stat-card"><span>Mines</span><strong id="mine-count">0</strong></article>
+          <article class="stat-card"><span>Time</span><strong id="timer">0</strong></article>
+          <article class="stat-card"><span>Best</span><strong id="best-score">--</strong></article>
+        </div>
+      </div>
+      <div class="play-layout">
+        <aside class="panel control-panel">
+          <div class="status-box"><span class="badge">Status</span><strong id="status-title">Ready</strong><p id="status-copy">Reveal a safe tile. Right-click or long-press to flag.</p></div>
+          <fieldset class="field-group">
+            <legend>Mode</legend>
+            <div class="segmented-control">
+              <button class="segment active" data-mode="solo" aria-pressed="true">Solo</button>
+              <button class="segment" data-mode="race" aria-pressed="false">Race</button>
+              <button class="segment" data-mode="ai" aria-pressed="false">AI Assist</button>
+            </div>
+          </fieldset>
+          <fieldset class="field-group">
+            <legend>AI level</legend>
+            <div class="segmented-control">
+              <button class="segment" data-difficulty="easy" aria-pressed="false">Easy</button>
+              <button class="segment active" data-difficulty="medium" aria-pressed="true">Medium</button>
+              <button class="segment" data-difficulty="hard" aria-pressed="false">Hard</button>
+            </div>
+          </fieldset>
+          <div class="toolbar">
+            <button class="btn primary" id="new-game">New Game</button>
+            <button class="btn secondary" id="ai-step">AI Step</button>
+          </div>
+        </aside>
+        <section class="panel board-wrap">
+          <div class="board-glow"></div>
+          <div id="board" class="mine-board game-board" aria-label="Minesweeper board"></div>
+        </section>
+      </div>
+    </section>
+  </main>
+  <script src="../shared/scripts/utils.js"></script>
+  <script src="../shared/scripts/storage.js"></script>
+  <script src="../shared/scripts/sound.js"></script>
+  <script src="script/state.js"></script>
+  <script src="script/game.js"></script>
+  <script src="script/ai.js"></script>
+  <script src="script/ui.js"></script>
+</body>
+</html>

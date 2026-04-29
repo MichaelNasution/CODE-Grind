@@ -1,0 +1,32 @@
+.mine-board {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(30px, 1fr));
+  width: min(620px, 86vw);
+  aspect-ratio: 1;
+  gap: 6px;
+  padding: 10px;
+  border-radius: var(--radius-xl);
+  background: rgba(0, 0, 0, 0.24);
+}
+
+.mine-tile {
+  min-width: 0;
+  border-radius: 10px;
+  font-weight: 950;
+}
+
+.mine-tile.revealed {
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.13);
+  cursor: default;
+}
+
+.mine-tile.flagged {
+  color: var(--color-warning);
+}
+
+.mine-tile.exploded {
+  color: white;
+  background: var(--color-danger);
+  animation: lose-shake 320ms var(--ease-out);
+}

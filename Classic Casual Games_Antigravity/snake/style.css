@@ -1,0 +1,29 @@
+.snake-board {
+  display: grid;
+  grid-template-columns: repeat(18, 1fr);
+  width: min(620px, 86vw);
+  aspect-ratio: 1;
+  gap: 3px;
+  padding: 10px;
+  border-radius: var(--radius-xl);
+  background: rgba(0, 0, 0, 0.26);
+}
+
+.snake-cell {
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.snake-cell.snake {
+  background: var(--color-primary);
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.28);
+}
+
+.snake-cell.head {
+  background: var(--color-accent);
+}
+
+.snake-cell.food {
+  background: var(--color-warning);
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.34);
+}
