@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic Tac Toe Neon Desk</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="game-stage" aria-labelledby="game-title">
+      <div class="topbar">
+        <div>
+          <p class="eyebrow">desktop game</p>
+          <h1 id="game-title">Tic Tac Toe</h1>
+        </div>
+
+        <div class="scoreboard" aria-label="Papan skor">
+          <article class="score-card score-x">
+            <span class="score-label">X</span>
+            <strong id="score-x">0</strong>
+          </article>
+          <article class="score-card score-draw">
+            <span class="score-label">Draw</span>
+            <strong id="score-draw">0</strong>
+          </article>
+          <article class="score-card score-o">
+            <span class="score-label">O</span>
+            <strong id="score-o">0</strong>
+          </article>
+        </div>
+      </div>
+
+      <div class="play-layout">
+        <aside class="control-panel" aria-label="Pengaturan permainan">
+          <div class="status-box">
+            <span class="status-kicker">Giliran</span>
+            <strong id="turn-label">X bermain</strong>
+            <p id="status-message">Pilih kotak untuk mulai.</p>
+          </div>
+
+          <fieldset>
+            <legend>Mode</legend>
+            <div class="segmented-control" id="mode-control">
+              <button class="segment active" type="button" data-mode="ai" aria-pressed="true">Player vs AI</button>
+              <button class="segment" type="button" data-mode="local" aria-pressed="false">2 Pemain</button>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Pemain awal</legend>
+            <div class="segmented-control" id="starter-control">
+              <button class="segment active" type="button" data-starter="X" aria-pressed="true">X</button>
+              <button class="segment" type="button" data-starter="O" aria-pressed="false">O</button>
+            </div>
+          </fieldset>
+
+          <fieldset class="ai-level-field">
+            <legend>Level AI</legend>
+            <div class="segmented-control difficulty-control" id="difficulty-control">
+              <button class="segment" type="button" data-difficulty="easy" aria-pressed="false">Mudah</button>
+              <button class="segment active" type="button" data-difficulty="medium" aria-pressed="true">Sedang</button>
+              <button class="segment" type="button" data-difficulty="hard" aria-pressed="false">Sulit</button>
+            </div>
+          </fieldset>
+
+          <div class="button-row">
+            <button class="action-btn primary" id="reset-round" type="button">Reset ronde</button>
+            <button class="action-btn ghost" id="reset-score" type="button">Reset skor</button>
+          </div>
+        </aside>
+
+        <section class="board-wrap" aria-label="Area permainan">
+          <div class="board-glow" aria-hidden="true"></div>
+          <div class="board" id="board" role="grid" aria-label="Papan Tic Tac Toe">
+            <button class="cell" type="button" role="gridcell" data-index="0" aria-label="Kotak 1"></button>
+            <button class="cell" type="button" role="gridcell" data-index="1" aria-label="Kotak 2"></button>
+            <button class="cell" type="button" role="gridcell" data-index="2" aria-label="Kotak 3"></button>
+            <button class="cell" type="button" role="gridcell" data-index="3" aria-label="Kotak 4"></button>
+            <button class="cell" type="button" role="gridcell" data-index="4" aria-label="Kotak 5"></button>
+            <button class="cell" type="button" role="gridcell" data-index="5" aria-label="Kotak 6"></button>
+            <button class="cell" type="button" role="gridcell" data-index="6" aria-label="Kotak 7"></button>
+            <button class="cell" type="button" role="gridcell" data-index="7" aria-label="Kotak 8"></button>
+            <button class="cell" type="button" role="gridcell" data-index="8" aria-label="Kotak 9"></button>
+            <span class="win-line" id="win-line" aria-hidden="true"></span>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/animejs/dist/bundles/anime.umd.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
