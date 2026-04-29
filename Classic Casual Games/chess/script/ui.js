@@ -83,7 +83,7 @@
   }
 
   function runAiMove() {
-    if (state.turn !== "black" && state.mode === "ai") return;
+    if (state.turn !== "black") return;
     const move = window.ChessAI.chooseMove(state);
     if (move) {
       window.ChessGame.applyMove(state, move);
