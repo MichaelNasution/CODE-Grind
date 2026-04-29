@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <a class="back-link" href="../index.html" aria-label="Back to game library">‹</a>
   <main class="app-shell solitaire-shell">
     <section class="game-stage">
       <div class="topbar">
@@ -33,7 +34,7 @@
             <legend>AI level</legend>
             <div class="segmented-control"><button class="segment" data-difficulty="easy" aria-pressed="false">Easy</button><button class="segment active" data-difficulty="medium" aria-pressed="true">Medium</button><button class="segment" data-difficulty="hard" aria-pressed="false">Hard</button></div>
           </fieldset>
-          <div class="toolbar"><button class="btn primary" id="new-game">New Game</button><button class="btn secondary" id="ai-move">AI Move</button><button class="btn ghost" id="auto-stack">Auto Stack</button><a class="btn ghost" href="../index.html">Library</a></div>
+          <div class="toolbar"><button class="btn primary" id="new-game">New Game</button><button class="btn secondary" id="ai-move">AI Move</button><button class="btn ghost" id="auto-stack">Auto Stack</button></div>
         </aside>
         <section class="panel solitaire-table">
           <div class="top-piles">

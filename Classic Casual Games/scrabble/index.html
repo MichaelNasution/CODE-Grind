@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <a class="back-link" href="../index.html" aria-label="Back to game library">‹</a>
   <main class="app-shell scrabble-shell">
     <section class="game-stage">
       <div class="topbar">
@@ -28,7 +29,7 @@
           <fieldset class="field-group"><legend>Mode</legend><div class="segmented-control"><button class="segment active" data-mode="ai" aria-pressed="true">Player vs AI</button><button class="segment" data-mode="local" aria-pressed="false">2 Players</button></div></fieldset>
           <fieldset class="field-group"><legend>AI level</legend><div class="segmented-control"><button class="segment" data-difficulty="easy" aria-pressed="false">Easy</button><button class="segment active" data-difficulty="medium" aria-pressed="true">Medium</button><button class="segment" data-difficulty="hard" aria-pressed="false">Hard</button></div></fieldset>
           <fieldset class="field-group"><legend>Direction</legend><div class="segmented-control"><button class="segment active" data-direction="horizontal" aria-pressed="true">Across</button><button class="segment" data-direction="vertical" aria-pressed="false">Down</button></div></fieldset>
-          <div class="toolbar"><button class="btn primary" id="submit-word">Play Word</button><button class="btn secondary" id="ai-move">AI Move</button><button class="btn ghost" id="new-game">New Game</button><a class="btn ghost" href="../index.html">Library</a></div>
+          <div class="toolbar"><button class="btn primary" id="submit-word">Play Word</button><button class="btn secondary" id="ai-move">AI Move</button><button class="btn ghost" id="new-game">New Game</button></div>
         </aside>
         <section class="panel scrabble-table">
           <div id="board" class="scrabble-board"></div>

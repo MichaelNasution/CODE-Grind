@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <a class="back-link" href="../index.html" aria-label="Back to game library">‹</a>
   <main class="app-shell">
     <section class="game-stage">
       <div class="topbar">
@@ -27,7 +28,7 @@
           <div class="status-box"><span class="badge">Status</span><strong id="status-title">Ready</strong><p id="status-copy">Select a piece to highlight legal moves.</p></div>
           <fieldset class="field-group"><legend>Mode</legend><div class="segmented-control"><button class="segment active" data-mode="ai" aria-pressed="true">Player vs AI</button><button class="segment" data-mode="local" aria-pressed="false">2 Players</button></div></fieldset>
           <fieldset class="field-group"><legend>AI level</legend><div class="segmented-control"><button class="segment" data-difficulty="easy" aria-pressed="false">Easy</button><button class="segment active" data-difficulty="medium" aria-pressed="true">Medium</button><button class="segment" data-difficulty="hard" aria-pressed="false">Hard</button></div></fieldset>
-          <div class="toolbar"><button class="btn primary" id="new-game">New Game</button><button class="btn secondary" id="ai-move">AI Move</button><a class="btn ghost" href="../index.html">Library</a></div>
+          <div class="toolbar"><button class="btn primary" id="new-game">New Game</button><button class="btn secondary" id="ai-move">AI Move</button></div>
         </aside>
         <section class="panel board-wrap">
           <div class="board-glow"></div>
