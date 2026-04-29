@@ -1,0 +1,72 @@
+@keyframes fade-scale-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes click-bounce {
+  0% {
+    transform: scale(1);
+  }
+  46% {
+    transform: scale(0.94);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes win-pulse {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 1px var(--color-border), var(--shadow-glow);
+  }
+  50% {
+    box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.7), 0 0 42px rgba(34, 197, 94, 0.36);
+  }
+}
+
+@keyframes lose-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+.animate-in {
+  animation: fade-scale-in var(--motion-slow) var(--ease-out) both;
+}
+
+.click-bounce {
+  animation: click-bounce 220ms var(--ease-out);
+}
+
+.is-win {
+  animation: win-pulse 900ms var(--ease-out) 2;
+}
+
+.is-lose {
+  animation: lose-shake 320ms var(--ease-out);
+}
+
+.hover-glow {
+  transition:
+    box-shadow var(--motion-normal) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+}
+
+.hover-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft), var(--shadow-glow);
+}
