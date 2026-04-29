@@ -8,6 +8,8 @@
   const depthEl = GameKit.qs("#depth");
   const statusTitle = GameKit.qs("#status-title");
   const statusCopy = GameKit.qs("#status-copy");
+  const whiteCaptures = GameKit.qs("#white-captures");
+  const blackCaptures = GameKit.qs("#black-captures");
 
   boot();
 
@@ -41,12 +43,16 @@
       square.className = `chess-square ${(Math.floor(index / 8) + index) % 2 ? "dark" : "light"}`;
       square.classList.toggle("selected", state.selected === index);
       square.classList.toggle("legal", state.legalMoves.some((move) => move.to === index));
-      square.classList.toggle("last", state.lastMove && (state.lastMove.from === index || state.lastMove.to === index));
+      square.classList.toggle("capture-target", state.legalMoves.some((move) => move.to === index && state.board[index]));
+      square.classList.toggle("last", Boolean(state.lastMove && (state.lastMove.from === index || state.lastMove.to === index)));
       square.type = "button";
       square.dataset.index = index;
+      square.setAttribute("aria-label", piece ? `${piece.color} ${piece.type} on ${squareName(index)}` : `Empty square ${squareName(index)}`);
       if (piece) {
-        square.textContent = window.ChessGame.symbols[piece.color][piece.type];
-        square.classList.add(`piece-${piece.color}`);
+        const pieceEl = document.createElement("span");
+        pieceEl.className = `chess-piece piece-${piece.color}`;
+        pieceEl.textContent = window.ChessGame.symbols[piece.color][piece.type];
+        square.appendChild(pieceEl);
       }
       square.addEventListener("click", () => onSquare(index));
       boardEl.appendChild(square);
@@ -55,7 +61,29 @@
     modeLabel.textContent = state.mode === "ai" ? "AI" : "PvP";
     depthEl.textContent = { easy: 1, medium: 2, hard: 3 }[state.difficulty];
     statusTitle.textContent = state.status === "checkmate" ? "Checkmate" : state.status === "stalemate" ? "Stalemate" : state.status === "check" ? "Check" : "Playing";
-    statusCopy.textContent = state.mode === "ai" ? "You play white. The AI evaluates material, control, and king safety." : "Two players share the board locally.";
+    statusCopy.textContent = statusMessage();
+    renderCaptures();
+  }
+
+  function renderCaptures() {
+    whiteCaptures.innerHTML = state.captured.white
+      .map((piece) => `<span class="captured-piece piece-${piece.color}">${window.ChessGame.symbols[piece.color][piece.type]}</span>`)
+      .join("");
+    blackCaptures.innerHTML = state.captured.black
+      .map((piece) => `<span class="captured-piece piece-${piece.color}">${window.ChessGame.symbols[piece.color][piece.type]}</span>`)
+      .join("");
+  }
+
+  function statusMessage() {
+    if (state.selected !== null) {
+      return `${squareName(state.selected)} selected. ${state.legalMoves.length} legal move${state.legalMoves.length === 1 ? "" : "s"} available.`;
+    }
+    if (state.status === "check") return `${state.turn === "white" ? "White" : "Black"} is in check.`;
+    if (state.status === "checkmate") return `${state.turn === "white" ? "Black" : "White"} wins by checkmate.`;
+    if (state.status === "stalemate") return "No legal moves remain. The game is a stalemate.";
+    return state.mode === "ai"
+      ? "You play white. Select a piece to see legal moves; captures are marked in red."
+      : "Two players share the board locally. Select a piece to see legal moves.";
   }
 
   function onSquare(index) {
@@ -69,7 +97,7 @@
       state.legalMoves = [];
       GameKit.playClick();
       render();
-      if (state.mode === "ai" && state.turn === "black" && state.status !== "checkmate") window.setTimeout(runAiMove, 220);
+      if (state.mode === "ai" && state.turn === "black" && state.status !== "checkmate") window.setTimeout(runAiMove, 260);
       return;
     }
     if (piece?.color === state.turn) {
@@ -90,5 +118,9 @@
       GameKit.playClick();
       render();
     }
+  }
+
+  function squareName(index) {
+    return `${"abcdefgh"[index % 8]}${8 - Math.floor(index / 8)}`;
   }
 })();
