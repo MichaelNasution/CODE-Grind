@@ -13,6 +13,7 @@
         direction: "horizontal",
         selectedRackIds: [],
         selectedCell: { row: 7, col: 7 },
+        staging: [], // Tiles dragged to board but not submitted
         lastMove: null,
         turn: "player",
       };

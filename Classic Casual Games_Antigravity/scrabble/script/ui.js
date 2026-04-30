@@ -16,9 +16,11 @@
   const submitBtn = GameKit.qs("#submit-word");
   const aiMoveBtn = GameKit.qs("#ai-move");
 
-  // The typed word input buffer
-  let typedWord = "";
   let locked = false; // prevent input during AI turn animation
+
+  // Drag and drop state
+  let draggedTileId = null;
+  let draggedFrom = null; // "rack" or { row, col }
 
   boot();
 
@@ -29,7 +31,7 @@
     window.ScrabbleDictionary.load().then(() => {
       locked = false;
       statusTitle.textContent = "Ready";
-      statusCopy.textContent = "Type a word, click a starting cell, choose direction, then Play.";
+      statusCopy.textContent = "Drag tiles to the board, or type to place them. Then Play Word.";
       wireControls();
       wireKeyboard();
       render();
@@ -45,10 +47,11 @@
       state = window.ScrabbleState.create();
       state.mode = mode;
       state.difficulty = difficulty;
-      typedWord = "";
       locked = false;
+      draggedTileId = null;
+      draggedFrom = null;
       statusTitle.textContent = "Ready";
-      statusCopy.textContent = "Type a word, click a starting cell, choose direction, then Play.";
+      statusCopy.textContent = "Drag tiles to the board, or type to place them. Then Play Word.";
       render();
     });
 
@@ -59,8 +62,7 @@
     });
 
     GameKit.qs("#clear-word").addEventListener("click", () => {
-      typedWord = "";
-      state.selectedRackIds = [];
+      clearStaging();
       render();
     });
 
@@ -78,14 +80,41 @@
       GameKit.setPressed(GameKit.qsa("[data-direction]"), state.direction, "direction");
       render();
     }));
+
+    // Rack drop zone (to return tiles from board)
+    const rackPanel = GameKit.qs(".rack-panel");
+    rackPanel.addEventListener("dragover", (e) => {
+      if (locked || state.turn !== "player") return;
+      e.preventDefault();
+    });
+    rackPanel.addEventListener("drop", (e) => {
+      if (locked || state.turn !== "player") return;
+      e.preventDefault();
+      if (draggedFrom !== "rack" && draggedTileId) {
+        const stageIdx = state.staging.findIndex((st) => st.tile.id === draggedTileId);
+        if (stageIdx >= 0) {
+          const st = state.staging.splice(stageIdx, 1)[0];
+          state.racks.player.push(st.tile);
+          render();
+        }
+      }
+      draggedTileId = null;
+      draggedFrom = null;
+    });
+  }
+
+  function clearStaging() {
+    while (state.staging.length > 0) {
+      const st = state.staging.pop();
+      state.racks.player.push(st.tile);
+    }
   }
 
   /* ── Keyboard input for word typing ─────────────────────── */
 
   function wireKeyboard() {
     document.addEventListener("keydown", (e) => {
-      if (locked) return;
-      // Don't capture when an actual input/textarea is focused
+      if (locked || state.turn !== "player") return;
       if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
 
       if (e.key === "Enter") {
@@ -96,48 +125,45 @@
 
       if (e.key === "Backspace") {
         e.preventDefault();
-        typedWord = typedWord.slice(0, -1);
-        syncRackSelection();
-        render();
+        if (state.staging.length > 0) {
+          // Remove the most recently placed tile (last in array)
+          const st = state.staging.pop();
+          state.racks.player.push(st.tile);
+          render();
+        }
         return;
       }
 
       if (e.key === "Escape") {
         e.preventDefault();
-        typedWord = "";
-        state.selectedRackIds = [];
+        clearStaging();
         render();
         return;
       }
 
-      // Letter keys
       if (/^[a-zA-Z]$/.test(e.key)) {
         e.preventDefault();
         const letter = e.key.toUpperCase();
-        typedWord += letter;
-        syncRackSelection();
-        render();
+        const tileIndex = state.racks.player.findIndex((t) => t.letter === letter);
+        if (tileIndex >= 0) {
+          // Find next available cell
+          let r = state.selectedCell.row;
+          let c = state.selectedCell.col;
+          
+          // Advance past existing tiles on board and staging
+          while (r < 15 && c < 15 && (state.board[r][c] || state.staging.some((st) => st.row === r && st.col === c))) {
+            if (state.direction === "horizontal") c++;
+            else r++;
+          }
+          
+          if (r < 15 && c < 15) {
+            const tile = state.racks.player.splice(tileIndex, 1)[0];
+            state.staging.push({ row: r, col: c, tile });
+            render();
+          }
+        }
       }
     });
-  }
-
-  /**
-   * Sync selectedRackIds to match the typedWord from left to right.
-   * This ensures the rack highlights the tiles that would be used.
-   */
-  function syncRackSelection() {
-    const ids = [];
-    const used = new Set();
-    for (const ch of typedWord) {
-      const tile = state.racks.player.find((t) => t.letter === ch && !used.has(t.id));
-      if (tile) {
-        ids.push(tile.id);
-        used.add(tile.id);
-      }
-      // If tile not found in rack, we still keep the typed letter
-      // (it might come from the board)
-    }
-    state.selectedRackIds = ids;
   }
 
   /* ── Render ──────────────────────────────────────────────── */
@@ -156,36 +182,68 @@
       ? `${state.lastMove.player === "player" ? "You" : "AI"} played ${state.lastMove.word} for ${state.lastMove.score}`
       : "No words played";
 
-    // Disable/enable buttons based on turn
     submitBtn.disabled = locked || state.turn !== "player";
     aiMoveBtn.disabled = locked;
   }
 
   function renderBoard() {
     boardEl.innerHTML = "";
-    const preview = previewCells();
-    const previewKeys = new Set(preview.map((item) => `${item.row},${item.col}`));
     const lastKeys = new Set((state.lastMove?.tiles || []).map((item) => `${item.row},${item.col}`));
+
     for (let row = 0; row < 15; row += 1) {
       for (let col = 0; col < 15; col += 1) {
-        const cell = document.createElement("button");
+        const cell = document.createElement("div");
         const bonus = window.ScrabbleScoring.bonus[`${row},${col}`];
         const tile = state.board[row][col];
-        const previewTile = preview.find((item) => item.row === row && item.col === col);
+        const staged = state.staging.find((st) => st.row === row && st.col === col);
+
         cell.className = `scrabble-cell ${bonus ? `bonus-${bonus}` : ""}`;
         cell.classList.toggle("filled", Boolean(tile));
-        cell.classList.toggle("preview", Boolean(previewTile) && !tile);
         cell.classList.toggle("last-move", lastKeys.has(`${row},${col}`));
         cell.classList.toggle("selected", state.selectedCell.row === row && state.selectedCell.col === col);
-        cell.innerHTML = tile
-          ? tileMarkup(tile)
-          : previewTile
-            ? tileMarkup(previewTile.tile, "ghost")
-            : bonusMarkup(bonus);
+        
+        if (staged) {
+          cell.classList.add("staged");
+          const tileEl = document.createElement("div");
+          tileEl.innerHTML = tileMarkup(staged.tile);
+          tileEl.draggable = true;
+          tileEl.addEventListener("dragstart", (e) => handleDragStart(e, { row, col }, staged.tile.id));
+          tileEl.addEventListener("click", (e) => {
+             e.stopPropagation();
+             if (locked || state.turn !== "player") return;
+             // Click to return to rack
+             const stageIdx = state.staging.findIndex((st) => st.tile.id === staged.tile.id);
+             if (stageIdx >= 0) {
+               const st = state.staging.splice(stageIdx, 1)[0];
+               state.racks.player.push(st.tile);
+               render();
+             }
+          });
+          cell.appendChild(tileEl.firstElementChild);
+        } else if (tile) {
+          cell.innerHTML = tileMarkup(tile);
+        } else {
+          cell.innerHTML = bonusMarkup(bonus);
+        }
+
+        // Drag and drop events for the cell
+        cell.addEventListener("dragover", (e) => {
+          if (locked || state.turn !== "player") return;
+          e.preventDefault(); // Necessary to allow dropping
+          if (!tile && !staged) cell.classList.add("drag-over");
+        });
+        cell.addEventListener("dragleave", () => cell.classList.remove("drag-over"));
+        cell.addEventListener("drop", (e) => {
+          cell.classList.remove("drag-over");
+          handleDrop(e, row, col);
+        });
+
+        // Click to select cell
         cell.addEventListener("click", () => {
           state.selectedCell = { row, col };
           render();
         });
+
         boardEl.appendChild(cell);
       }
     }
@@ -196,61 +254,173 @@
     state.racks.player.forEach((tile) => {
       const button = document.createElement("button");
       button.className = "rack-tile";
-      button.classList.toggle("selected", state.selectedRackIds.includes(tile.id));
+      button.draggable = true;
       button.innerHTML = tileMarkup(tile);
+      
+      button.addEventListener("dragstart", (e) => handleDragStart(e, "rack", tile.id));
+      
       button.addEventListener("click", () => {
-        if (locked) return;
-        // Clicking rack tile appends/removes the letter from typedWord
-        if (state.selectedRackIds.includes(tile.id)) {
-          // Remove first occurrence of this letter from typed word
-          const idx = typedWord.indexOf(tile.letter);
-          if (idx >= 0) typedWord = typedWord.slice(0, idx) + typedWord.slice(idx + 1);
-        } else {
-          typedWord += tile.letter;
+        if (locked || state.turn !== "player") return;
+        
+        // Find next available cell to act like typing
+        let r = state.selectedCell.row;
+        let c = state.selectedCell.col;
+        while (r < 15 && c < 15 && (state.board[r][c] || state.staging.some((st) => st.row === r && st.col === c))) {
+          if (state.direction === "horizontal") c++;
+          else r++;
         }
-        syncRackSelection();
-        render();
+        
+        if (r < 15 && c < 15) {
+          const idx = state.racks.player.findIndex((t) => t.id === tile.id);
+          const t = state.racks.player.splice(idx, 1)[0];
+          state.staging.push({ row: r, col: c, tile: t });
+          render();
+        }
       });
       rackEl.appendChild(button);
     });
     rackCount.textContent = `${state.racks.player.length} tile${state.racks.player.length === 1 ? "" : "s"}`;
   }
 
-  function renderWordInput() {
-    const display = typedWord || "-";
-    wordPreview.textContent = display;
+  function handleDragStart(e, source, tileId) {
+    if (locked || state.turn !== "player") {
+      e.preventDefault();
+      return;
+    }
+    draggedTileId = tileId;
+    draggedFrom = source;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", tileId);
+  }
 
-    if (typedWord.length >= 2) {
-      const placement = window.ScrabbleGame.buildPlacement(
-        state, "player", typedWord,
-        state.selectedCell.row, state.selectedCell.col, state.direction
-      );
-      selectedScore.textContent = placement ? `${placement.score} pts` : "0 pts";
+  function handleDrop(e, targetRow, targetCol) {
+    e.preventDefault();
+    if (locked || state.turn !== "player") return;
+    
+    const tileId = draggedTileId;
+    if (!tileId) return;
+
+    // Check if target is empty
+    if (state.board[targetRow][targetCol]) return; // Occupied by permanent tile
+    const existingStaged = state.staging.findIndex((st) => st.row === targetRow && st.col === targetCol);
+    
+    // If target has a staged tile, we could swap. For simplicity, we just prevent drop if occupied.
+    if (existingStaged >= 0 && (draggedFrom === "rack" || draggedFrom.row !== targetRow || draggedFrom.col !== targetCol)) {
+       return; 
+    }
+
+    if (draggedFrom === "rack") {
+       const rackIdx = state.racks.player.findIndex((t) => t.id === tileId);
+       if (rackIdx >= 0) {
+          const tile = state.racks.player.splice(rackIdx, 1)[0];
+          state.staging.push({ row: targetRow, col: targetCol, tile });
+       }
     } else {
-      selectedScore.textContent = "0 pts";
+       // Coming from staging
+       const stageIdx = state.staging.findIndex((st) => st.tile.id === tileId);
+       if (stageIdx >= 0) {
+          state.staging[stageIdx].row = targetRow;
+          state.staging[stageIdx].col = targetCol;
+       }
+    }
+    
+    draggedTileId = null;
+    draggedFrom = null;
+    
+    // Update selected cell to the dropped location for convenience
+    state.selectedCell = { row: targetRow, col: targetCol };
+    render();
+  }
+
+  /* ── Move Inference ──────────────────────────────────────── */
+
+  function inferMoveFromStaging() {
+    if (state.staging.length === 0) return null;
+
+    let isHorizontal = true;
+    let isVertical = true;
+    const r0 = state.staging[0].row;
+    const c0 = state.staging[0].col;
+
+    for (const t of state.staging) {
+      if (t.row !== r0) isHorizontal = false;
+      if (t.col !== c0) isVertical = false;
+    }
+
+    if (!isHorizontal && !isVertical) return { error: "Tiles must be placed in a single row or column." };
+
+    let direction = state.direction;
+    if (state.staging.length > 1) {
+      direction = isHorizontal ? "horizontal" : "vertical";
+    }
+
+    let minR = 15, maxR = -1, minC = 15, maxC = -1;
+    for (const t of state.staging) {
+      minR = Math.min(minR, t.row);
+      maxR = Math.max(maxR, t.row);
+      minC = Math.min(minC, t.col);
+      maxC = Math.max(maxC, t.col);
+    }
+
+    if (direction === "horizontal") {
+      let r = r0;
+      let c1 = minC;
+      while (c1 > 0 && state.board[r][c1 - 1]) c1--;
+      let c2 = maxC;
+      while (c2 < 14 && state.board[r][c2 + 1]) c2++;
+      
+      let word = "";
+      for (let c = c1; c <= c2; c++) {
+        const boardTile = state.board[r][c];
+        const stagedTile = state.staging.find((t) => t.row === r && t.col === c);
+        if (boardTile) word += boardTile.letter;
+        else if (stagedTile) word += stagedTile.tile.letter;
+        else return { error: "Word has gaps between tiles." };
+      }
+      return { word, row: r, col: c1, direction };
+    } else {
+      let c = c0;
+      let r1 = minR;
+      while (r1 > 0 && state.board[r1 - 1][c]) r1--;
+      let r2 = maxR;
+      while (r2 < 14 && state.board[r2 + 1][c]) r2++;
+      
+      let word = "";
+      for (let r = r1; r <= r2; r++) {
+        const boardTile = state.board[r][c];
+        const stagedTile = state.staging.find((t) => t.row === r && t.col === c);
+        if (boardTile) word += boardTile.letter;
+        else if (stagedTile) word += stagedTile.tile.letter;
+        else return { error: "Word has gaps between tiles." };
+      }
+      return { word, row: r1, col: c, direction };
     }
   }
 
-  /* ── Preview ghost tiles on the board ───────────────────── */
-
-  function previewCells() {
-    if (!typedWord) return [];
-    const word = typedWord.toUpperCase();
-    const result = [];
-    const usedIds = new Set();
-    for (let i = 0; i < word.length; i++) {
-      const r = state.selectedCell.row + (state.direction === "vertical" ? i : 0);
-      const c = state.selectedCell.col + (state.direction === "horizontal" ? i : 0);
-      if (r < 0 || r >= 15 || c < 0 || c >= 15) continue;
-      const existing = state.board[r][c];
-      if (existing) continue; // Don't ghost-preview existing tiles
-      const tile = state.racks.player.find((t) => t.letter === word[i] && !usedIds.has(t.id));
-      if (tile) {
-        usedIds.add(tile.id);
-        result.push({ row: r, col: c, tile });
-      }
+  function renderWordInput() {
+    const move = inferMoveFromStaging();
+    if (!move || move.error) {
+      wordPreview.textContent = "-";
+      selectedScore.textContent = "0 pts";
+      return;
     }
-    return result;
+
+    wordPreview.textContent = move.word;
+    
+    // To calculate score, we temporarily simulate the tiles being played
+    // We can use buildPlacement
+    const originalRack = [...state.racks.player];
+    // Put staging tiles back into rack temporarily to satisfy buildPlacement
+    for (const st of state.staging) state.racks.player.push(st.tile);
+    
+    const placement = window.ScrabbleGame.buildPlacement(
+      state, "player", move.word, move.row, move.col, move.direction
+    );
+    
+    // Restore rack
+    state.racks.player = originalRack;
+
+    selectedScore.textContent = placement ? `${placement.score} pts` : "0 pts";
   }
 
   /* ── Submit word ─────────────────────────────────────────── */
@@ -262,24 +432,34 @@
       statusCopy.textContent = "Wait for the AI to finish.";
       return;
     }
-    if (!typedWord || typedWord.length < 2) {
-      statusTitle.textContent = "Type a word";
-      statusCopy.textContent = "Type letters on your keyboard, or click rack tiles, then press Enter or Play Word.";
+    
+    if (state.staging.length === 0) {
+      statusTitle.textContent = "Place your tiles";
+      statusCopy.textContent = "Drag tiles to the board or type to form a word.";
       GameKit.playLose();
       return;
     }
 
-    const word = typedWord.toUpperCase();
+    const move = inferMoveFromStaging();
+    if (move.error) {
+      statusTitle.textContent = "Invalid placement";
+      statusCopy.textContent = move.error;
+      GameKit.playLose();
+      return;
+    }
+
+    // `ScrabbleGame.playWord` expects tiles to be in the rack.
+    // Move staging back to rack temporarily.
+    const stashedStaging = [...state.staging];
+    clearStaging();
+
     const result = window.ScrabbleGame.playWord(
-      state, "player", word,
-      state.selectedCell.row, state.selectedCell.col, state.direction
+      state, "player", move.word, move.row, move.col, move.direction
     );
 
     if (result.ok) {
-      statusTitle.textContent = `Played ${word}`;
+      statusTitle.textContent = `Played ${move.word}`;
       statusCopy.textContent = `Scored ${result.placement.score} points!`;
-      typedWord = "";
-      state.selectedRackIds = [];
       GameKit.playClick();
       render();
       if (state.mode === "ai") {
@@ -292,6 +472,13 @@
         }, 600);
       }
     } else {
+      // Restore staging if invalid
+      for (const st of stashedStaging) {
+         // remove from rack
+         const idx = state.racks.player.findIndex(t => t.id === st.tile.id);
+         if (idx >= 0) state.racks.player.splice(idx, 1);
+         state.staging.push(st);
+      }
       statusTitle.textContent = "Invalid move";
       statusCopy.textContent = result.reason;
       GameKit.playLose();
@@ -306,7 +493,6 @@
     if (!move) {
       statusTitle.textContent = "AI passed";
       statusCopy.textContent = "No dictionary word can be placed from the current rack.";
-      // Turn goes back to player
       state.turn = "player";
       render();
       return;
