@@ -23,9 +23,17 @@
   boot();
 
   function boot() {
-    wireControls();
-    wireKeyboard();
-    render();
+    statusTitle.textContent = "Loading dictionary…";
+    statusCopy.textContent = "Downloading 149,000+ word Scrabble dictionary.";
+    locked = true;
+    window.ScrabbleDictionary.load().then(() => {
+      locked = false;
+      statusTitle.textContent = "Ready";
+      statusCopy.textContent = "Type a word, click a starting cell, choose direction, then Play.";
+      wireControls();
+      wireKeyboard();
+      render();
+    });
   }
 
   /* ── Controls ────────────────────────────────────────────── */
