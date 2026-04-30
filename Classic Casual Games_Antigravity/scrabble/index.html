@@ -13,81 +13,105 @@
 </head>
 <body>
   <a class="back-link" href="../index.html" aria-label="Back to game library">&lsaquo;</a>
-  <main class="app-shell scrabble-shell">
-    <section class="game-stage">
-      <div class="topbar scrabble-topbar">
-        <div>
-          <p class="eyebrow">word strategy</p>
-          <h1>Scrabble</h1>
-          <p class="game-subtitle">Build words, claim premium squares, and pressure the board against the AI.</p>
+  <main class="app-shell scrabble-shell modern">
+    <div class="game-container">
+      
+      <!-- Left Column: Board and Racks -->
+      <section class="left-col">
+        <div class="board-wrapper">
+          <!-- The board container will have coordinate labels injected by JS or CSS -->
+          <div id="board" class="scrabble-board modern-board"></div>
         </div>
-        <div class="score-stack" aria-label="Scoreboard">
-          <article class="player-score active" id="player-card"><span>You</span><strong id="player-score">0</strong></article>
-          <article class="player-score" id="ai-card"><span>AI</span><strong id="ai-score">0</strong></article>
-          <article class="player-score bag-card"><span>Bag</span><strong id="bag-count">0</strong></article>
+        
+        <div class="racks-section">
+          <!-- AI Rack (visible for debugging/request) -->
+          <div class="rack-panel ai-rack-panel">
+            <div class="rack-header"><p class="eyebrow">AI Rack</p></div>
+            <div id="ai-rack" class="rack modern-rack"></div>
+          </div>
+          
+          <div class="action-bar">
+            <button class="btn icon-btn" id="btn-shuffle" title="Shuffle Rack">🔀</button>
+            <button class="btn outline" id="btn-resign">Resign</button>
+            <button class="btn outline" id="btn-skip">Skip</button>
+            <button class="btn outline" id="btn-swap">Swap</button>
+            <button class="btn primary" id="btn-submit">Submit</button>
+            <button class="btn icon-btn" id="btn-recall" title="Recall Tiles">↩</button>
+          </div>
+          
+          <div class="rack-panel player-rack-panel">
+            <div class="rack-header"><p class="eyebrow">Your Rack</p></div>
+            <div id="rack" class="rack modern-rack"></div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div class="scrabble-layout">
-        <aside class="panel control-panel">
-          <div class="status-box">
-            <span class="badge" id="turn-label">Your turn</span>
-            <strong id="status-title">Ready</strong>
-            <p id="status-copy">Type a word on your keyboard, click a cell to set the start, then press Enter or Play Word.</p>
+      <!-- Right Column: Info Panels -->
+      <aside class="right-col">
+        <div class="panel game-info-panel">
+          <div class="top-info">
+            <span id="status-title">Loading dictionary…</span> • <span id="status-copy">Downloading 149k words</span>
           </div>
-          <div class="word-builder">
-            <div class="builder-top">
-              <span class="builder-label">Word tray</span>
-              <button class="clear-word-btn" id="clear-word" title="Clear word (Esc)">✕</button>
+          
+          <div class="player-cards">
+            <div class="player-card active" id="player-card">
+              <div class="avatar">V</div>
+              <div class="details">
+                <span class="name">You</span>
+                <span class="elo">Elo Score: 1500</span>
+              </div>
+              <strong class="score" id="player-score">0</strong>
             </div>
-            <strong id="word-preview">-</strong>
-            <span id="selected-score">0 pts</span>
-            <span class="builder-hint">⌨ Type letters or click rack tiles</span>
+            <div class="player-card" id="ai-card">
+              <div class="avatar">Z</div>
+              <div class="details">
+                <span class="name">ScrabbleBot</span>
+                <span class="elo">Elo Score: 1298</span>
+              </div>
+              <strong class="score" id="ai-score">0</strong>
+            </div>
           </div>
-          <fieldset class="field-group">
-            <legend>Mode</legend>
-            <div class="segmented-control">
-              <button class="segment active" data-mode="ai" aria-pressed="true">Player vs AI</button>
-              <button class="segment" data-mode="local" aria-pressed="false">2 Players</button>
-            </div>
-          </fieldset>
-          <fieldset class="field-group">
-            <legend>AI level</legend>
-            <div class="segmented-control">
-              <button class="segment" data-difficulty="easy" aria-pressed="false">Easy</button>
-              <button class="segment active" data-difficulty="medium" aria-pressed="true">Medium</button>
-              <button class="segment" data-difficulty="hard" aria-pressed="false">Hard</button>
-            </div>
-          </fieldset>
-          <fieldset class="field-group">
-            <legend>Direction</legend>
-            <div class="segmented-control">
-              <button class="segment active" data-direction="horizontal" aria-pressed="true">Across</button>
-              <button class="segment" data-direction="vertical" aria-pressed="false">Down</button>
-            </div>
-          </fieldset>
-          <div class="toolbar">
-            <button class="btn primary" id="submit-word">Play Word</button>
-            <button class="btn secondary" id="ai-move">AI Move</button>
-            <button class="btn ghost" id="new-game">New Game</button>
-          </div>
-        </aside>
+        </div>
 
-        <section class="panel scrabble-table">
-          <div class="board-header">
-            <div><span class="badge">board</span><strong id="last-play">No words played</strong></div>
-            <div class="bonus-legend" aria-label="Bonus legend"><span class="tw">TW</span><span class="dw">DW</span><span class="tl">TL</span><span class="dl">DL</span></div>
+        <div class="panel bag-panel">
+          <div class="panel-header">
+            <h3><span class="icon">💼</span> Tile Bag <span id="bag-count">100</span></h3>
+            <div class="bag-stats">
+              <span>Vowels: <strong id="vowels-count">42</strong></span>
+              <span>Consonants: <strong id="consonants-count">56</strong></span>
+            </div>
           </div>
-          <div class="scrabble-board-wrap">
-            <div id="board" class="scrabble-board"></div>
+          <div id="bag-grid" class="bag-grid">
+            <!-- Rendered by JS -->
           </div>
-          <div class="rack-panel">
-            <div class="rack-header"><p class="eyebrow">rack</p><span id="rack-count">7 tiles</span></div>
-            <div id="rack" class="rack"></div>
+        </div>
+
+        <div class="panel history-panel">
+          <div class="panel-header">
+            <h3><span class="icon">📄</span> Turn History</h3>
           </div>
-        </section>
-      </div>
-    </section>
+          <div class="history-content">
+            <ul id="turn-history-list" class="turn-history-list">
+              <li class="empty-state">There is no history to show</li>
+            </ul>
+          </div>
+        </div>
+        
+        <!-- Game settings hidden or simplified -->
+        <div class="settings-panel hidden">
+            <!-- Kept for JS compatibility if needed -->
+            <button id="submit-word" style="display:none"></button>
+            <button id="ai-move" style="display:none"></button>
+            <button id="clear-word" style="display:none"></button>
+            <button id="new-game" style="display:none"></button>
+            <span id="turn-label" style="display:none"></span>
+            <span id="word-preview" style="display:none"></span>
+            <span id="selected-score" style="display:none"></span>
+            <span id="last-play" style="display:none"></span>
+        </div>
+      </aside>
+
+    </div>
   </main>
   <script src="../shared/scripts/utils.js"></script>
   <script src="../shared/scripts/storage.js"></script>
