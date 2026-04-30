@@ -8,17 +8,33 @@
     "0,3": "dl", "0,11": "dl", "2,6": "dl", "2,8": "dl", "3,0": "dl", "3,7": "dl", "3,14": "dl", "6,2": "dl", "6,6": "dl", "6,8": "dl", "6,12": "dl", "7,3": "dl", "7,11": "dl", "8,2": "dl", "8,6": "dl", "8,8": "dl", "8,12": "dl", "11,0": "dl", "11,7": "dl", "11,14": "dl", "12,6": "dl", "12,8": "dl", "14,3": "dl", "14,11": "dl"
   };
 
-  function scorePlacement(tiles, board) {
-    let wordMultiplier = 1;
-    const letterScore = tiles.reduce((sum, item) => {
-      const key = `${item.row},${item.col}`;
-      const tileBonus = board[item.row][item.col] ? null : bonus[key];
-      if (tileBonus === "dw") wordMultiplier *= 2;
-      if (tileBonus === "tw") wordMultiplier *= 3;
-      const letterMultiplier = tileBonus === "dl" ? 2 : tileBonus === "tl" ? 3 : 1;
-      return sum + item.tile.value * letterMultiplier;
-    }, 0);
-    return letterScore * wordMultiplier;
+  function scorePlacement(words, numNewTiles) {
+    let totalScore = 0;
+    
+    for (const word of words) {
+       let wordScore = 0;
+       let wordMultiplier = 1;
+       
+       for (const item of word) {
+          let letterVal = item.tile.value;
+          if (item.isNew) {
+             const key = `${item.row},${item.col}`;
+             const tileBonus = bonus[key];
+             if (tileBonus === "dl") letterVal *= 2;
+             if (tileBonus === "tl") letterVal *= 3;
+             if (tileBonus === "dw") wordMultiplier *= 2;
+             if (tileBonus === "tw") wordMultiplier *= 3;
+          }
+          wordScore += letterVal;
+       }
+       totalScore += (wordScore * wordMultiplier);
+    }
+    
+    if (numNewTiles === 7) {
+       totalScore += 50; // Bingo
+    }
+    
+    return totalScore;
   }
 
   window.ScrabbleScoring = { bonus, scorePlacement };

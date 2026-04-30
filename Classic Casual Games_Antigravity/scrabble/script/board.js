@@ -62,5 +62,62 @@
     tiles.forEach((item) => { board[item.row][item.col] = item.tile; });
   }
 
-  window.ScrabbleBoard = { createBoard, canPlace, place, isEmpty };
+  function getWordsFormed(board, newTiles, primaryDirection) {
+    const words = [];
+    
+    function extractWord(r, c, dr, dc) {
+        let startR = r, startC = c;
+        while (startR - dr >= 0 && startC - dc >= 0 && board[startR - dr][startC - dc]) {
+            startR -= dr;
+            startC -= dc;
+        }
+        
+        const letters = [];
+        let currR = startR, currC = startC;
+        while (currR < 15 && currC < 15 && board[currR][currC]) {
+            const isNew = newTiles.some(t => t.row === currR && t.col === currC);
+            letters.push({ row: currR, col: currC, tile: board[currR][currC], isNew });
+            currR += dr;
+            currC += dc;
+        }
+        return letters;
+    }
+
+    if (newTiles.length > 0) {
+        const first = newTiles[0];
+        const dr = primaryDirection === "vertical" ? 1 : 0;
+        const dc = primaryDirection === "horizontal" ? 1 : 0;
+        
+        const primary = extractWord(first.row, first.col, dr, dc);
+        if (primary.length > 1 || newTiles.length === 1) {
+            words.push(primary);
+        }
+
+        const crossDr = primaryDirection === "horizontal" ? 1 : 0;
+        const crossDc = primaryDirection === "vertical" ? 1 : 0;
+        
+        for (const nt of newTiles) {
+            const cross = extractWord(nt.row, nt.col, crossDr, crossDc);
+            if (cross.length > 1) {
+                words.push(cross);
+            }
+        }
+    }
+    
+    // Deduplicate words based on stringified coordinates to prevent issues with single tile placements
+    const uniqueWords = [];
+    const seen = new Set();
+    for (const w of words) {
+       if (w.length === 0) continue;
+       const key = `${w[0].row},${w[0].col}-${w[w.length-1].row},${w[w.length-1].col}`;
+       if (!seen.has(key)) {
+           seen.add(key);
+           uniqueWords.push(w);
+       }
+    }
+    
+    return uniqueWords;
+  }
+
+  window.ScrabbleBoard = { createBoard, canPlace, place, isEmpty, getWordsFormed };
 })();
