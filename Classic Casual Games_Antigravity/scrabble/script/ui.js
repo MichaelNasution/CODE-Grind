@@ -91,7 +91,7 @@
     });
 
     // Rack drop zone
-    const rackPanel = GameKit.qs(".player-rack-panel");
+    const rackPanel = GameKit.qs(".rack-container");
     rackPanel.addEventListener("dragover", (e) => {
       if (locked || state.turn !== "player") return;
       e.preventDefault();

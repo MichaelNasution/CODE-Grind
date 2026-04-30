@@ -55,8 +55,12 @@ body {
   display: grid;
   grid-template-columns: 24px 1fr;
   grid-template-rows: 24px 1fr;
-  width: 100%;
-  max-width: calc(100vh - 280px); /* Strictly constrain board height based on screen */
+  
+  /* Bulletproof responsive square sizing that ignores flex intrinsic bugs */
+  width: calc(100vh - 320px);
+  height: calc(100vh - 320px);
+  max-width: 100%;
+  max-height: 100%;
   aspect-ratio: 1 / 1;
 }
 
