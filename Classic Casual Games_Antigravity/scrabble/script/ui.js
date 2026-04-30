@@ -50,6 +50,12 @@
       playAiMove();
     });
 
+    GameKit.qs("#clear-word").addEventListener("click", () => {
+      typedWord = "";
+      state.selectedRackIds = [];
+      render();
+    });
+
     GameKit.qsa("[data-mode]").forEach((button) => button.addEventListener("click", () => {
       state.mode = button.dataset.mode;
       GameKit.setPressed(GameKit.qsa("[data-mode]"), state.mode, "mode");

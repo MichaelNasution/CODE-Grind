@@ -33,12 +33,16 @@
           <div class="status-box">
             <span class="badge" id="turn-label">Your turn</span>
             <strong id="status-title">Ready</strong>
-            <p id="status-copy">Choose tiles and place your word.</p>
+            <p id="status-copy">Type a word on your keyboard, click a cell to set the start, then press Enter or Play Word.</p>
           </div>
           <div class="word-builder">
-            <span class="builder-label">Word tray</span>
+            <div class="builder-top">
+              <span class="builder-label">Word tray</span>
+              <button class="clear-word-btn" id="clear-word" title="Clear word (Esc)">✕</button>
+            </div>
             <strong id="word-preview">-</strong>
             <span id="selected-score">0 pts</span>
+            <span class="builder-hint">⌨ Type letters or click rack tiles</span>
           </div>
           <fieldset class="field-group">
             <legend>Mode</legend>
