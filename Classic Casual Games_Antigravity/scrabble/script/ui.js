@@ -363,20 +363,56 @@
       turnHistory.push({ player, word, score });
   }
 
+  function getLetterValue(letter) {
+      const values = {
+          A:1, E:1, I:1, O:1, U:1, L:1, N:1, S:1, T:1, R:1,
+          D:2, G:2,
+          B:3, C:3, M:3, P:3,
+          F:4, H:4, V:4, W:4, Y:4,
+          K:5,
+          J:8, X:8,
+          Q:10, Z:10,
+          " ":0
+      };
+      return values[letter.toUpperCase()] || 0;
+  }
+
   function renderHistory() {
       if (turnHistory.length === 0) {
           historyList.innerHTML = `<li class="empty-state">No moves yet.</li>`;
           return;
       }
       historyList.innerHTML = "";
-      turnHistory.slice().reverse().forEach(turn => {
+      
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      
+      turnHistory.slice().reverse().forEach((turn, idx) => {
           const li = document.createElement("li");
           li.className = turn.player === "player" ? "player-move" : "ai-move";
           
+          const playerInit = turn.player === "player" ? "V" : "Z";
+          const playerName = turn.player === "player" ? "ViableUser708243" : "ZippyUser904344";
+          
+          let tilesHtml = turn.word.split('').map(char => {
+              const val = getLetterValue(char);
+              return `<div class="history-tile">${char}<sub>${val}</sub></div>`;
+          }).join('');
+          
+          const turnNum = turnHistory.length - idx;
+
           li.innerHTML = `
-            <span>${turn.player === "player" ? "You" : "AI"}</span>
-            <span class="move-word">${turn.word}</span>
-            <span class="move-score">${turn.score} pts</span>
+            <div class="history-top">
+              <div class="history-avatar">${playerInit}</div>
+              <div class="history-details">
+                <strong>${playerName}</strong><br>
+                Turn #${turnNum}, ${dateStr} at ${timeStr} • 1 Word • ${turn.score} Points
+              </div>
+            </div>
+            <div class="history-word-row">
+              ${tilesHtml}
+            </div>
           `;
           historyList.appendChild(li);
       });

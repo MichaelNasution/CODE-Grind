@@ -19,29 +19,36 @@
       <!-- Left Column: Board and Racks -->
       <section class="left-col">
         <div class="board-wrapper">
-          <!-- The board container will have coordinate labels injected by JS or CSS -->
-          <div id="board" class="scrabble-board modern-board"></div>
+          <div class="board-and-coords">
+            <div class="top-coords">
+              <span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span><span>I</span><span>J</span><span>K</span><span>L</span><span>M</span><span>N</span><span>O</span>
+            </div>
+            <div class="left-coords">
+              <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span>
+            </div>
+            <div id="board" class="scrabble-board modern-board"></div>
+          </div>
         </div>
         
         <div class="racks-section">
           <!-- AI Rack (visible for debugging/request) -->
-          <div class="rack-panel ai-rack-panel">
-            <div class="rack-header"><p class="eyebrow">AI Rack</p></div>
+          <div class="rack-panel ai-rack-panel" style="display:none;">
             <div id="ai-rack" class="rack modern-rack"></div>
           </div>
           
-          <div class="action-bar">
-            <button class="btn icon-btn" id="btn-shuffle" title="Shuffle Rack">🔀</button>
-            <button class="btn outline" id="btn-resign">Resign</button>
-            <button class="btn outline" id="btn-skip">Skip</button>
-            <button class="btn outline" id="btn-swap">Swap</button>
-            <button class="btn primary" id="btn-submit">Submit</button>
-            <button class="btn icon-btn" id="btn-recall" title="Recall Tiles">↩</button>
-          </div>
-          
-          <div class="rack-panel player-rack-panel">
-            <div class="rack-header"><p class="eyebrow">Your Rack</p></div>
-            <div id="rack" class="rack modern-rack"></div>
+          <div class="player-controls">
+            <div class="rack-container">
+              <button class="btn icon-btn" id="btn-shuffle" title="Shuffle Rack">🔀</button>
+              <div id="rack" class="rack modern-rack"></div>
+              <button class="btn icon-btn" id="btn-recall" title="Recall Tiles">↩</button>
+            </div>
+            
+            <div class="action-bar">
+              <button class="btn block-btn" id="btn-resign">Resign</button>
+              <button class="btn block-btn" id="btn-skip">Skip</button>
+              <button class="btn block-btn" id="btn-swap">Swap</button>
+              <button class="btn block-btn submit-btn" id="btn-submit">Submit</button>
+            </div>
           </div>
         </div>
       </section>
