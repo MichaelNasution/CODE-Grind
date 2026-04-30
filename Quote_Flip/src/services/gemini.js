@@ -33,7 +33,7 @@ export const generateQuote = async () => {
 
   try {
     // Note: The user requested to use 'gemini-1.5-pro-latest' or equivalent.
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     
     const randomTopic = topics[Math.floor(Math.random() * topics.length)];
     
