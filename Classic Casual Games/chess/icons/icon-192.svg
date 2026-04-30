@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="Chess app icon">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1f2937"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="40" fill="url(#bg)"/>
+  <rect x="24" y="24" width="144" height="144" rx="26" fill="#134e4a" opacity="0.36"/>
+  <path d="M96 36c15 0 28 11 28 25 0 10-7 18-16 22l10 19h-44l10-19c-9-4-16-12-16-22 0-14 13-25 28-25zm-24 74h48l9 36H63l9-36zm-7 44h62v10H65z" fill="#f8fafc"/>
+</svg>

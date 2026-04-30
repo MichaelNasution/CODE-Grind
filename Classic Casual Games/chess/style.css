@@ -1,5 +1,9 @@
 .app-shell {
   width: min(1120px, 100%);
+  padding-top: max(var(--space-4), env(safe-area-inset-top));
+  padding-right: max(var(--space-4), env(safe-area-inset-right));
+  padding-bottom: max(var(--space-4), env(safe-area-inset-bottom));
+  padding-left: max(var(--space-4), env(safe-area-inset-left));
 }
 
 .chess-topbar {
@@ -63,10 +67,16 @@
   aspect-ratio: 1;
   overflow: hidden;
   cursor: pointer;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
   transition:
     filter var(--motion-fast) var(--ease-out),
     box-shadow var(--motion-fast) var(--ease-out),
     transform var(--motion-fast) var(--ease-out);
+}
+
+.chess-board {
+  touch-action: none;
 }
 
 .chess-square.light {
@@ -212,6 +222,13 @@
     --chess-board-size: min(360px, calc(100vw - 64px));
   }
 
+  .app-shell {
+    padding-top: max(var(--space-2), env(safe-area-inset-top));
+    padding-right: max(var(--space-2), env(safe-area-inset-right));
+    padding-bottom: max(var(--space-2), env(safe-area-inset-bottom));
+    padding-left: max(var(--space-2), env(safe-area-inset-left));
+  }
+
   .chess-board {
     border-width: 6px;
   }
@@ -220,5 +237,11 @@
     grid-template-columns: 1fr;
     height: auto;
     min-height: 58px;
+  }
+}
+
+@media (hover: none) {
+  .chess-square:hover {
+    filter: none;
   }
 }

@@ -1,7 +1,8 @@
 (function () {
   "use strict";
 
-  let state = window.ChessState.create();
+  const STORAGE_KEY = "chess";
+  let state = loadState();
   const boardEl = GameKit.qs("#board");
   const turnEl = GameKit.qs("#turn");
   const modeLabel = GameKit.qs("#mode-label");
@@ -68,6 +69,7 @@
     statusTitle.textContent = state.status === "checkmate" ? "Checkmate" : state.status === "stalemate" ? "Stalemate" : state.status === "check" ? "Check" : "Playing";
     statusCopy.textContent = statusMessage();
     renderCaptures();
+    saveState();
   }
 
   function renderCaptures() {
@@ -113,10 +115,11 @@
     const from = dragFrom;
     dragFrom = null;
     suppressClick = true;
-    if (index === from) return;
-    const move = window.ChessGame.legalMoves(state, from).find((candidate) => candidate.to === index);
+    const dropIndex = resolveDropIndex(event, index);
+    if (dropIndex === from) return;
+    const move = window.ChessGame.legalMoves(state, from).find((candidate) => candidate.to === dropIndex);
     if (!move) return;
-    window.ChessGame.applyMove(state, { from, ...move });
+    window.ChessGame.applyMove(state, { from, to: dropIndex, promotion: move.promotion });
     state.selected = null;
     state.legalMoves = [];
     GameKit.playClick();
@@ -168,5 +171,65 @@
 
   function squareName(index) {
     return `${"abcdefgh"[index % 8]}${8 - Math.floor(index / 8)}`;
+  }
+
+  function resolveDropIndex(event, fallbackIndex) {
+    const touchPoint = event.changedTouches?.[0];
+    const x = touchPoint ? touchPoint.clientX : event.clientX;
+    const y = touchPoint ? touchPoint.clientY : event.clientY;
+    if (typeof x === "number" && typeof y === "number") {
+      const hit = document.elementFromPoint(x, y);
+      const square = hit?.closest?.(".chess-square");
+      const parsed = Number.parseInt(square?.dataset?.index ?? "", 10);
+      if (Number.isInteger(parsed)) return parsed;
+    }
+    return fallbackIndex;
+  }
+
+  function loadState() {
+    const fallback = window.ChessState.create();
+    const persisted = GameKit.loadScore(STORAGE_KEY, {});
+    if (!persisted || !Array.isArray(persisted.board) || persisted.board.length !== 64) return fallback;
+    const next = window.ChessState.create();
+    next.board = persisted.board.map((piece) => {
+      if (!piece || typeof piece !== "object") return null;
+      if (!piece.color || !piece.type) return null;
+      return { color: piece.color, type: piece.type };
+    });
+    next.turn = persisted.turn === "black" ? "black" : "white";
+    next.mode = persisted.mode === "local" ? "local" : "ai";
+    next.difficulty = ["easy", "medium", "hard"].includes(persisted.difficulty) ? persisted.difficulty : "medium";
+    next.selected = Number.isInteger(persisted.selected) ? persisted.selected : null;
+    next.legalMoves = Array.isArray(persisted.legalMoves) ? persisted.legalMoves.filter((move) => Number.isInteger(move?.to)) : [];
+    next.lastMove = persisted.lastMove && Number.isInteger(persisted.lastMove.from) && Number.isInteger(persisted.lastMove.to)
+      ? { from: persisted.lastMove.from, to: persisted.lastMove.to, promotion: persisted.lastMove.promotion ?? null }
+      : null;
+    next.status = ["playing", "check", "checkmate", "stalemate"].includes(persisted.status) ? persisted.status : "playing";
+    next.captured = {
+      white: normalizeCaptured(persisted?.captured?.white),
+      black: normalizeCaptured(persisted?.captured?.black),
+    };
+    return next;
+  }
+
+  function saveState() {
+    GameKit.saveScore(STORAGE_KEY, {
+      board: state.board,
+      turn: state.turn,
+      mode: state.mode,
+      difficulty: state.difficulty,
+      selected: state.selected,
+      legalMoves: state.legalMoves,
+      lastMove: state.lastMove,
+      captured: state.captured,
+      status: state.status,
+    });
+  }
+
+  function normalizeCaptured(list) {
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((piece) => piece && piece.color && piece.type)
+      .map((piece) => ({ color: piece.color, type: piece.type }));
   }
 })();
