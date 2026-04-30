@@ -1,91 +1,80 @@
 (function () {
   "use strict";
 
-  const CDN_URL = "https://cdn.jsdelivr.net/npm/stockfish@16.0.0/src/stockfish-nnue-16-single.js";
+  const WORKER_PATH = "script/stockfish-worker.js";
 
   let worker = null;
   let ready = false;
   let loading = false;
   let pendingResolve = null;
+  let initPromise = null;
 
   function init() {
     if (worker && ready) return Promise.resolve();
-    if (loading) {
-      return new Promise((resolve) => {
-        const check = setInterval(() => {
-          if (ready) { clearInterval(check); resolve(); }
-        }, 100);
-      });
-    }
+    if (initPromise) return initPromise;
 
     loading = true;
-    return new Promise((resolve, reject) => {
-      /*
-       * Browsers block new Worker(crossOriginURL) due to same-origin policy.
-       * Workaround: fetch the script, wrap it in a Blob, and create the Worker from the Blob URL.
-       */
-      fetch(CDN_URL)
-        .then((response) => {
-          if (!response.ok) throw new Error("Failed to download Stockfish: " + response.status);
-          return response.text();
-        })
-        .then((scriptText) => {
-          const blob = new Blob([scriptText], { type: "application/javascript" });
-          const blobURL = URL.createObjectURL(blob);
+    initPromise = new Promise((resolve, reject) => {
+      try {
+        worker = new Worker(WORKER_PATH);
+      } catch (error) {
+        loading = false;
+        initPromise = null;
+        reject(new Error("Failed to create Stockfish worker: " + error.message));
+        return;
+      }
 
-          try {
-            worker = new Worker(blobURL);
-          } catch (error) {
-            URL.revokeObjectURL(blobURL);
-            loading = false;
-            reject(new Error("Failed to create Stockfish worker: " + error.message));
-            return;
-          }
+      /* Timeout — if engine doesn't respond within 30s, bail */
+      const timeout = setTimeout(() => {
+        loading = false;
+        initPromise = null;
+        if (worker) { worker.terminate(); worker = null; }
+        reject(new Error("Stockfish init timed out (30 s). Check your internet connection."));
+      }, 30000);
 
-          worker.onerror = (error) => {
-            loading = false;
-            worker = null;
-            URL.revokeObjectURL(blobURL);
-            reject(new Error("Stockfish worker error: " + (error.message || "unknown")));
-          };
+      worker.onerror = (error) => {
+        clearTimeout(timeout);
+        loading = false;
+        initPromise = null;
+        worker = null;
+        reject(new Error("Stockfish worker error: " + (error.message || "unknown")));
+      };
 
-          let initStep = 0;
+      let initStep = 0;
 
-          worker.onmessage = (event) => {
-            const line = typeof event.data === "string" ? event.data : String(event.data);
+      worker.onmessage = (event) => {
+        const line = typeof event.data === "string" ? event.data : String(event.data);
 
-            /* Initialization handshake */
-            if (initStep === 0 && line.indexOf("uciok") !== -1) {
-              initStep = 1;
-              worker.postMessage("isready");
-              return;
-            }
-            if (initStep === 1 && line.indexOf("readyok") !== -1) {
-              initStep = 2;
-              ready = true;
-              loading = false;
-              resolve();
-              return;
-            }
-
-            /* During play — listen for bestmove */
-            if (pendingResolve && line.indexOf("bestmove") === 0) {
-              const parts = line.split(" ");
-              const moveStr = parts[1];
-              const cb = pendingResolve;
-              pendingResolve = null;
-              cb(moveStr);
-            }
-          };
-
-          /* Start UCI init */
-          worker.postMessage("uci");
-        })
-        .catch((error) => {
+        /* Initialization handshake */
+        if (initStep === 0 && line.indexOf("uciok") !== -1) {
+          initStep = 1;
+          worker.postMessage("isready");
+          return;
+        }
+        if (initStep === 1 && line.indexOf("readyok") !== -1) {
+          clearTimeout(timeout);
+          initStep = 2;
+          ready = true;
           loading = false;
-          reject(new Error("Stockfish download failed: " + error.message));
-        });
+          resolve();
+          return;
+        }
+
+        /* During play — listen for bestmove */
+        if (pendingResolve && line.indexOf("bestmove") === 0) {
+          const parts = line.split(" ");
+          const moveStr = parts[1];
+          const cb = pendingResolve;
+          pendingResolve = null;
+          cb(moveStr);
+        }
+      };
+
+      /* Start UCI init */
+      worker.postMessage("uci");
     });
+
+    return initPromise;
   }
 
   function getBestMove(fen, depth) {
@@ -100,13 +89,14 @@
 
   function stop() {
     if (worker) {
-      try { worker.postMessage("stop"); } catch (e) { /* ignore */ }
-      try { worker.postMessage("quit"); } catch (e) { /* ignore */ }
+      try { worker.postMessage("stop"); } catch (_) { /* ignore */ }
+      try { worker.postMessage("quit"); } catch (_) { /* ignore */ }
       worker.terminate();
       worker = null;
       ready = false;
       loading = false;
       pendingResolve = null;
+      initPromise = null;
     }
   }
 
