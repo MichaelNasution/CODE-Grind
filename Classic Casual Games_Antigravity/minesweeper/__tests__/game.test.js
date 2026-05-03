@@ -164,13 +164,13 @@ describe('MinesweeperGame', () => {
       state.status = 'playing';
       state.mines = 1; // 8 safe tiles
       state.board = Array(9).fill(0).map((_, i) => ({
-          index: i, mine: i===8, revealed: false, count: 0
+          index: i, mine: i===8, revealed: i>0 && i<8, count: 1
       }));
       
-      // manually reveal 7 tiles
+      // manually reveal 7 tiles (1 to 7)
       state.revealed = 7;
       
-      // reveal the 8th safe tile
+      // reveal the 8th safe tile (index 0)
       reveal(state, 0);
       
       expect(state.status).toBe('won');
