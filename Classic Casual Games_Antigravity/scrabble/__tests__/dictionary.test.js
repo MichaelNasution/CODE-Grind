@@ -6,6 +6,8 @@ describe('ScrabbleDictionary', () => {
   beforeEach(() => {
     // Reset global fetch mock
     global.fetch = jest.fn();
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    jest.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {

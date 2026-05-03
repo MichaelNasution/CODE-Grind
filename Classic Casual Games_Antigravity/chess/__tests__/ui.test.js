@@ -4,6 +4,7 @@ describe('ChessUI', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.useFakeTimers();
+    jest.spyOn(console, 'error').mockImplementation(() => {});
 
     document.body.innerHTML = `
       <div id="board"></div>
