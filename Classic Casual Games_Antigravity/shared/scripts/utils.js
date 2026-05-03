@@ -52,8 +52,12 @@
 
     elements.filter(Boolean).forEach((element) => {
       if (params.opacity !== undefined) element.style.opacity = String(lastValue(params.opacity));
-      if (params.scale !== undefined) element.style.transform = `scale(${lastValue(params.scale)})`;
-      if (params.translateY !== undefined) element.style.transform = `translateY(${lastValue(params.translateY)}px)`;
+      if (params.scale !== undefined || params.translateY !== undefined) {
+        let transformStr = "";
+        if (params.scale !== undefined) transformStr += `scale(${lastValue(params.scale)}) `;
+        if (params.translateY !== undefined) transformStr += `translateY(${lastValue(params.translateY)}px)`;
+        element.style.transform = transformStr.trim();
+      }
     });
 
     return { finished: Promise.resolve() };
