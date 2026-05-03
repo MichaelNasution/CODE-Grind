@@ -48,7 +48,7 @@
   function canMoveToTableau(card, pile) {
     if (!card) return false;
     const top = pile[pile.length - 1];
-    return top ? top.faceUp && top.color !== card.color && card.value === top.value + 1 : card.value === 13;
+    return top ? top.faceUp && top.color !== card.color && card.value === top.value - 1 : card.value === 13;
   }
 
   function moveWasteToFoundation(state, suit) {
