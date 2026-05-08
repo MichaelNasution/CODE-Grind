@@ -1,122 +1,74 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useState } from 'react';
+import useAudioEngine from './hooks/useAudioEngine';
+import useChordDetector from './hooks/useChordDetector';
+import useMidi from './hooks/useMidi';
+import ControlBar from './components/ControlBar';
+import PianoKeyboard from './components/PianoKeyboard';
+import Visualizer from './components/Visualizer';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+    const [activeNotes, setActiveNotes] = useState(new Set());
+    const [visualBlocks, setVisualBlocks] = useState(null);
+    const [showNotes, setShowNotes] = useState(true);
+    const [showKeys, setShowKeys] = useState(true);
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    const {
+        samplerReady,
+        audioStarted,
+        ensureAudioStarted,
+        playNote,
+        stopNote,
+        sustainOn, setSustainOn,
+        volume, setVolume,
+        metronomeOn, setMetronomeOn,
+        bpm, setBpm,
+        isRecording, toggleRecording,
+        isPlaying, togglePlayback,
+        hasRecording
+    } = useAudioEngine(setActiveNotes, setVisualBlocks);
 
-      <div className="ticks"></div>
+    const chordName = useChordDetector(activeNotes);
+    useMidi(playNote, stopNote, ensureAudioStarted);
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
+    return (
+        <div id="app">
+            <div id="loading-overlay" className={samplerReady && audioStarted ? 'hidden' : ''}>
+                <div className="loader-ring"></div>
+                <h2 id="loading-text">{samplerReady ? 'Ready' : 'Loading Samples...'}</h2>
+                <p>High-fidelity audio engine initializing</p>
+                <button 
+                    id="start-btn" 
+                    style={{ display: samplerReady && !audioStarted ? 'inline-block' : 'none' }}
+                    onClick={ensureAudioStarted}
                 >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+                    Start Playing
+                </button>
+            </div>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+            <ControlBar
+                showNotes={showNotes} setShowNotes={setShowNotes}
+                showKeys={showKeys} setShowKeys={setShowKeys}
+                sustainOn={sustainOn} setSustainOn={setSustainOn}
+                volume={volume} setVolume={setVolume}
+                metronomeOn={metronomeOn} setMetronomeOn={setMetronomeOn}
+                bpm={bpm} setBpm={setBpm}
+                isRecording={isRecording} toggleRecording={toggleRecording}
+                isPlaying={isPlaying} togglePlayback={togglePlayback}
+                hasRecording={hasRecording}
+                chordName={chordName}
+            />
+
+            <main id="piano-wrapper">
+                <Visualizer visualEvent={visualBlocks} />
+                <PianoKeyboard 
+                    activeNotes={activeNotes}
+                    playNote={playNote}
+                    stopNote={stopNote}
+                    ensureAudioStarted={ensureAudioStarted}
+                    showNotes={showNotes}
+                    showKeys={showKeys}
+                />
+            </main>
+        </div>
+    );
 }
-
-export default App
