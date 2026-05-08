@@ -416,10 +416,12 @@
             wrapper.scrollLeft = (totalW - viewW) / 2;
         });
 
-        // Start button dismisses overlay and unlocks audio
-        $startBtn.addEventListener('click', async () => {
-            await ensureAudioStarted();
+        // Start button dismisses overlay and attempts to unlock audio
+        $startBtn.addEventListener('click', () => {
             $overlay.classList.add('hidden');
+            // Attempt to start audio context; if it fails here,
+            // ensureAudioStarted() will retry on first key interaction
+            Tone.start().then(() => { audioStarted = true; }).catch(() => {});
         });
     }
 

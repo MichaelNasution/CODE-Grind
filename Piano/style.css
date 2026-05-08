@@ -288,6 +288,11 @@ html, body {
     padding: 0 20px 24px;
     scrollbar-width: thin;
     scrollbar-color: rgba(124, 110, 240, 0.25) transparent;
+    /* Subtle depth gradient behind the piano */
+    background: linear-gradient(to bottom,
+        var(--bg-primary) 0%,
+        rgba(15, 15, 25, 1) 60%,
+        rgba(20, 18, 32, 1) 100%);
 }
 
 #piano-wrapper::-webkit-scrollbar {
@@ -310,6 +315,8 @@ html, body {
     align-items: flex-end;
     flex-shrink: 0;
     padding-bottom: 4px;
+    /* Wooden trim above the keys */
+    border-top: 4px solid #2a2430;
     /* subtle shadow under the piano */
     filter: drop-shadow(0 12px 40px rgba(0, 0, 0, 0.6));
 }
