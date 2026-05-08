@@ -111,41 +111,42 @@
      * ------------------------------------------------------------------ */
 
     /**
-     * Generate all octave groups (C2–C7).
-     * Each octave is wrapped in a `.octave-group` div so that
-     * black keys can be positioned via percentage offsets.
+     * White notes that have a sharp (black key) immediately after them.
+     * B and E do NOT have sharps — no black key between E-F or B-C.
+     */
+    const HAS_SHARP = new Set(['C', 'D', 'F', 'G', 'A']);
+
+    /**
+     * Build the piano keyboard using the wrapper-div approach:
+     *   - Each white key is placed inside a `.key-wrapper` div.
+     *   - If the white key has a sharp after it (C, D, F, G, A),
+     *     the corresponding black key is also placed inside the
+     *     same wrapper, absolutely positioned at the right edge.
+     *   - This guarantees black keys always straddle the correct
+     *     boundary between two white keys, regardless of resize.
      */
     function buildKeyboard() {
         for (let oct = START_OCTAVE; oct <= END_OCTAVE; oct++) {
-            const notes = oct === END_OCTAVE
-                ? ['C']                          // only C7
-                : CHROMATIC.slice();             // full octave
+            const whiteNotes = oct === END_OCTAVE
+                ? ['C']                                     // only C7
+                : ['C', 'D', 'E', 'F', 'G', 'A', 'B'];   // full octave
 
-            const group = document.createElement('div');
-            group.className = 'octave-group';
+            whiteNotes.forEach(name => {
+                const wrapper   = document.createElement('div');
+                wrapper.className = 'key-wrapper';
 
-            // First pass: white keys (flex items that size the group)
-            const whiteCount = notes.filter(n => WHITE_NOTES.has(n)).length;
-            notes.forEach(name => {
-                const fullNote = name + oct;
-                if (WHITE_NOTES.has(name)) {
-                    group.appendChild(createKey(fullNote, 'white'));
+                // White key
+                const whiteNote = name + oct;
+                wrapper.appendChild(createKey(whiteNote, 'white'));
+
+                // Black key (if this white note has a sharp)
+                if (HAS_SHARP.has(name) && !(oct === END_OCTAVE)) {
+                    const sharpNote = name + '#' + oct;
+                    wrapper.appendChild(createKey(sharpNote, 'black'));
                 }
-            });
 
-            // Second pass: black keys (absolutely positioned)
-            notes.forEach(name => {
-                const fullNote = name + oct;
-                if (!WHITE_NOTES.has(name)) {
-                    const key = createKey(fullNote, 'black');
-                    // Position via percentage
-                    key.style.left = BLACK_KEY_PCT[name] + '%';
-                    key.style.transform = 'translateX(-50%)';
-                    group.appendChild(key);
-                }
+                $piano.appendChild(wrapper);
             });
-
-            $piano.appendChild(group);
         }
     }
 
