@@ -22,9 +22,9 @@
 
     /* Key dimensions */
     --white-key-width: 52px;
-    --white-key-height: 220px;
+    --white-key-height: 280px;
     --black-key-width-pct: 60%;      /* relative to white key */
-    --black-key-height: 140px;
+    --black-key-height: 175px;
 
     --key-radius: 0 0 6px 6px;
     --transition-fast: 80ms ease;
@@ -285,7 +285,7 @@ html, body {
     justify-content: center;
     overflow-x: auto;
     overflow-y: hidden;
-    padding: 0 20px 40px;
+    padding: 0 20px 24px;
     scrollbar-width: thin;
     scrollbar-color: rgba(124, 110, 240, 0.25) transparent;
 }
@@ -451,8 +451,8 @@ html, body {
 @media (max-width: 768px) {
     :root {
         --white-key-width: 40px;
-        --white-key-height: 180px;
-        --black-key-height: 110px;
+        --white-key-height: 220px;
+        --black-key-height: 135px;
     }
 
     #control-panel {
@@ -478,8 +478,8 @@ html, body {
 @media (max-width: 480px) {
     :root {
         --white-key-width: 34px;
-        --white-key-height: 155px;
-        --black-key-height: 95px;
+        --white-key-height: 180px;
+        --black-key-height: 110px;
     }
 
     .toggle-btn {
