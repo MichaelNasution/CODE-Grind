@@ -3,7 +3,8 @@
  *  Virtual Piano — Application Logic
  *  Audio engine (Tone.js Sampler), keyboard
  *  generation, pointer/keyboard events, and
- *  control panel state management.
+ *  advanced practice tools (Metronome, Record,
+ *  Chord Detector, Visualizer, MIDI).
  * =============================================
  */
 
@@ -14,49 +15,40 @@
      *  1. CONSTANTS & CONFIGURATION
      * ------------------------------------------------------------------ */
 
-    /** Chromatic note names in one octave */
     const CHROMATIC = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-
-    /** Which notes are "white" keys */
     const WHITE_NOTES = new Set(['C','D','E','F','G','A','B']);
+    const HAS_SHARP = new Set(['C', 'D', 'F', 'G', 'A']);
 
-    /** Piano range: C2 → C7 (5 octaves, 61 keys) */
     const START_OCTAVE = 2;
-    const END_OCTAVE   = 7;   // inclusive only for C7
+    const END_OCTAVE   = 7;
 
-    /**
-     * Computer-keyboard → note mapping.
-     * Covers ~2.5 octaves (C3 – E5) across two QWERTY rows.
-     */
     const KEY_MAP = {
-        /* ---- Octave 3 (Z-row = white, S/D/G/H/J = black) ---- */
         'z': 'C3',  's': 'C#3', 'x': 'D3',  'd': 'D#3',
         'c': 'E3',  'v': 'F3',  'g': 'F#3',  'b': 'G3',
         'h': 'G#3', 'n': 'A3',  'j': 'A#3',  'm': 'B3',
-
-        /* ---- Octave 4 (Q-row = white, number row = black) ---- */
         'q': 'C4',  '2': 'C#4', 'w': 'D4',  '3': 'D#4',
         'e': 'E4',  'r': 'F4',  '5': 'F#4', 't': 'G4',
         '6': 'G#4', 'y': 'A4',  '7': 'A#4', 'u': 'B4',
-
-        /* ---- Octave 5 (partial) ---- */
         'i': 'C5',  '9': 'C#5', 'o': 'D5',  '0': 'D#5', 'p': 'E5',
     };
 
-    /** Reverse map: note → display label for the computer key */
     const NOTE_TO_KEY = {};
     for (const [k, n] of Object.entries(KEY_MAP)) {
         NOTE_TO_KEY[n] = k.toUpperCase();
     }
 
-
-
+    // Set of all valid piano notes
+    const VALID_NOTES = new Set();
+    for(let o=START_OCTAVE; o<=END_OCTAVE; o++) {
+        if(o === END_OCTAVE) { VALID_NOTES.add('C'+o); }
+        else { CHROMATIC.forEach(n => VALID_NOTES.add(n+o)); }
+    }
 
     /* ------------------------------------------------------------------
      *  2. STATE
      * ------------------------------------------------------------------ */
 
-    let sampler        = null;   // Tone.Sampler instance
+    let sampler        = null;
     let samplerReady   = false;
     let audioStarted   = false;
 
@@ -64,62 +56,74 @@
     let showKeys       = true;
     let sustainOn      = false;
 
-    /** Track currently-held computer-keyboard keys to prevent repeat spam */
     const heldKeys     = new Set();
-
-    /** Track currently-sounding notes (for releasing on sustain-off) */
     const activeNotes  = new Set();
-
-    /** Map pointer-id → note for glissando tracking */
     const pointerNotes = new Map();
+
+    // Metronome State
+    let metronomeOn    = false;
+    let metronomeSynth = null;
+
+    // Recording State
+    let isRecording        = false;
+    let isPlaying          = false;
+    let recordingStartTime = 0;
+    let recordedNotes      = [];   // { time, note, duration }
+    const noteOnTimes      = new Map(); // tracks start time of currently held notes
+    let playbackPart       = null;
+
+    // Visualizer State
+    const activeBlocks     = new Map(); // note -> { startTime, x, width }
+    const flyingBlocks     = [];        // { x, width, yBottom, length, color }
+    let lastVisualTime     = 0;
+    const FALL_SPEED       = 0.15;      // px per ms
 
     /* ------------------------------------------------------------------
      *  3. DOM REFERENCES
      * ------------------------------------------------------------------ */
 
+    const $pianoWrapper= document.getElementById('piano-wrapper');
     const $piano       = document.getElementById('piano');
     const $overlay     = document.getElementById('loading-overlay');
     const $loadingText = document.getElementById('loading-text');
     const $startBtn    = document.getElementById('start-btn');
+    
+    // Toggles
     const $toggleNotes = document.getElementById('toggle-notes');
     const $toggleKeys  = document.getElementById('toggle-keys');
     const $toggleSust  = document.getElementById('toggle-sustain');
     const $volumeSlider= document.getElementById('volume-slider');
+    
+    // Advanced Controls
+    const $toggleMetro = document.getElementById('toggle-metronome');
+    const $bpmInput    = document.getElementById('bpm-input');
+    const $toggleRec   = document.getElementById('toggle-record');
+    const $togglePlay  = document.getElementById('toggle-play');
+    
+    // Chord Display
+    const $chordName   = document.getElementById('chord-name');
+    
+    // Visualizer Canvas
+    const $canvas      = document.getElementById('visualizer');
+    const ctx          = $canvas.getContext('2d');
 
     /* ------------------------------------------------------------------
      *  4. BUILD PIANO KEYS
      * ------------------------------------------------------------------ */
 
-    /**
-     * White notes that have a sharp (black key) immediately after them.
-     * B and E do NOT have sharps — no black key between E-F or B-C.
-     */
-    const HAS_SHARP = new Set(['C', 'D', 'F', 'G', 'A']);
-
-    /**
-     * Build the piano keyboard using the wrapper-div approach:
-     *   - Each white key is placed inside a `.key-wrapper` div.
-     *   - If the white key has a sharp after it (C, D, F, G, A),
-     *     the corresponding black key is also placed inside the
-     *     same wrapper, absolutely positioned at the right edge.
-     *   - This guarantees black keys always straddle the correct
-     *     boundary between two white keys, regardless of resize.
-     */
     function buildKeyboard() {
         for (let oct = START_OCTAVE; oct <= END_OCTAVE; oct++) {
             const whiteNotes = oct === END_OCTAVE
-                ? ['C']                                     // only C7
-                : ['C', 'D', 'E', 'F', 'G', 'A', 'B'];   // full octave
+                ? ['C']
+                : ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
 
             whiteNotes.forEach(name => {
                 const wrapper   = document.createElement('div');
                 wrapper.className = 'key-wrapper';
 
-                // White key
                 const whiteNote = name + oct;
                 wrapper.appendChild(createKey(whiteNote, 'white'));
 
-                // Black key (if this white note has a sharp)
                 if (HAS_SHARP.has(name) && !(oct === END_OCTAVE)) {
                     const sharpNote = name + '#' + oct;
                     wrapper.appendChild(createKey(sharpNote, 'black'));
@@ -130,12 +134,6 @@
         }
     }
 
-    /**
-     * Create a single piano key element.
-     * @param {string} note  – e.g. "C4", "F#3"
-     * @param {string} type  – "white" or "black"
-     * @returns {HTMLElement}
-     */
     function createKey(note, type) {
         const el = document.createElement('div');
         el.className   = `key-${type}`;
@@ -143,13 +141,11 @@
         el.setAttribute('role', 'button');
         el.setAttribute('aria-label', `Piano key ${note}`);
 
-        // Note label (e.g. "C4")
         const noteLabel = document.createElement('span');
         noteLabel.className   = 'key-label-note';
         noteLabel.textContent = note;
         el.appendChild(noteLabel);
 
-        // Computer-key label (e.g. "Q")
         const keyLabel = document.createElement('span');
         keyLabel.className   = 'key-label-key';
         keyLabel.textContent = NOTE_TO_KEY[note] || '';
@@ -159,13 +155,9 @@
     }
 
     /* ------------------------------------------------------------------
-     *  5. AUDIO ENGINE
+     *  5. AUDIO ENGINE & METRONOME
      * ------------------------------------------------------------------ */
 
-    /**
-     * Initialize the Tone.js Sampler with Salamander Grand Piano samples.
-     * We provide a sparse set of samples; Tone.js re-pitches the rest.
-     */
     function initSampler() {
         sampler = new Tone.Sampler({
             urls: {
@@ -184,8 +176,25 @@
             onload: onSamplerLoaded,
         }).toDestination();
 
-        // Set initial volume
         applyVolume($volumeSlider.value);
+
+        // Init Metronome
+        metronomeSynth = new Tone.MembraneSynth({
+            pitchDecay: 0.008,
+            octaves: 2,
+            envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.01 }
+        }).toDestination();
+        metronomeSynth.volume.value = -10;
+
+        Tone.Transport.scheduleRepeat((time) => {
+            if (metronomeOn) {
+                // Higher pitch on the downbeat (beat 0)
+                const isDownbeat = Tone.Transport.position.split(':')[1] === '0';
+                metronomeSynth.triggerAttackRelease(isDownbeat ? 'C5' : 'G4', '32n', time);
+            }
+        }, '4n');
+        
+        Tone.Transport.bpm.value = Number($bpmInput.value);
     }
 
     function onSamplerLoaded() {
@@ -194,71 +203,186 @@
         $startBtn.style.display  = 'inline-block';
     }
 
-    /** Convert slider 0–100 to a perceptual dB scale */
     function applyVolume(val) {
         const v = Number(val);
         Tone.Destination.volume.value = v === 0 ? -Infinity : 20 * Math.log10(v / 100);
     }
 
     /* ------------------------------------------------------------------
-     *  6. NOTE PLAY / STOP
+     *  6. NOTE PLAY / STOP & LOGIC
      * ------------------------------------------------------------------ */
 
     /**
-     * Start playing a note.
-     * @param {string} note – e.g. "C4"
+     * Internal function to trigger visuals only (used during playback)
      */
-    function playNote(note) {
-        if (!samplerReady || !audioStarted) return;
-
+    function visualPlayNote(note) {
         const el = $piano.querySelector(`[data-note="${note}"]`);
-        if (!el) return;
-
-        el.classList.add('active');
-        activeNotes.add(note);
-
-        // Trigger attack (Tone.js handles polyphony natively)
-        sampler.triggerAttack(note, Tone.now());
+        if (el) el.classList.add('active');
+        
+        // Start visualizer block
+        if (el) {
+            const rect = el.getBoundingClientRect();
+            const wrapperRect = $pianoWrapper.getBoundingClientRect();
+            const x = rect.left - wrapperRect.left + $pianoWrapper.scrollLeft;
+            activeBlocks.set(note, {
+                startTime: performance.now(),
+                x: x,
+                width: rect.width,
+                isBlack: el.classList.contains('key-black')
+            });
+        }
     }
 
-    /**
-     * Stop a note (unless sustain is ON).
-     * @param {string} note – e.g. "C4"
-     */
-    function stopNote(note) {
-        if (!samplerReady || !audioStarted) return;
-
+    function visualStopNote(note) {
         const el = $piano.querySelector(`[data-note="${note}"]`);
         if (el) el.classList.remove('active');
-
-        if (!sustainOn) {
-            sampler.triggerRelease(note, Tone.now());
-            activeNotes.delete(note);
+        
+        // Finish visualizer block
+        if (activeBlocks.has(note)) {
+            const block = activeBlocks.get(note);
+            const durationMs = performance.now() - block.startTime;
+            flyingBlocks.push({
+                x: block.x,
+                width: block.width,
+                yBottom: $canvas.height, // start flying from the bottom of canvas
+                length: durationMs * FALL_SPEED,
+                isBlack: block.isBlack
+            });
+            activeBlocks.delete(note);
         }
-        // When sustain is ON, note keeps ringing; activeNotes retains it
     }
 
-    /**
-     * Release ALL currently active (sustaining) notes.
-     * Called when the sustain toggle is turned OFF.
-     */
+    function playNote(note, time = Tone.now(), velocity = 1) {
+        if (!samplerReady || !audioStarted) return;
+        if (!VALID_NOTES.has(note)) return;
+
+        // Audio
+        sampler.triggerAttack(note, time, velocity);
+        
+        // State & Visuals
+        activeNotes.add(note);
+        visualPlayNote(note);
+        updateChordDisplay();
+
+        // Recording Logic
+        if (isRecording) {
+            noteOnTimes.set(note, Tone.now() - recordingStartTime);
+        }
+    }
+
+    function stopNote(note, time = Tone.now()) {
+        if (!samplerReady || !audioStarted) return;
+
+        visualStopNote(note);
+
+        if (!sustainOn) {
+            sampler.triggerRelease(note, time);
+            activeNotes.delete(note);
+            updateChordDisplay();
+        }
+
+        // Recording Logic
+        if (isRecording && noteOnTimes.has(note)) {
+            const startTime = noteOnTimes.get(note);
+            const duration = (Tone.now() - recordingStartTime) - startTime;
+            recordedNotes.push({ time: startTime, note: note, duration: duration });
+            noteOnTimes.delete(note);
+        }
+    }
+
     function releaseAllSustained() {
         for (const note of activeNotes) {
             sampler.triggerRelease(note, Tone.now());
-            const el = $piano.querySelector(`[data-note="${note}"]`);
-            if (el) el.classList.remove('active');
+            visualStopNote(note);
         }
         activeNotes.clear();
+        updateChordDisplay();
     }
 
     /* ------------------------------------------------------------------
-     *  7. POINTER EVENTS (mouse + touch + pen — supports glissando)
+     *  7. CHORD DETECTOR (Tonal.js)
+     * ------------------------------------------------------------------ */
+    
+    function updateChordDisplay() {
+        if (!window.Tonal || activeNotes.size === 0) {
+            $chordName.textContent = '--';
+            return;
+        }
+
+        // Get unique pitch classes (e.g., C4, E4, G5 -> C, E, G)
+        const pitchClasses = Array.from(activeNotes).map(n => n.replace(/\d/, ''));
+        const uniqueNotes = [...new Set(pitchClasses)];
+
+        if (uniqueNotes.length >= 3) {
+            const detected = Tonal.Chord.detect(uniqueNotes);
+            if (detected.length > 0) {
+                // Show first detected chord
+                $chordName.textContent = detected[0];
+            } else {
+                $chordName.textContent = uniqueNotes.join(', ');
+            }
+        } else {
+            // 1 or 2 notes
+            $chordName.textContent = uniqueNotes.join(', ');
+        }
+    }
+
+    /* ------------------------------------------------------------------
+     *  8. SYNTHESIA VISUALIZER (Canvas)
+     * ------------------------------------------------------------------ */
+
+    function resizeCanvas() {
+        // Canvas covers the piano-wrapper scroll area horizontally, but fixed height
+        $canvas.width = $piano.scrollWidth;
+        $canvas.height = $pianoWrapper.clientHeight - $piano.clientHeight;
+    }
+
+    function drawVisualizer(timestamp) {
+        if (!lastVisualTime) lastVisualTime = timestamp;
+        const deltaTime = timestamp - lastVisualTime;
+        lastVisualTime = timestamp;
+
+        ctx.clearRect(0, 0, $canvas.width, $canvas.height);
+        
+        // Colors from classic theme
+        const colorWhite = 'rgba(232, 200, 74, 0.8)'; // amber/gold
+        const colorBlack = 'rgba(184, 150, 46, 0.9)'; // darker gold
+
+        // Draw flying blocks (released notes drifting up)
+        for (let i = flyingBlocks.length - 1; i >= 0; i--) {
+            const block = flyingBlocks[i];
+            block.yBottom -= FALL_SPEED * deltaTime;
+            
+            ctx.fillStyle = block.isBlack ? colorBlack : colorWhite;
+            ctx.beginPath();
+            ctx.roundRect(block.x, block.yBottom - block.length, block.width, block.length, 3);
+            ctx.fill();
+
+            // Remove if off screen
+            if (block.yBottom < 0) {
+                flyingBlocks.splice(i, 1);
+            }
+        }
+
+        // Draw active blocks (currently held notes growing up from bottom)
+        for (const [note, block] of activeBlocks.entries()) {
+            const length = (timestamp - block.startTime) * FALL_SPEED;
+            ctx.fillStyle = block.isBlack ? colorBlack : colorWhite;
+            ctx.beginPath();
+            ctx.roundRect(block.x, $canvas.height - length, block.width, length, 3);
+            ctx.fill();
+        }
+
+        requestAnimationFrame(drawVisualizer);
+    }
+
+    /* ------------------------------------------------------------------
+     *  9. EVENTS: POINTER & KEYBOARD
      * ------------------------------------------------------------------ */
 
     function getKeyFromPointer(e) {
         const target = document.elementFromPoint(e.clientX, e.clientY);
         if (!target) return null;
-        // Handle clicks on label children
         const keyEl = target.closest('.key-white, .key-black');
         return keyEl ? keyEl.dataset.note : null;
     }
@@ -283,7 +407,6 @@
         const prev = pointerNotes.get(e.pointerId);
 
         if (note !== prev) {
-            // Glissando: release old, play new
             if (prev) stopNote(prev);
             if (note) {
                 pointerNotes.set(e.pointerId, note);
@@ -303,23 +426,20 @@
     $piano.addEventListener('pointerup', onPointerEnd);
     $piano.addEventListener('pointercancel', onPointerEnd);
 
-    /* ------------------------------------------------------------------
-     *  8. PHYSICAL KEYBOARD EVENTS
-     * ------------------------------------------------------------------ */
-
     document.addEventListener('keydown', (e) => {
-        // Ignore key-repeat (prevents stuttering audio)
         if (e.repeat) return;
+        
+        // Don't intercept if user is typing in BPM input
+        if (document.activeElement === $bpmInput) return;
 
         const key  = e.key.toLowerCase();
         const note = KEY_MAP[key];
         if (!note) return;
 
-        // Prevent browser default (e.g. Tab switching focus)
         e.preventDefault();
         ensureAudioStarted();
 
-        if (heldKeys.has(key)) return;  // safety net
+        if (heldKeys.has(key)) return;
         heldKeys.add(key);
         playNote(note);
     });
@@ -334,77 +454,195 @@
     });
 
     /* ------------------------------------------------------------------
-     *  9. CONTROL PANEL
+     *  10. WEB MIDI API
      * ------------------------------------------------------------------ */
 
-    // --- Toggle: Note Labels ---
+    function initMIDI() {
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess().then(access => {
+                const inputs = access.inputs.values();
+                for (let input of inputs) {
+                    input.onmidimessage = (msg) => {
+                        ensureAudioStarted();
+                        const [command, noteNum, velocity] = msg.data;
+                        
+                        // Note On
+                        if (command >= 144 && command <= 159 && velocity > 0) {
+                            if (window.Tonal) {
+                                const note = Tonal.Midi.midiToNoteName(noteNum);
+                                if (!activeNotes.has(note)) {
+                                    playNote(note, Tone.now(), velocity / 127);
+                                }
+                            }
+                        } 
+                        // Note Off
+                        else if ((command >= 128 && command <= 143) || (command >= 144 && command <= 159 && velocity === 0)) {
+                            if (window.Tonal) {
+                                const note = Tonal.Midi.midiToNoteName(noteNum);
+                                stopNote(note);
+                            }
+                        }
+                    };
+                }
+            }).catch(err => console.warn('MIDI Access Denied:', err));
+        }
+    }
+
+    /* ------------------------------------------------------------------
+     *  11. CONTROL PANEL EVENTS
+     * ------------------------------------------------------------------ */
+
     $toggleNotes.addEventListener('click', () => {
         showNotes = !showNotes;
         $toggleNotes.classList.toggle('active', showNotes);
         $piano.classList.toggle('hide-notes', !showNotes);
     });
 
-    // --- Toggle: Keyboard Labels ---
     $toggleKeys.addEventListener('click', () => {
         showKeys = !showKeys;
         $toggleKeys.classList.toggle('active', showKeys);
         $piano.classList.toggle('hide-keys', !showKeys);
     });
 
-    // --- Toggle: Sustain ---
     $toggleSust.addEventListener('click', () => {
         sustainOn = !sustainOn;
         $toggleSust.classList.toggle('active', sustainOn);
+        if (!sustainOn) releaseAllSustained();
+    });
 
-        // User refinement: release all lingering notes when sustain is turned OFF
-        if (!sustainOn) {
-            releaseAllSustained();
+    $volumeSlider.addEventListener('input', (e) => applyVolume(e.target.value));
+
+    // Advanced: Metronome
+    $toggleMetro.addEventListener('click', () => {
+        ensureAudioStarted();
+        metronomeOn = !metronomeOn;
+        $toggleMetro.classList.toggle('active', metronomeOn);
+        if (metronomeOn && Tone.Transport.state !== 'started') {
+            Tone.Transport.start();
         }
     });
 
-    // --- Volume Slider ---
-    $volumeSlider.addEventListener('input', (e) => {
-        applyVolume(e.target.value);
+    $bpmInput.addEventListener('change', (e) => {
+        let val = Number(e.target.value);
+        if (val < 40) val = 40;
+        if (val > 240) val = 240;
+        e.target.value = val;
+        Tone.Transport.bpm.value = val;
+    });
+
+    // Advanced: Record
+    $toggleRec.addEventListener('click', () => {
+        ensureAudioStarted();
+        isRecording = !isRecording;
+        $toggleRec.classList.toggle('active', isRecording);
+        
+        if (isRecording) {
+            // Start recording
+            recordedNotes = [];
+            noteOnTimes.clear();
+            recordingStartTime = Tone.now();
+            $togglePlay.disabled = true;
+            if (playbackPart) {
+                playbackPart.dispose();
+                playbackPart = null;
+            }
+        } else {
+            // Stop recording
+            // Close any currently held notes
+            for (const [note, startTime] of noteOnTimes.entries()) {
+                const duration = (Tone.now() - recordingStartTime) - startTime;
+                recordedNotes.push({ time: startTime, note: note, duration: duration });
+            }
+            noteOnTimes.clear();
+            
+            // Enable play button if we have notes
+            if (recordedNotes.length > 0) {
+                $togglePlay.disabled = false;
+            }
+        }
+    });
+
+    // Advanced: Playback
+    $togglePlay.addEventListener('click', () => {
+        ensureAudioStarted();
+        if (recordedNotes.length === 0 || isRecording) return;
+
+        isPlaying = !isPlaying;
+        $togglePlay.classList.toggle('active', isPlaying);
+
+        if (isPlaying) {
+            // Start Playback
+            playbackPart = new Tone.Part((time, value) => {
+                sampler.triggerAttackRelease(value.note, value.duration, time);
+                
+                // Sync visualizer and keys
+                Tone.Draw.schedule(() => {
+                    visualPlayNote(value.note);
+                    updateChordDisplay(); // Note: activeNotes isn't tracking playback notes, but this looks cool
+                    setTimeout(() => {
+                        visualStopNote(value.note);
+                    }, value.duration * 1000);
+                }, time);
+
+            }, recordedNotes).start(0);
+            
+            Tone.Transport.start();
+            
+            // Stop playback when part is done (find max time + duration)
+            const maxTime = Math.max(...recordedNotes.map(n => n.time + n.duration));
+            Tone.Transport.scheduleOnce(() => {
+                isPlaying = false;
+                $togglePlay.classList.remove('active');
+                playbackPart.dispose();
+                playbackPart = null;
+                // Don't stop transport if metronome is on
+                if (!metronomeOn) Tone.Transport.stop();
+            }, `+${maxTime + 0.5}`);
+
+        } else {
+            // Stop Playback manually
+            if (playbackPart) playbackPart.dispose();
+            playbackPart = null;
+            if (!metronomeOn) Tone.Transport.stop();
+        }
     });
 
     /* ------------------------------------------------------------------
-     *  10. AUDIO CONTEXT UNLOCK
+     *  12. INITIALIZATION
      * ------------------------------------------------------------------ */
 
-    /**
-     * Browsers require a user gesture to start the AudioContext.
-     * This is called on the first interaction.
-     */
     async function ensureAudioStarted() {
         if (audioStarted) return;
         await Tone.start();
         audioStarted = true;
     }
 
-    /* ------------------------------------------------------------------
-     *  11. INITIALIZATION
-     * ------------------------------------------------------------------ */
-
     function init() {
         buildKeyboard();
         initSampler();
+        initMIDI();
 
-        // Scroll piano to center (middle-C area)
-        const wrapper = document.getElementById('piano-wrapper');
+        // Setup Visualizer Canvas
+        window.addEventListener('resize', resizeCanvas);
+        // Wait for DOM layout to complete before initial resize
+        setTimeout(resizeCanvas, 100);
+        requestAnimationFrame(drawVisualizer);
+
+        // Center piano wrapper
         requestAnimationFrame(() => {
             const totalW = $piano.scrollWidth;
-            const viewW  = wrapper.clientWidth;
-            wrapper.scrollLeft = (totalW - viewW) / 2;
+            const viewW  = $pianoWrapper.clientWidth;
+            $pianoWrapper.scrollLeft = (totalW - viewW) / 2;
+            resizeCanvas(); // Resize again after scroll adjustment
         });
 
-        // Start button dismisses overlay and attempts to unlock audio
         $startBtn.addEventListener('click', () => {
             $overlay.classList.add('hidden');
-            // Attempt to start audio context; if it fails here,
-            // ensureAudioStarted() will retry on first key interaction
             Tone.start().then(() => { audioStarted = true; }).catch(() => {});
+            resizeCanvas();
         });
     }
 
     init();
 })();
+

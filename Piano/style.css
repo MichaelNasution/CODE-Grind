@@ -234,6 +234,76 @@ html, body {
     box-shadow: 0 0 4px var(--gold-glow);
 }
 
+/* Record Button Indicator */
+.toggle-btn.record-btn.active {
+    border-color: #a33;
+    color: #f77;
+    box-shadow: inset 0 1px 0 rgba(255, 100, 100, 0.1),
+                0 0 6px rgba(255, 100, 100, 0.3);
+}
+
+.toggle-btn.record-btn.active .indicator {
+    background: #e44;
+    box-shadow: 0 0 6px rgba(255, 50, 50, 0.8);
+    animation: pulse-red 1.5s infinite alternate;
+}
+
+@keyframes pulse-red {
+    from { box-shadow: 0 0 4px rgba(255, 50, 50, 0.5); }
+    to { box-shadow: 0 0 10px rgba(255, 50, 50, 1); }
+}
+
+/* Play Button */
+.toggle-btn.play-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Control Group (Metronome + BPM) */
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(to bottom, #3a2a20, #2c1e16);
+    border: 1px solid #4a3828;
+    border-radius: 5px;
+    padding-right: 8px;
+    box-shadow: inset 0 1px 0 rgba(255, 220, 140, 0.06),
+                0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.control-group .toggle-btn {
+    border: none;
+    box-shadow: none;
+    background: transparent;
+}
+
+.control-group .toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.control-group .toggle-btn.active {
+    background: rgba(212, 175, 55, 0.1);
+}
+
+#bpm-input {
+    width: 48px;
+    background: #1a0f0a;
+    border: 1px solid #5a4838;
+    color: var(--gold-dim);
+    font-family: inherit;
+    font-size: 0.8rem;
+    text-align: center;
+    border-radius: 3px;
+    padding: 2px 0;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+    outline: none;
+}
+
+#bpm-input:focus {
+    border-color: var(--gold);
+}
+
 /* Volume control — wood & brass */
 .volume-control {
     display: flex;
@@ -304,6 +374,7 @@ html, body {
     display: flex;
     align-items: flex-end;
     justify-content: center;
+    position: relative;
     overflow-x: auto;
     overflow-y: hidden;
     padding: 0 20px 24px;
@@ -329,6 +400,53 @@ html, body {
 #piano-wrapper::-webkit-scrollbar-thumb {
     background: rgba(139, 115, 85, 0.35);
     border-radius: 3px;
+}
+
+/* Synthesia Visualizer Canvas */
+#visualizer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Chord Detector Display */
+#chord-display {
+    position: absolute;
+    bottom: calc(var(--white-key-height) + 40px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(to bottom, #2a1b14, #1a0d08);
+    border: 2px solid #5d4037;
+    border-radius: 4px;
+    padding: 8px 20px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    z-index: 5;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.8),
+                0 4px 12px rgba(0,0,0,0.6),
+                0 0 0 1px #8b6b4a; /* Brass inner trim */
+}
+
+.chord-label {
+    font-size: 0.7rem;
+    color: var(--brown-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+#chord-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.03em;
+    min-width: 60px;
+    text-align: center;
 }
 
 /* Piano keyboard container — wooden cabinet frame */
