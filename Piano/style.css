@@ -20,11 +20,11 @@
     --text-secondary: #9590a8;
     --text-muted: #5c576e;
 
-    /* Key dimensions */
+    /* Key dimensions — pixel-based for precise control */
     --white-key-width: 52px;
     --white-key-height: 280px;
-    --black-key-width-pct: 60%;      /* relative to white key */
-    --black-key-height: 175px;
+    --black-key-width: 30px;           /* ~58% of white key */
+    --black-key-height: 168px;         /* 60% of white key height */
 
     --key-radius: 0 0 6px 6px;
     --transition-fast: 80ms ease;
@@ -312,28 +312,27 @@ html, body {
 #piano {
     position: relative;
     display: inline-flex;
-    align-items: flex-end;
+    align-items: flex-start;       /* keys hang from top edge */
     flex-shrink: 0;
-    padding-bottom: 4px;
     /* Wooden trim above the keys */
     border-top: 4px solid #2a2430;
     /* subtle shadow under the piano */
     filter: drop-shadow(0 12px 40px rgba(0, 0, 0, 0.6));
 }
 
-/* ---------- Octave Group ---------- */
-.octave-group {
-    position: relative;
-    display: inline-flex;
+/* ---------- Key Wrapper ---------- */
+.key-wrapper {
+    position: relative;            /* anchor for the black key child */
+    width: var(--white-key-width);
+    height: var(--white-key-height);
     flex-shrink: 0;
 }
 
 /* ---------- White Keys ---------- */
 .key-white {
     position: relative;
-    width: var(--white-key-width);
-    height: var(--white-key-height);
-    flex-shrink: 0;
+    width: 100%;
+    height: 100%;
     background: linear-gradient(to bottom, #fefefe 0%, #f0eff4 85%, #e4e2ea 100%);
     border: 1px solid #c8c6d0;
     border-top: none;
@@ -344,11 +343,12 @@ html, body {
                 box-shadow var(--transition-fast);
     z-index: 1;
 
+    /* Label layout */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-    padding-bottom: 10px;
+    padding-bottom: 12px;
     gap: 3px;
 }
 
@@ -361,6 +361,7 @@ html, body {
     box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.06),
                 inset 0 1px 0 rgba(255, 255, 255, 0.8);
     pointer-events: none;
+    z-index: 1;
 }
 
 .key-white:hover {
@@ -382,26 +383,29 @@ html, body {
 .key-black {
     position: absolute;
     top: 0;
-    width: var(--black-key-width-pct);
+    /* Straddle the right edge of the wrapper (= boundary between two white keys) */
+    right: calc(var(--black-key-width) / -2);
+    width: var(--black-key-width);
     height: var(--black-key-height);
     background: linear-gradient(to bottom, #303035 0%, #1a1a1f 60%, #111115 100%);
     border: 1px solid #0a0a0e;
     border-top: none;
     border-radius: 0 0 5px 5px;
     cursor: pointer;
-    z-index: 5;
+    z-index: 10;                   /* clearly on top of white keys */
     transition: background var(--transition-fast),
                 transform var(--transition-fast),
                 box-shadow var(--transition-fast);
 
+    /* Label layout — centered near bottom */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-    padding-bottom: 8px;
-    gap: 2px;
+    padding-bottom: 10px;
+    gap: 3px;
 
-    /* glossy highlight */
+    /* Glossy 3D effect */
     box-shadow: inset 0 -6px 10px rgba(0, 0, 0, 0.4),
                 inset 0 1px 0 rgba(255, 255, 255, 0.08),
                 0 4px 8px rgba(0, 0, 0, 0.5);
@@ -431,7 +435,7 @@ html, body {
 
 .key-label-note {
     color: var(--accent);
-    font-size: 0.6rem;
+    font-size: 0.62rem;
 }
 
 .key-label-key {
@@ -442,12 +446,12 @@ html, body {
 
 .key-black .key-label-note {
     color: var(--accent-secondary);
-    font-size: 0.55rem;
+    font-size: 0.6rem;
 }
 
 .key-black .key-label-key {
-    color: #6a6878;
-    font-size: 0.52rem;
+    color: #7a7890;
+    font-size: 0.55rem;
 }
 
 /* Hidden state for labels */
@@ -459,7 +463,8 @@ html, body {
     :root {
         --white-key-width: 40px;
         --white-key-height: 220px;
-        --black-key-height: 135px;
+        --black-key-width: 24px;
+        --black-key-height: 132px;
     }
 
     #control-panel {
@@ -486,7 +491,8 @@ html, body {
     :root {
         --white-key-width: 34px;
         --white-key-height: 180px;
-        --black-key-height: 110px;
+        --black-key-width: 20px;
+        --black-key-height: 108px;
     }
 
     .toggle-btn {

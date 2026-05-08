@@ -49,28 +49,8 @@
         NOTE_TO_KEY[n] = k.toUpperCase();
     }
 
-    /**
-     * Black-key left offsets expressed as a percentage of one white-key width.
-     * Each value = (global-white-key-index-of-following-white-key) positions
-     * from the octave start, converted to a fractional position.
-     * Within an octave (7 white keys), the boundaries between pairs:
-     *   C# → between C(0) and D(1) → center at 1/7 of octave ≈ 14.28%
-     *   D# → between D(1) and E(2) → center at 2/7 ≈ 28.57%
-     *   F# → between F(3) and G(4) → center at 4/7 ≈ 57.14%
-     *   G# → between G(4) and A(5) → center at 5/7 ≈ 71.43%
-     *   A# → between A(5) and B(6) → center at 6/7 ≈ 85.71%
-     *
-     * These are the center-point percentages within an octave-group div.
-     * The black key itself is offset left by half its own width (done in CSS
-     * via transform: translateX(-50%)).
-     */
-    const BLACK_KEY_PCT = {
-        'C#': 14.2857,
-        'D#': 28.5714,
-        'F#': 57.1429,
-        'G#': 71.4286,
-        'A#': 85.7143,
-    };
+
+
 
     /* ------------------------------------------------------------------
      *  2. STATE
