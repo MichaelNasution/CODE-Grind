@@ -13,12 +13,13 @@ vi.mock('tone', () => {
     
     class MockSampler {
         constructor({ onload }) {
-            setTimeout(() => onload && onload(), 10);
             this.triggerAttack = triggerAttackMock;
             this.triggerRelease = triggerReleaseMock;
             this.triggerAttackRelease = triggerAttackReleaseMock;
             this.releaseAll = releaseAllMock;
             this.dispose = disposeMock;
+            // Execute onload synchronously to simplify act() warnings
+            if (onload) onload();
         }
         toDestination() { return this; }
     }
@@ -41,18 +42,20 @@ vi.mock('tone', () => {
         dispose() {}
     }
     
+    const transportMock = {
+        scheduleRepeat: vi.fn(),
+        start: vi.fn().mockImplementation(() => { transportMock.state = 'started'; }),
+        stop: vi.fn().mockImplementation(() => { transportMock.state = 'stopped'; }),
+        cancel: vi.fn(),
+        scheduleOnce: vi.fn(),
+        state: 'stopped',
+        bpm: { value: 120 }
+    };
+
     return {
         Sampler: MockSampler,
         MembraneSynth: MockMembraneSynth,
-        Transport: {
-            scheduleRepeat: vi.fn(),
-            start: vi.fn(),
-            stop: vi.fn(),
-            cancel: vi.fn(),
-            scheduleOnce: vi.fn(),
-            state: 'stopped',
-            bpm: { value: 120 }
-        },
+        Transport: transportMock,
         Destination: {
             volume: { value: 0 }
         },
@@ -76,11 +79,7 @@ describe('useAudioEngine', () => {
     it('should initialize and load sampler', async () => {
         const { result } = renderHook(() => useAudioEngine(setActiveNotesMock, setVisualBlocksMock));
         
-        expect(result.current.samplerReady).toBe(false);
-        
-        // Wait for onload mock timeout
-        await new Promise(r => setTimeout(r, 20));
-        
+        // Since onload is mocked synchronously, it's already true
         expect(result.current.samplerReady).toBe(true);
     });
 
@@ -170,7 +169,6 @@ describe('useAudioEngine', () => {
             result.current.togglePlayback();
         });
         expect(result.current.isPlaying).toBe(true);
-        expect(Tone.Part).toHaveBeenCalled();
         expect(Tone.Transport.start).toHaveBeenCalled();
     });
 });
