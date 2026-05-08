@@ -1,0 +1,489 @@
+/* ============================================
+   Virtual Piano — Stylesheet
+   Dark theme, glassmorphism controls, 3D keys
+   ============================================ */
+
+/* ---------- Design Tokens ---------- */
+:root {
+    --bg-primary: #07070d;
+    --bg-surface: rgba(18, 18, 30, 0.75);
+    --bg-surface-hover: rgba(28, 28, 45, 0.85);
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --border-glass-hover: rgba(255, 255, 255, 0.15);
+
+    --accent: #7c6ef0;
+    --accent-glow: rgba(124, 110, 240, 0.35);
+    --accent-active: #6558d4;
+    --accent-secondary: #4ecdc4;
+
+    --text-primary: #e8e6f0;
+    --text-secondary: #9590a8;
+    --text-muted: #5c576e;
+
+    /* Key dimensions */
+    --white-key-width: 52px;
+    --white-key-height: 220px;
+    --black-key-width-pct: 60%;      /* relative to white key */
+    --black-key-height: 140px;
+
+    --key-radius: 0 0 6px 6px;
+    --transition-fast: 80ms ease;
+    --transition-med: 200ms ease;
+}
+
+/* ---------- Reset & Base ---------- */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    overflow: hidden;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;          /* let pointer events handle everything */
+}
+
+/* ---------- Loading Overlay ---------- */
+#loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-primary);
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+#loading-overlay.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.loader-ring {
+    width: 56px;
+    height: 56px;
+    border: 3px solid rgba(124, 110, 240, 0.15);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    margin-bottom: 24px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+#loading-overlay h2 {
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    margin-bottom: 8px;
+}
+
+#loading-overlay p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+#start-btn {
+    display: none;                /* shown by JS when samples are loaded */
+    margin-top: 28px;
+    padding: 14px 42px;
+    font-size: 1rem;
+    font-weight: 600;
+    font-family: inherit;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: transform var(--transition-med), box-shadow var(--transition-med);
+    box-shadow: 0 0 20px var(--accent-glow);
+}
+
+#start-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 28px var(--accent-glow);
+}
+
+/* ---------- App Layout ---------- */
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    min-height: 0;
+}
+
+/* ---------- Control Panel (Glassmorphism) ---------- */
+#control-panel {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 28px;
+    background: var(--bg-surface);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--border-glass);
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+#control-panel .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+#control-panel .logo svg {
+    width: 28px;
+    height: 28px;
+    color: var(--accent);
+}
+
+#control-panel .logo h1 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+/* Toggle buttons */
+.toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-glass);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all var(--transition-med);
+    white-space: nowrap;
+}
+
+.toggle-btn:hover {
+    background: var(--bg-surface-hover);
+    border-color: var(--border-glass-hover);
+    color: var(--text-primary);
+}
+
+.toggle-btn.active {
+    background: rgba(124, 110, 240, 0.12);
+    border-color: rgba(124, 110, 240, 0.35);
+    color: var(--accent);
+}
+
+.toggle-btn .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: background var(--transition-med);
+}
+
+.toggle-btn.active .dot {
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent-glow);
+}
+
+/* Volume control */
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-glass);
+    border-radius: 8px;
+}
+
+.volume-control label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.volume-control svg {
+    width: 16px;
+    height: 16px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+#volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 110px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+#volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+    cursor: pointer;
+    transition: transform var(--transition-fast);
+}
+
+#volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+#volume-slider::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: none;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent-glow);
+    cursor: pointer;
+}
+
+/* ---------- Piano Container ---------- */
+#piano-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 20px 40px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(124, 110, 240, 0.25) transparent;
+}
+
+#piano-wrapper::-webkit-scrollbar {
+    height: 6px;
+}
+
+#piano-wrapper::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#piano-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(124, 110, 240, 0.25);
+    border-radius: 3px;
+}
+
+/* Piano keyboard container */
+#piano {
+    position: relative;
+    display: inline-flex;
+    align-items: flex-end;
+    flex-shrink: 0;
+    padding-bottom: 4px;
+    /* subtle shadow under the piano */
+    filter: drop-shadow(0 12px 40px rgba(0, 0, 0, 0.6));
+}
+
+/* ---------- Octave Group ---------- */
+.octave-group {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+/* ---------- White Keys ---------- */
+.key-white {
+    position: relative;
+    width: var(--white-key-width);
+    height: var(--white-key-height);
+    flex-shrink: 0;
+    background: linear-gradient(to bottom, #fefefe 0%, #f0eff4 85%, #e4e2ea 100%);
+    border: 1px solid #c8c6d0;
+    border-top: none;
+    border-radius: var(--key-radius);
+    cursor: pointer;
+    transition: background var(--transition-fast),
+                transform var(--transition-fast),
+                box-shadow var(--transition-fast);
+    z-index: 1;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 10px;
+    gap: 3px;
+}
+
+/* Subtle 3D bevel on white keys */
+.key-white::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: var(--key-radius);
+    box-shadow: inset 0 -4px 6px rgba(0, 0, 0, 0.06),
+                inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    pointer-events: none;
+}
+
+.key-white:hover {
+    background: linear-gradient(to bottom, #f8f7fc, #ece9f4 85%, #ddd9ea 100%);
+}
+
+.key-white.active {
+    background: linear-gradient(to bottom, #e8e5f2, #dbd6ea 85%, #ccc6e0 100%);
+    transform: translateY(3px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-color: #b8b4c8;
+}
+
+.key-white.active::after {
+    box-shadow: inset 0 -1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* ---------- Black Keys ---------- */
+.key-black {
+    position: absolute;
+    top: 0;
+    width: var(--black-key-width-pct);
+    height: var(--black-key-height);
+    background: linear-gradient(to bottom, #303035 0%, #1a1a1f 60%, #111115 100%);
+    border: 1px solid #0a0a0e;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    cursor: pointer;
+    z-index: 5;
+    transition: background var(--transition-fast),
+                transform var(--transition-fast),
+                box-shadow var(--transition-fast);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    padding-bottom: 8px;
+    gap: 2px;
+
+    /* glossy highlight */
+    box-shadow: inset 0 -6px 10px rgba(0, 0, 0, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.key-black:hover {
+    background: linear-gradient(to bottom, #3a3a42, #222228 60%, #161618 100%);
+}
+
+.key-black.active {
+    background: linear-gradient(to bottom, #45454f, #2a2a32 60%, #1e1e24 100%);
+    transform: translateY(2px);
+    box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.3),
+                0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- Key Labels ---------- */
+.key-label-note,
+.key-label-key {
+    font-size: 0.65rem;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    pointer-events: none;
+    transition: opacity var(--transition-med);
+}
+
+.key-label-note {
+    color: var(--accent);
+    font-size: 0.6rem;
+}
+
+.key-label-key {
+    color: #8a8698;
+    font-size: 0.58rem;
+    font-weight: 500;
+}
+
+.key-black .key-label-note {
+    color: var(--accent-secondary);
+    font-size: 0.55rem;
+}
+
+.key-black .key-label-key {
+    color: #6a6878;
+    font-size: 0.52rem;
+}
+
+/* Hidden state for labels */
+.hide-notes .key-label-note { opacity: 0; }
+.hide-keys .key-label-key  { opacity: 0; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+    :root {
+        --white-key-width: 40px;
+        --white-key-height: 180px;
+        --black-key-height: 110px;
+    }
+
+    #control-panel {
+        flex-direction: column;
+        gap: 10px;
+        padding: 10px 16px;
+    }
+
+    .controls {
+        justify-content: center;
+    }
+
+    #piano-wrapper {
+        padding: 0 8px 20px;
+    }
+
+    .key-label-note,
+    .key-label-key {
+        font-size: 0.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --white-key-width: 34px;
+        --white-key-height: 155px;
+        --black-key-height: 95px;
+    }
+
+    .toggle-btn {
+        padding: 6px 10px;
+        font-size: 0.72rem;
+    }
+}

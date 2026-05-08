@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Virtual Piano — Play Piano Online</title>
+    <meta name="description" content="A premium virtual piano with realistic Salamander Grand Piano samples, full keyboard mapping, sustain, and polyphonic playback. Play directly in your browser.">
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- ====== Loading Overlay ====== -->
+    <div id="loading-overlay">
+        <div class="loader-ring"></div>
+        <h2>Virtual Piano</h2>
+        <p id="loading-text">Loading piano samples…</p>
+        <button id="start-btn">Start Playing</button>
+    </div>
+
+    <!-- ====== Main Application ====== -->
+    <div id="app">
+
+        <!-- ---- Control Panel ---- -->
+        <header id="control-panel">
+            <div class="logo">
+                <!-- Piano icon SVG -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <line x1="8" y1="4" x2="8" y2="14"/>
+                    <line x1="16" y1="4" x2="16" y2="14"/>
+                    <line x1="12" y1="4" x2="12" y2="14"/>
+                </svg>
+                <h1>Virtual Piano</h1>
+            </div>
+
+            <div class="controls">
+                <!-- Keyboard Marks Toggle -->
+                <button id="toggle-keys" class="toggle-btn active" aria-label="Toggle keyboard marks">
+                    <span class="dot"></span>
+                    Keyboard
+                </button>
+
+                <!-- Letter Notes Toggle -->
+                <button id="toggle-notes" class="toggle-btn active" aria-label="Toggle note labels">
+                    <span class="dot"></span>
+                    Notes
+                </button>
+
+                <!-- Sustain Toggle -->
+                <button id="toggle-sustain" class="toggle-btn" aria-label="Toggle sustain">
+                    <span class="dot"></span>
+                    Sustain
+                </button>
+
+                <!-- Volume -->
+                <div class="volume-control">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                    </svg>
+                    <input type="range" id="volume-slider" min="0" max="100" value="75" aria-label="Volume">
+                </div>
+            </div>
+        </header>
+
+        <!-- ---- Piano Keyboard ---- -->
+        <main id="piano-wrapper">
+            <div id="piano" role="application" aria-label="Piano keyboard">
+                <!-- Keys are generated dynamically by script.js -->
+            </div>
+        </main>
+
+    </div>
+
+    <!-- Tone.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"
+            integrity="sha512-u6sM4G28+QRxVsOqBviWBVHdDl4vVgDMjhbOfXEVxBI0XjyMtYBlFMVWbEExFxqYrDijhg1sOhU3BzQAqFkEQ=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+
+    <!-- Application Logic -->
+    <script src="script.js"></script>
+</body>
+</html>
