@@ -15,36 +15,50 @@ const KEY_MAP = {
     'i': 'C5',  '9': 'C#5', 'o': 'D5',  '0': 'D#5', 'p': 'E5',
 };
 
-export default function PianoKeyboard({ activeNotes, playNote, stopNote, ensureAudioStarted, showNotes, showKeys }) {
+export default function PianoKeyboard({ activeNotes, playNote, stopNote, ensureAudioStarted, showNotes, showKeys, octaveShift }) {
     const pianoRef = useRef(null);
     const pointerNotesRef = useRef(new Map());
-    const heldKeysRef = useRef(new Set());
+    const heldKeysRef = useRef(new Map()); // Key -> Note
+
+    const shiftNoteOctave = (noteStr, shift) => {
+        if (!shift) return noteStr;
+        const match = noteStr.match(/([A-Z]#?)(\d)/);
+        if (!match) return noteStr;
+        let [, noteName, octave] = match;
+        octave = Number(octave) + shift;
+        if (octave < 2) octave = 2;
+        if (octave > 7) octave = 7;
+        // Edge case C8
+        if (octave > 7 && noteName !== 'C') octave = 7;
+        return noteName + octave;
+    };
 
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.repeat) return;
-            // Ignore if focus is in an input (like BPM)
             if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
 
             const key = e.key.toLowerCase();
-            const note = KEY_MAP[key];
-            if (!note) return;
+            const baseNote = KEY_MAP[key];
+            if (!baseNote) return;
 
             e.preventDefault();
             ensureAudioStarted();
 
             if (heldKeysRef.current.has(key)) return;
-            heldKeysRef.current.add(key);
-            playNote(note);
+            
+            const shiftedNote = shiftNoteOctave(baseNote, octaveShift);
+            heldKeysRef.current.set(key, shiftedNote);
+            playNote(shiftedNote);
         };
 
         const handleKeyUp = (e) => {
             const key = e.key.toLowerCase();
-            const note = KEY_MAP[key];
-            if (!note) return;
+            if (!heldKeysRef.current.has(key)) return;
 
+            const playedNote = heldKeysRef.current.get(key);
             heldKeysRef.current.delete(key);
-            stopNote(note);
+            stopNote(playedNote);
         };
 
         document.addEventListener('keydown', handleKeyDown);
@@ -53,8 +67,10 @@ export default function PianoKeyboard({ activeNotes, playNote, stopNote, ensureA
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
             document.removeEventListener('keyup', handleKeyUp);
+            // We should release all held keys on unmount or shift change if we want it perfect,
+            // but just leaving them held locally is fine as `stopNote` cleans up.
         };
-    }, [playNote, stopNote, ensureAudioStarted]);
+    }, [playNote, stopNote, ensureAudioStarted, octaveShift]);
 
     const getKeyFromPointer = (e) => {
         const target = document.elementFromPoint(e.clientX, e.clientY);

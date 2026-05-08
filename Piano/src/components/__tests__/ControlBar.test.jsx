@@ -31,7 +31,13 @@ describe('ControlBar', () => {
         await userEvent.click(screen.getByLabelText('Toggle sustain'));
         expect(defaultProps.setSustainOn).toHaveBeenCalledWith(true);
 
-        await userEvent.click(screen.getByLabelText('Toggle metronome'));
+        // Open settings menu
+        await userEvent.click(screen.getByLabelText('Toggle settings'));
+        
+        // Use text matching or add test ID, or label text if provided.
+        // Actually, the label is "Metronome" span next to it, but let's just find the button that says "OFF" or "ON" inside settings
+        const metronomeBtn = screen.getByText('OFF'); // default metronomeOn is false
+        await userEvent.click(metronomeBtn);
         expect(defaultProps.setMetronomeOn).toHaveBeenCalledWith(true);
     });
 
@@ -47,12 +53,14 @@ describe('ControlBar', () => {
 
     it('updates BPM input', async () => {
         render(<ControlBar {...defaultProps} />);
-        const bpmInput = screen.getByLabelText('BPM');
+        
+        // Open settings menu
+        await userEvent.click(screen.getByLabelText('Toggle settings'));
+        
+        const bpmInput = screen.getByRole('spinbutton'); // number input
         await userEvent.clear(bpmInput);
         await userEvent.type(bpmInput, '140');
         
-        // Given how number inputs with onChange work, it might fire multiple times.
-        // The last call should be 140
         expect(defaultProps.setBpm).toHaveBeenCalled();
     });
 });

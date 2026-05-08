@@ -11,6 +11,7 @@ export default function App() {
     const [visualBlocks, setVisualBlocks] = useState(null);
     const [showNotes, setShowNotes] = useState(true);
     const [showKeys, setShowKeys] = useState(true);
+    const [octaveShift, setOctaveShift] = useState(0);
 
     const {
         samplerReady,
@@ -56,6 +57,8 @@ export default function App() {
                 isPlaying={isPlaying} togglePlayback={togglePlayback}
                 hasRecording={hasRecording}
                 chordName={chordName}
+                octaveShift={octaveShift}
+                setOctaveShift={setOctaveShift}
             />
 
             <main id="piano-wrapper">
@@ -67,6 +70,7 @@ export default function App() {
                     ensureAudioStarted={ensureAudioStarted}
                     showNotes={showNotes}
                     showKeys={showKeys}
+                    octaveShift={octaveShift}
                 />
             </main>
         </div>
