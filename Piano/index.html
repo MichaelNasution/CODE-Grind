@@ -59,6 +59,25 @@
                     Sustain
                 </button>
 
+                <!-- Metronome Toggle & BPM -->
+                <div class="control-group">
+                    <button id="toggle-metronome" class="toggle-btn" aria-label="Toggle metronome">
+                        <span class="dot"></span>
+                        Metronome
+                    </button>
+                    <input type="number" id="bpm-input" value="120" min="40" max="240" aria-label="BPM">
+                </div>
+
+                <!-- Record & Play Toggle -->
+                <button id="toggle-record" class="toggle-btn record-btn" aria-label="Toggle record">
+                    <span class="dot indicator"></span>
+                    Record
+                </button>
+                <button id="toggle-play" class="toggle-btn play-btn" aria-label="Play recording" disabled>
+                    <span class="dot"></span>
+                    Play
+                </button>
+
                 <!-- Volume -->
                 <div class="volume-control">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -71,8 +90,17 @@
             </div>
         </header>
 
-        <!-- ---- Piano Keyboard ---- -->
+        <!-- ---- Piano Keyboard & Visualizer ---- -->
         <main id="piano-wrapper">
+            <!-- Synthesia Visualizer Canvas -->
+            <canvas id="visualizer"></canvas>
+
+            <!-- Chord Detector Display -->
+            <div id="chord-display">
+                <span class="chord-label">Chord:</span>
+                <span id="chord-name">--</span>
+            </div>
+
             <div id="piano" role="application" aria-label="Piano keyboard">
                 <!-- Keys are generated dynamically by script.js -->
             </div>
@@ -80,8 +108,9 @@
 
     </div>
 
-    <!-- Tone.js CDN -->
+    <!-- CDNs: Tone.js & Tonal.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tonaljs/tonal/browser/tonal.min.js"></script>
 
     <!-- Application Logic -->
     <script src="script.js"></script>
