@@ -1,4 +1,5 @@
 import requests
+import pandas as pd
 
 url = "https://api.balldontlie.io/v1/games"
 
@@ -8,4 +9,10 @@ headers = {
 
 response = requests.get(url, headers=headers)
 
-print(response.json())
+data = response.json()
+
+games = data["data"]
+
+df = pd.DataFrame(games)
+
+print(df.head())
