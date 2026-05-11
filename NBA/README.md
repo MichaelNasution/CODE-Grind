@@ -1,140 +1,136 @@
-# NBA Analytics & Prediction Engine
+# 🏀 NBA CLI-Based Betting Prediction Engine
 
-A professional, scalable architecture for NBA sports analytics, betting edge detection, and predictive modeling.
+A high-performance, modular, and scalable CLI tool for NBA game analysis, betting edge detection, and match predictions. This project is built for professional bettors and data enthusiasts who prefer a terminal-first workflow.
+
+---
 
 ## 📂 Project Structure
 
-- **`app/`**: Streamlit dashboard and multi-page application.
-  - `dashboard.py`: Main entry point for the UI.
-  - `pages/`: Individual analytical views (Live Games, Predictions, etc.).
-- **`core/`**: Critical infrastructure components.
-  - `api_client.py`: Handles external data requests.
-  - `data_pipeline.py`: Manages ETL processes.
-  - `scheduler.py`: Handles background jobs.
-  - `cache_manager.py`: Optimizes performance.
-- **`analytics/`**: Domain-specific analysis logic.
-  - `analyze.py`: General stats processing.
-  - `pace_analysis.py`: Efficiency and pace metrics.
-  - `offensive_rating.py` / `defensive_rating.py`: Rating calculations.
-  - `form_analysis.py`: Trend and momentum detection.
-  - `betting_analysis.py`: Odds and market efficiency.
-- **`predictors/`**: Predictive engines and confidence scoring.
-  - `predictor.py`: Base predictor interface.
-  - `winner_predictor.py` / `total_predictor.py`: Outcome-specific models.
-  - `live_predictor.py`: In-game prediction adjustments.
-- **`models/`**: Machine Learning assets and feature engineering.
-- **`data/`**: Multi-tiered data storage (Raw, Processed, Historical, Live).
-- **`utils/`**: Shared utilities, logging, and constants.
-- **`tests/`**: Comprehensive test suite using `pytest`.
+```text
+NBA/
+├── core/               # Infrastructure & External Connections
+│   ├── api_client.py   # Base HTTP client
+│   ├── odds_client.py  # Sportsbook Odds API integration (The Odds API, etc.)
+│   ├── nba_client.py   # NBA Stats/Games API client
+│   ├── scheduler.py    # Background task management
+│   └── cache_manager.py# Data caching (Redis/File)
+├── analytics/          # Domain Logic & Statistical Processing
+│   ├── team_analysis.py# Team-level efficiency metrics
+│   ├── pace_analysis.py# Pace & Transition analytics
+│   ├── momentum_analysis.py # Momentum & Trend detection
+│   ├── quarter_analysis.py  # Specific Q1-Q4 breakdown
+│   ├── totals_analysis.py   # Over/Under historical data
+│   ├── winner_analysis.py   # Win probability logic
+│   └── value_bet_analysis.py# Edge detection logic
+├── predictors/         # Prediction Engines
+│   ├── predict_today.py     # Batch today's predictions
+│   ├── predict_tomorrow.py  # Batch tomorrow's predictions
+│   ├── winner_predictor.py  # ML/Stat Winner model
+│   ├── total_predictor.py   # ML/Stat Total model
+│   ├── quarter_predictor.py # Quarter-specific outcomes
+│   └── confidence_engine.py # Prediction certainty scoring
+├── cli/                # Command Line Interface
+│   ├── commands.py      # Command handlers
+│   ├── parser.py        # Argument parsing logic
+│   ├── formatter.py     # Text formatting helpers
+│   └── output_renderer.py # Rich terminal rendering
+├── data/               # Multi-tiered Data Storage
+├── models/             # ML Assets & Feature Engineering
+├── utils/              # Shared Utilities (Logger, Helpers)
+├── tests/              # Unit & Integration Tests
+├── main.py             # CLI Entry Point
+└── config.py           # Global Configuration
+```
 
-## 🔄 Project Workflow
-
-1.  **Ingestion**: `core/api_client.py` fetches data which is stored in `data/raw/`.
-2.  **Pipeline**: `core/data_pipeline.py` transforms raw data into `data/processed/`.
-3.  **Analysis**: `analytics/` modules process the data to extract deep insights.
-4.  **Prediction**: `predictors/` use analytical features to generate match forecasts.
-5.  **Visualization**: `app/dashboard.py` presents findings through an interactive dashboard.
-
-## 🚀 Roadmap
-
-- [ ] Implement robust `APIClient` for BallDontLie v1.
-- [ ] Build automated ETL pipeline for historical game data.
-- [ ] Develop Advanced Pace and Efficiency metrics.
-- [ ] Integrate scikit-learn for Winner/Total ML models.
-- [ ] Implement Live Momentum Analyzer for real-time betting edges.
+---
 
 ## 🛠️ Installation & Setup
 
-Ikuti langkah-langkah berikut untuk menyiapkan lingkungan pengembangan:
-
-### 1. Persiapan Virtual Environment
-Disarankan menggunakan virtual environment agar dependensi antar project tidak bentrok.
+### 1. Initialize Environment
 ```bash
-# Buat venv
 python -m venv venv
-
-# Aktivasi venv (Windows)
 .\venv\Scripts\activate
-
-# Aktivasi venv (macOS/Linux)
-source venv/bin/activate
 ```
 
-### 2. Instalasi Dependensi
+### 2. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Konfigurasi Environment
-Salin file `.env.example` menjadi `.env` dan masukkan API Key Anda.
-```bash
-cp .env.example .env
-```
-Buka file `.env` dan isi `BALL_DONT_LIE_API_KEY` dengan key dari [balldontlie.io](https://docs.balldontlie.io/).
+### 3. Configure API Keys
+1. Copy `.env.example` to `.env`.
+2. Add your `BALL_DONT_LIE_API_KEY` and any `ODDS_API_KEY`.
 
 ---
 
-## 🖥️ Panduan Penggunaan CLI (Command Line Interface)
+## 🖥️ CLI Usage Guide
 
-Project ini dirancang untuk dapat dioperasikan sepenuhnya melalui terminal. Berikut adalah langkah detail untuk melihat hasil prediksi:
+The engine is operated using simple commands.
 
-### 1. Ingest Data (Wajib)
-Sebelum melakukan prediksi, Anda harus menarik data terbaru dari API:
+### 1. Predict Today's Games
 ```bash
-python main.py
+python main.py today
 ```
 
-### 2. Melihat Prediksi Pemenang (Winner Prediction)
-Untuk menampilkan hasil prediksi pemenang pertandingan hari ini di terminal:
+### 2. Predict Tomorrow's Games
 ```bash
-python -m predictors.winner_predictor
+python main.py tomorrow
 ```
-*Output yang diharapkan (setelah implementasi logic):*
+
+### 3. Predict Specific Matchup
+```bash
+python main.py predict "Lakers" "Celtics"
+```
+
+### 4. Real-time Live Analysis
+```bash
+python main.py live
+```
+
+---
+
+## 📊 Sample Output
 ```text
-Matchup: Lakers vs Celtics
-Win Probability: Lakers (58%) | Celtics (42%)
-Predicted Winner: Los Angeles Lakers
-```
+====================================
+LAKERS vs CELTICS
+=================
 
-### 3. Melihat Prediksi Over/Under (Total Prediction)
-Untuk menampilkan estimasi total poin:
-```bash
-c
-```
-*Output yang diharapkan:*
-```text
-Matchup: Lakers vs Celtics
-Predicted Total Points: 228.5
-Recommendation: OVER 225.0
-```
+Predicted Winner:
+Boston Celtics
 
-### 4. Menjalankan Pipeline Lengkap
-Anda bisa membuat script orchestrator di `main.py` untuk menjalankan semua analisis sekaligus:
-```bash
-python main.py --predict-all
-```
+Confidence:
+68%
 
-### 5. Menjalankan Unit Testing
-Pastikan semua logika berjalan dengan benar:
-```bash
-pytest
-```
+Best Market:
+W2 (Moneyline)
 
----
+Predicted Total:
+228.5
 
-## 📊 Menjalankan Dashboard (GUI)
+Suggested Bet:
+OVER 223.5
 
-Jika Anda ingin melihat visualisasi data yang lebih interaktif:
-```bash
-streamlit run app/dashboard.py
+Quarter Edge:
+Q1 OVER
+Q3 Celtics Win
+
+Value Bet:
+YES (Edge found in Odds comparison)
+====================================
 ```
 
 ---
 
-## 🔄 Project Workflow
+## 🚀 Roadmap
+- [ ] Implement robust `APIClient` for BallDontLie v1.
+- [ ] Integrate `The Odds API` for real-time betting markets.
+- [ ] Develop Advanced Pace and Momentum metrics.
+- [ ] Implement Live Momentum Analyzer (real-time prediction shifts).
+- [ ] Build Value Bet alerting system (CLI notifications).
 
-1.  **Ingestion**: `core/api_client.py` mengambil data mentah -> `data/raw/`.
-2.  **Pipeline**: `core/data_pipeline.py` membersihkan data -> `data/processed/`.
-3.  **Analysis**: Modul `analytics/` menghitung metrik statistik mendalam.
-4.  **Prediction**: `predictors/` menghasilkan probabilitas kemenangan dan estimasi skor.
-5.  **Visualization**: `app/dashboard.py` menampilkan hasil akhir ke user.
+---
+
+## 🏗️ Architecture Explanation
+- **Modular Design**: Every component (API, Analytics, Prediction) is isolated for easy testing and updates.
+- **CLI-First**: Optimized for terminal output using `rich` for professional visualization.
+- **Scalable**: Ready to integrate with scikit-learn or deep learning models in the `models/` folder.
