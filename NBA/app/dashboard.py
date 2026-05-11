@@ -1,12 +1,10 @@
-"""
-Main Dashboard Application Entry Point (Streamlit)
-"""
 import streamlit as st
 
-def main():
-    st.set_page_config(page_title="NBA Analytics Engine", layout="wide")
-    st.title("🏀 NBA Analytics & Prediction Engine")
-    st.write("Welcome to the professional NBA analytics platform.")
+st.set_page_config(
+    page_title="NBA Analytics",
+    layout="wide"
+)
 
-if __name__ == "__main__":
-    main()
+st.title("🏀 NBA Analytics Dashboard")
+
+st.write("Deployment berhasil 🚀")
