@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # API Configuration
-API_KEY = os.getenv("BALL_DONT_LIE_API_KEY")
+API_KEY = os.getenv("658225bf-983a-4ab6-ad78-a52a787d8afe")
 BASE_URL = "https://api.balldontlie.io/v1"
 
 # Directory Structure
