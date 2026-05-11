@@ -76,30 +76,46 @@ Buka file `.env` dan isi `BALL_DONT_LIE_API_KEY` dengan key dari [balldontlie.io
 
 ## 🖥️ Panduan Penggunaan CLI (Command Line Interface)
 
-Project ini dirancang untuk dapat dioperasikan sepenuhnya melalui terminal untuk kebutuhan otomasi dan pipeline data.
+Project ini dirancang untuk dapat dioperasikan sepenuhnya melalui terminal. Berikut adalah langkah detail untuk melihat hasil prediksi:
 
-### 1. Ingest Data (Pengambilan Data)
-Jalankan entry point utama untuk menarik data terbaru dari API ke folder `data/raw/`.
+### 1. Ingest Data (Wajib)
+Sebelum melakukan prediksi, Anda harus menarik data terbaru dari API:
 ```bash
 python main.py
 ```
-*Script ini akan memicu `core/data_pipeline.py` untuk mengambil jadwal, skor, dan statistik pemain.*
 
-### 2. Menjalankan Pipeline Analytics
-Untuk memproses data mentah menjadi metrik yang siap pakai (Pace, ORtg, DRtg):
-```bash
-# (Gunakan script spesifik jika sudah diimplementasikan)
-python -m analytics.analyze
-```
-
-### 3. Menjalankan Engine Prediksi
-Untuk mendapatkan prediksi pertandingan hari ini secara langsung di terminal:
+### 2. Melihat Prediksi Pemenang (Winner Prediction)
+Untuk menampilkan hasil prediksi pemenang pertandingan hari ini di terminal:
 ```bash
 python -m predictors.winner_predictor
 ```
+*Output yang diharapkan (setelah implementasi logic):*
+```text
+Matchup: Lakers vs Celtics
+Win Probability: Lakers (58%) | Celtics (42%)
+Predicted Winner: Los Angeles Lakers
+```
 
-### 4. Menjalankan Unit Testing
-Pastikan semua logika berjalan dengan benar sebelum deploy:
+### 3. Melihat Prediksi Over/Under (Total Prediction)
+Untuk menampilkan estimasi total poin:
+```bash
+c
+```
+*Output yang diharapkan:*
+```text
+Matchup: Lakers vs Celtics
+Predicted Total Points: 228.5
+Recommendation: OVER 225.0
+```
+
+### 4. Menjalankan Pipeline Lengkap
+Anda bisa membuat script orchestrator di `main.py` untuk menjalankan semua analisis sekaligus:
+```bash
+python main.py --predict-all
+```
+
+### 5. Menjalankan Unit Testing
+Pastikan semua logika berjalan dengan benar:
 ```bash
 pytest
 ```
