@@ -4,3 +4,6 @@ numpy
 matplotlib
 streamlit
 scikit-learn
+python-dotenv
+joblib
+pytest

@@ -1,12 +1,19 @@
 """
-NBA Analytics & Prediction System Configuration
+Global Configuration for NBA Analytics & Prediction Engine
 """
+import os
+from dotenv import load_dotenv
 
-# BallDontLie API Configuration
-# Get your API key from https://docs.balldontlie.io/
-API_KEY = "658225bf-983a-4ab6-ad78-a52a787d8afe"
+load_dotenv()
+
+# API Configuration
+API_KEY = os.getenv("BALL_DONT_LIE_API_KEY")
 BASE_URL = "https://api.balldontlie.io/v1"
 
-# Project Settings
-DATA_DIR = "data"
-MODELS_DIR = "models"
+# Directory Structure
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+
+# Other Settings
+DEBUG = os.getenv("DEBUG", "False") == "True"
