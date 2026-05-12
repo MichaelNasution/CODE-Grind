@@ -44,7 +44,9 @@ def parse_games(data):
         
         for team in teams:
             team_name = team.get("team", {}).get("shortDisplayName", "TBD")
-            score = int(team.get("score", 0))
+            score_val = team.get("score", 0)
+            score = int(score_val) if score_val else 0
+            
             if team.get("homeAway") == "home":
                 home_team = team_name
                 current_score["home"] = score
@@ -53,7 +55,8 @@ def parse_games(data):
                 current_score["away"] = score
         
         raw_status = event.get("status", {})
-        status_name = raw_status.get("type", {}).get("name", "STATUS_UNKNOWN")
+        status_info = raw_status.get("type", {})
+        status_name = status_info.get("name", "STATUS_UNKNOWN")
         
         if "FINAL" in status_name:
             game_status = "final"
@@ -62,12 +65,15 @@ def parse_games(data):
         else:
             game_status = "scheduled"
             
-        game_time = event.get("date", "")
-        if game_time:
+        game_time_str = event.get("date", "")
+        game_time = "00:00"
+        
+        if game_time_str:
             try:
-                dt = datetime.strptime(game_time, "%Y-%m-%dT%H:%MZ")
+                dt = datetime.strptime(game_time_str, "%Y-%m-%dT%H:%MZ")
                 game_time = dt.strftime("%H:%M")
-            except: pass
+            except Exception:
+                game_time = "00:00"
 
         games.append({
             "home_team": home_team,
