@@ -4,20 +4,11 @@
 
 ---
 
-## 🚀 Fitur Utama
-- **Real-Time Data**: Mengambil jadwal pertandingan riil (Today/Tomorrow/Live) via ESPN API.
-- **Predictive Analytics**: Estimasi pemenang, total skor, dan keunggulan per kuarter.
-- **Betting Edge**: Deteksi *Value Bet* dan rekomendasi market terbaik (W1/W2, Over/Under).
-- **Pro Interface**: Output terminal yang bersih dan profesional menggunakan `rich`.
-
----
-
 ## 🛠️ Langkah Instalasi (Step-by-Step)
 
 Ikuti urutan ini untuk menjalankan engine dari nol:
 
 ### 1. Setup Virtual Environment
-Mencegah konflik library di sistem Anda.
 ```bash
 # Buat venv
 python -m venv venv
@@ -37,13 +28,24 @@ deactivate
 pip install -r requirements.txt
 ```
 
-### 3. Konfigurasi (Opsional untuk Ingestion)
-Salin `.env.example` menjadi `.env` jika Anda memerlukan integrasi API berbayar di masa depan.
+---
+
+## 💰 Betting Analytics System
+
+Engine ini menggunakan sistem klasifikasi dan ranking untuk membantu pengambilan keputusan:
+
+### 1. Klasifikasi Value
+- **BEST VALUE**: Peluang tinggi dengan odds menguntungkan.
+- **SAFE VALUE**: Probabilitas menang sangat tinggi (>80%).
+- **RISKY VALUE**: Peluang menang rendah dengan potensi pembayaran tinggi.
+- **HIGH VALUE**: Kombinasi seimbang antara kepercayaan model dan data historis.
+
+### 2. Probability Engine
+Probabilitas dihitung spesifik untuk berbagai market: Moneyline, Spread, Totals, dan Quarter Markets.
 
 ---
 
 ## 🖥️ Cara Menggunakan (CLI)
-Setelah venv aktif, gunakan perintah berikut:
 
 Gunakan perintah sederhana berikut di terminal:
 
@@ -58,17 +60,14 @@ Gunakan perintah sederhana berikut di terminal:
 
 ## 📂 Alur Kerja Engine
 1. **Fetch**: Mengambil jadwal riil dari ESPN Scoreboard.
-2. **Analyze**: Memproses statistik tim dan tren performa.
-3. **Predict**: Menghasilkan probabilitas kemenangan dan estimasi skor.
-4. **Render**: Menampilkan hasil secara visual di terminal.
+2. **Analyze**: Menghitung metrik statistik dan tren momentum.
+3. **Betting Logic**: `analytics/value_engine.py` mendeteksi peluang terbaik.
+4. **Render**: Menampilkan hasil profesional dengan detail klasifikasi value.
 
 ---
 
 ## 🏗️ Arsitektur Project
 - `core/`: Client API & Pipeline Data.
-- `analytics/`: Logika statistik & efisiensi.
-- `predictors/`: Model prediksi & engine kepercayaan.
-- `cli/`: Parser perintah & perender output terminal.
-
----
-*Built for Speed, Scalability, and Professional Betting Analytics.*
+- `analytics/`: Logika statistik, efisiensi, dan value engine.
+- `predictors/`: Model prediksi, market engine, dan kepercayaan.
+- `cli/`: Parser perintah & perender output terminal (Advanced).
