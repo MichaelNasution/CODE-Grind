@@ -4,12 +4,13 @@ ESPN Scoreboard API Client for NBA Schedules
 import requests
 from datetime import datetime, timedelta
 
+# Konfigurasi Endpoint
 ESPN_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
 
 def get_today_games():
     """Fetches NBA games for today."""
     try:
-        response = requests.get(ESPN_URL)
+        response = requests.get(ESPN_URL, timeout=10)
         response.raise_for_status()
         return parse_games(response.json())
     except Exception as e:
@@ -22,7 +23,7 @@ def get_tomorrow_games():
     date_str = tomorrow.strftime("%Y%m%d")
     url = f"{ESPN_URL}?dates={date_str}"
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()
         return parse_games(response.json())
     except Exception as e:
@@ -30,55 +31,59 @@ def get_tomorrow_games():
         return []
 
 def parse_games(data):
-    """Parses ESPN API response with real-time score and status support."""
+    """Parses ESPN API response with robust error handling and real-time support."""
     games = []
     events = data.get("events", [])
     
     for event in events:
+        # Inisialisasi variabel untuk menghindari error scope
         competition = event.get("competitions", [{}])[0]
         teams = competition.get("competitors", [])
+        raw_status = event.get("status", {})
         
-        home_team = ""
-        away_team = ""
+        home_team = "TBD"
+        away_team = "TBD"
         current_score = {"home": 0, "away": 0}
         
-        for team in teams:
-            team_name = team.get("team", {}).get("shortDisplayName", "TBD")
-            score_val = team.get("score", 0)
-            score = int(score_val) if score_val else 0
+        for team_data in teams:
+            team_name = team_data.get("team", {}).get("shortDisplayName", "TBD")
+            score_str = team_data.get("score", "0")
+            score_val = int(score_str) if score_str else 0
             
-            if team.get("homeAway") == "home":
+            if team_data.get("homeAway") == "home":
                 home_team = team_name
-                current_score["home"] = score
+                current_score["home"] = score_val
             else:
                 away_team = team_name
-                current_score["away"] = score
+                current_score["away"] = score_val
         
-        raw_status = event.get("status", {})
         status_info = raw_status.get("type", {})
         status_name = status_info.get("name", "STATUS_UNKNOWN")
         
+        # Penentuan status internal
         if "FINAL" in status_name:
             game_status = "final"
-        elif "IN_PROGRESS" in status_name or "LIVE" in status_name:
+        elif any(s in status_name for s in ["IN_PROGRESS", "LIVE", "HALFTIME"]):
             game_status = "live"
         else:
             game_status = "scheduled"
             
-        game_time_str = event.get("date", "")
-        game_time = "00:00"
+        # Parsing waktu
+        game_time_raw = event.get("date", "")
+        game_time_formatted = "00:00"
         
-        if game_time_str:
+        if game_time_raw:
             try:
-                dt = datetime.strptime(game_time_str, "%Y-%m-%dT%H:%MZ")
-                game_time = dt.strftime("%H:%M")
-            except Exception:
-                game_time = "00:00"
+                dt_obj = datetime.strptime(game_time_raw, "%Y-%m-%dT%H:%MZ")
+                game_time_formatted = dt_obj.strftime("%H:%M")
+            except (ValueError, TypeError):
+                game_time_formatted = "00:00"
 
+        # Construct game object
         games.append({
             "home_team": home_team,
             "away_team": away_team,
-            "game_time": game_time,
+            "game_time": game_time_formatted,
             "status": game_status,
             "current_score": current_score,
             "final_score": current_score if game_status == "final" else None,

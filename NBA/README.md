@@ -1,14 +1,14 @@
 # 🏀 NBA CLI Betting Engine
 
-**NBA CLI Betting Engine** adalah platform analitik terminal profesional untuk prediksi NBA. Dirancang dengan tampilan *Sportsbook Console*, engine ini memberikan analisis mendalam secara instan, akurat, dan granular.
+**NBA CLI Betting Engine** adalah platform analitik terminal profesional untuk prediksi NBA. Dirancang dengan tampilan *Sportsbook Console*, engine ini menggunakan pendekatan **Ensemble Modeling** (Multi-Engine) yang terinspirasi oleh standar industri.
 
 ---
 
-## 🚀 Fitur Unggulan (Advanced)
+## 🚀 Fitur Unggulan (Advanced ML)
+- **Ensemble Predictor**: Menggabungkan hasil dari berbagai engine (Baseline, Linear, Tree, dan Deep Learning).
+- **Hierarchical Architecture**: Terinspirasi oleh *Phase 5 NBA AI*, menganalisis dari level Player (L1), Synergy (L2), hingga Team (L3).
 - **Real-Time Scoreboard**: Status-aware header untuk game **LIVE**, **FINAL**, dan **SCHEDULED**.
 - **Quarter Score Projections**: Prediksi skor individu (Home-Away) dan total poin per kuarter (Q1-Q4).
-- **H2H Analysis Engine**: Analisis otomatis 4 pertemuan terakhir untuk mendeteksi tren kemenangan dan skor.
-- **Value Bet Ranking**: Daftar taruhan paling menguntungkan yang diurutkan berdasarkan probabilitas.
 
 ---
 
@@ -22,6 +22,7 @@
    ```bash
    pip install -r requirements.txt
    ```
+   *(Sudah termasuk: PyTorch, Scikit-learn, XGBoost, Optuna)*
 
 ---
 
@@ -29,23 +30,18 @@
 
 | Perintah | Fungsi |
 | :--- | :--- |
-| `python main.py today` | Analisis pertandingan hari ini (Real-time ESPN) |
+| `python main.py today` | Analisis pertandingan hari ini (Ensemble Engine) |
 | `python main.py tomorrow` | Jadwal & Prediksi pertandingan besok |
-| `python main.py live` | Pantau pertandingan yang sedang berlangsung (Score & Clock) |
-| `python main.py predict "Home" "Away"` | Analisis kustom matchup spesifik |
+| `python main.py live` | Pantau skor real-time & clock |
 
 ---
 
-## 📊 Advanced Quarter Table
-Output terminal menyertakan matriks kuarter yang kaya informasi:
-- **Score Predict**: Proyeksi skor individu kedua tim.
-- **Total**: Estimasi total poin dalam satu kuarter.
-- **Prediction**: Rekomendasi taruhan (OVER/UNDER) spesifik per periode.
+## 📂 Alur Kerja (Ensemble Workflow)
+`Schedule` ➔ `Team Profiles` ➔ `Ensemble Analysis (DL/XGB/Linear)` ➔ `Averaging` ➔ `Value Engine` ➔ `CLI Renderer`.
 
 ---
 
-## 🏗️ Arsitektur Project
-- `core/`: Client API (ESPN) dengan dukungan skor real-time & clock.
-- `analytics/`: H2H Analysis, Quarter Score Projections, & Value Engine.
-- `predictors/`: Quarter Score & Winner Predictors.
-- `cli/`: Status-aware Renderer & Sportsbook-style Layout.
+## 🏗️ Arsitektur Predictor
+- `predictors/engines/`: Berisi berbagai engine prediksi (Baseline, DL, Linear, Tree).
+- `predictors/ensemble_predictor.py`: Orkestrator yang menggabungkan seluruh hasil engine.
+- `analytics/advanced/`: Modul untuk Player Ability (L1) dan Synergy (L2).
