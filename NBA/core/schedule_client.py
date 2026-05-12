@@ -7,9 +7,7 @@ from datetime import datetime, timedelta
 ESPN_URL = "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard"
 
 def get_today_games():
-    """
-    Fetches NBA games for today.
-    """
+    """Fetches NBA games for today."""
     try:
         response = requests.get(ESPN_URL)
         response.raise_for_status()
@@ -19,14 +17,10 @@ def get_today_games():
         return []
 
 def get_tomorrow_games():
-    """
-    Fetches NBA games for tomorrow.
-    Uses the date parameter in YYYYMMDD format.
-    """
+    """Fetches NBA games for tomorrow."""
     tomorrow = datetime.now() + timedelta(days=1)
     date_str = tomorrow.strftime("%Y%m%d")
     url = f"{ESPN_URL}?dates={date_str}"
-    
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -36,9 +30,7 @@ def get_tomorrow_games():
         return []
 
 def parse_games(data):
-    """
-    Parses the ESPN API response into a clean list of matchups.
-    """
+    """Parses ESPN API response with real-time score and status support."""
     games = []
     events = data.get("events", [])
     
@@ -48,37 +40,44 @@ def parse_games(data):
         
         home_team = ""
         away_team = ""
-        for team in teams:
-            if team.get("homeAway") == "home":
-                home_team = team.get("team", {}).get("shortDisplayName", "TBD")
-            else:
-                away_team = team.get("team", {}).get("shortDisplayName", "TBD")
+        current_score = {"home": 0, "away": 0}
         
-        status = event.get("status", {}).get("type", {}).get("name", "STATUS_UNKNOWN")
-        # Map ESPN status names to project standard
-        # STATUS_SCHEDULED, STATUS_IN_PROGRESS, STATUS_FINAL
-        if "FINAL" in status:
+        for team in teams:
+            team_name = team.get("team", {}).get("shortDisplayName", "TBD")
+            score = int(team.get("score", 0))
+            if team.get("homeAway") == "home":
+                home_team = team_name
+                current_score["home"] = score
+            else:
+                away_team = team_name
+                current_score["away"] = score
+        
+        raw_status = event.get("status", {})
+        status_name = raw_status.get("type", {}).get("name", "STATUS_UNKNOWN")
+        
+        if "FINAL" in status_name:
             game_status = "final"
-        elif "IN_PROGRESS" in status or "LIVE" in status:
+        elif "IN_PROGRESS" in status_name or "LIVE" in status_name:
             game_status = "live"
         else:
             game_status = "scheduled"
             
-        game_time = event.get("date", "") # ISO format
+        game_time = event.get("date", "")
         if game_time:
-            # Simple slice for HH:MM from 2024-05-11T23:30Z
             try:
                 dt = datetime.strptime(game_time, "%Y-%m-%dT%H:%MZ")
                 game_time = dt.strftime("%H:%M")
-            except:
-                pass
+            except: pass
 
         games.append({
             "home_team": home_team,
             "away_team": away_team,
             "game_time": game_time,
             "status": game_status,
-            "full_status": status, # raw status for detail
+            "current_score": current_score,
+            "final_score": current_score if game_status == "final" else None,
+            "period": raw_status.get("period", 1),
+            "clock": raw_status.get("displayClock", "00:00"),
             "is_playoff": event.get("season", {}).get("type") == 3,
             "series_summary": competition.get("series", {}).get("summary", "")
         })
