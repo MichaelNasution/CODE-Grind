@@ -74,17 +74,26 @@ def parse_games(data):
         
         if game_time_raw:
             try:
+                # ESPN API returns time in UTC (ends with Z)
                 dt_obj = datetime.strptime(game_time_raw, "%Y-%m-%dT%H:%MZ")
-                game_time_formatted = dt_obj.strftime("%H:%M")
+                # Convert to WIB (UTC+7)
+                wib_time = dt_obj + timedelta(hours=7)
+                game_time_formatted = wib_time.strftime("%H:%M")
+                game_date_formatted = wib_time.strftime("%Y-%m-%d")
             except (ValueError, TypeError):
                 game_time_formatted = "00:00"
+                game_date_formatted = datetime.now().strftime("%Y-%m-%d")
+
+
 
         # Construct game object
         games.append({
             "home_team": home_team,
             "away_team": away_team,
             "game_time": game_time_formatted,
+            "game_date": game_date_formatted,
             "status": game_status,
+
             "current_score": current_score,
             "final_score": current_score if game_status == "final" else None,
             "period": raw_status.get("period", 1),
