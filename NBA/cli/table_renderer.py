@@ -1,74 +1,82 @@
 """
-CLI Table Rendering Helpers - Advanced Sportsbook Style
+CLI Table Rendering Helpers - Quant Analytics Style
 """
 from rich.table import Table
 from rich import box
 
-def create_main_table(match_data):
-    """Creates the primary prediction table (Winner, Confidence, Total, Pace)."""
-    table = Table(show_header=False, box=box.ROUNDED, border_style="bright_blue", padding=(0, 1))
+def create_bet_tiers_table(bet_tiers):
+    """Creates the BET TIERS section showing Safest to Aggressive lines."""
+    table = Table(title="[bold green]BET TIERS[/bold green]", show_header=True, box=box.ROUNDED, border_style="green", expand=True)
+    table.add_column("TIER", justify="left", style="bold white")
+    table.add_column("INTERNAL LINE", justify="center", style="yellow")
+    table.add_column("HIT PROB", justify="right")
     
-    win_color = "bold green" if match_data['win_prob'] > 65 else "yellow"
+    for bt in bet_tiers:
+        prob = bt['probability']
+        color = "green" if prob >= 80 else "cyan" if prob >= 70 else "yellow" if prob >= 60 else "red"
+        
+        table.add_row(
+            bt['tier'],
+            f"OVER {bt['line']}",
+            f"[{color}]{prob}%[/{color}]"
+        )
+    return table
+
+def create_team_totals_table(team_totals, home_team, away_team):
+    """Creates the TEAM TOTALS section."""
+    table = Table(title="[bold cyan]TEAM TOTALS[/bold cyan]", show_header=True, box=box.ROUNDED, border_style="cyan", expand=True)
+    table.add_column("TEAM", justify="left", style="bold white")
+    table.add_column("SAFE", justify="center")
+    table.add_column("VALUE", justify="center")
+    table.add_column("AGGRESSIVE", justify="center")
     
-    table.add_row("[bold white]Winner[/bold white]", f"[{win_color}]{match_data['predicted_winner']}[/{win_color}]")
-    table.add_row("[bold white]Confidence[/bold white]", f"{match_data['win_prob']}%")
-    table.add_row("[bold white]Total[/bold white]", f"[bold yellow]{match_data['total_pred']} {match_data['total_line']}[/bold yellow]")
-    table.add_row("[bold white]Pace[/bold white]", f"[bold cyan]{match_data['pace']}[/bold cyan]")
+    # Extract lines for each team
+    h_tiers = team_totals['home']
+    a_tiers = team_totals['away']
+    
+    table.add_row(
+        home_team,
+        f"O {h_tiers['SAFE']}",
+        f"O {h_tiers['VALUE']}",
+        f"O {h_tiers['AGGRESSIVE']}"
+    )
+    table.add_row(
+        away_team,
+        f"O {a_tiers['SAFE']}",
+        f"O {a_tiers['VALUE']}",
+        f"O {a_tiers['AGGRESSIVE']}"
+    )
     
     return table
 
-def create_team_total_table(team_totals):
-    """Creates the Team Totals section."""
-    table = Table(title="[bold cyan]TEAM TOTALS[/bold cyan]", show_header=False, box=box.ROUNDED, border_style="cyan", width=40)
-    for tt in team_totals:
-        table.add_row(f"{tt['team']} {tt['pred']} {tt['line']}", f"[bold white]{tt['prob']}%[/bold white]")
-    return table
-
-def create_quarter_table(quarters):
+def create_quarter_projections_table(quarters):
     """
     Creates the advanced Q1-Q4 prediction table with score and total projections.
-    Structure: Q | Winner | Score Predict | Total | Prediction
     """
     table = Table(
         title="[bold magenta]QUARTERS[/bold magenta]", 
         show_header=True, 
         box=box.ROUNDED, 
         border_style="magenta", 
-        header_style="bold magenta"
+        header_style="bold magenta",
+        expand=True
     )
     table.add_column("Q", justify="center", width=2)
-    table.add_column("Winner", justify="left")
-    table.add_column("Score Predict", justify="center")
-    table.add_column("Total", justify="center")
-    table.add_column("Prediction", justify="left")
+    table.add_column("PROJECTED SCORE", justify="center")
+    table.add_column("TOTAL", justify="center")
+    table.add_column("INTERNAL LINE", justify="center")
+    table.add_column("CONFIDENCE", justify="left")
     
-    for q_id, q_data in quarters.items():
-        score_text = f"{q_data['home']} - {q_data['away']}"
-        table.add_row(
-            q_id.upper(),
-            f"[white]{q_data['winner']}[/white]",
-            f"[cyan]{score_text}[/cyan]",
-            f"[yellow]{q_data['total']}[/yellow]",
-            f"[bold white]{q_data['pred']} {q_data['line']}[/bold white]"
-        )
-    return table
-
-def create_value_bet_table(best_bets):
-    """Creates the ranked Value Bet table."""
-    table = Table(title="[bold green]BEST VALUE BETS[/bold green]", show_header=True, box=box.ROUNDED, border_style="green")
-    table.add_column("#", justify="center")
-    table.add_column("Suggested Bet", justify="left")
-    table.add_column("Prob", justify="right")
-    table.add_column("Value", justify="center")
-    
-    for i, bet in enumerate(best_bets, 1):
-        val_color = "bold green" if bet['value'] == "BEST" else "bold cyan"
-        if bet['value'] == "HIGH": val_color = "bold yellow"
+    for q in quarters:
+        score_text = f"{q['away']} - {q['home']}" # away @ home
+        prob = q['probability']
+        color = "green" if prob >= 75 else "cyan" if prob >= 65 else "yellow"
         
         table.add_row(
-            str(i),
-            bet['market'],
-            f"{bet['prob']}%",
-            f"[{val_color}]{bet['value']}[/{val_color}]"
+            f"Q{q['period']}",
+            f"[white]{score_text}[/white]",
+            f"[yellow]{q['total']}[/yellow]",
+            f"O {q['safe_line']}",
+            f"[{color}]{q['tier']} ({prob}%)[/{color}]"
         )
     return table
