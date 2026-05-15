@@ -75,8 +75,9 @@ def create_quarter_projections_table(quarters):
         table.add_row(
             f"Q{q['period']}",
             f"[white]{score_text}[/white]",
-            f"[yellow]{q['total']}[/yellow]",
+            f"[yellow]{round(q['total'], 1)}[/yellow]",
             f"O {q['safe_line']}",
             f"[{color}]{q['tier']} ({prob}%)[/{color}]"
         )
+
     return table

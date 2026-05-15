@@ -18,9 +18,10 @@ class SyntheticMarketGenerator:
         # 1. Pace Analysis
         pace_val, pace_rating = projection_engine.project_pace(home_team, away_team)
         
-        # 2. Score Projections
-        home_score = projection_engine.project_team_score(home_team, away_team, is_home=True)
-        away_score = projection_engine.project_team_score(away_team, home_team, is_home=False)
+        # 2. Score Projections (Matchup-Aware Pace)
+        home_score = projection_engine.project_team_score(home_team, away_team, pace_val=pace_val, is_home=True)
+        away_score = projection_engine.project_team_score(away_team, home_team, pace_val=pace_val, is_home=False)
+
         total_projected = home_score + away_score
         
         # 3. Variance Analysis

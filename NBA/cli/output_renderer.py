@@ -4,14 +4,14 @@ NBA CLI Output Renderer - Advanced Status-Aware Console
 from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
+from rich.table import Table
 from rich import box
 
 # Import rendering modules
 from cli.table_renderer import (
-    create_main_table, 
-    create_team_total_table, 
-    create_quarter_table, 
-    create_value_bet_table
+    create_bet_tiers_table,
+    create_team_totals_table,
+    create_quarter_projections_table
 )
 from cli.compact_layout import render_match_layout
 
@@ -61,67 +61,46 @@ def create_status_aware_header(match_data):
 
 def render_match_prediction(match_data):
     """
-    Main entry point for rendering professional betting analysis.
+    Main entry point for rendering professional Quant-Style betting analysis.
     """
     # 1. Pastikan data dasar tersedia
     home_name = match_data.get("home_team", "HOME")
     away_name = match_data.get("away_team", "AWAY")
     
-    # 2. Generate unique prediction data
+    # 2. Generate Quant Analytics
     dynamic_data = generate_dynamic_prediction(home_name, away_name)
+    analysis = dynamic_data['analysis']
     
-    # 3. Sinkronisasi data prediksi ke match_data
-    match_data['predicted_winner'] = dynamic_data.get('predicted_winner', home_name)
-    match_data['win_prob'] = dynamic_data.get('win_prob', 50.0)
-    match_data['total_line'] = dynamic_data.get('predicted_total', 220.0)
-    match_data['total_pred'] = "OVER" if match_data['total_line'] > 200 else "UNDER"
-    match_data['pace'] = dynamic_data.get('pace', "MEDIUM")
-    
-    # 4. Analisis Tim (L1-L3 style)
-    h_profile = dynamic_data.get('home_off', {})
-    a_profile = dynamic_data.get('away_off', {})
-    
-    h_pts_avg = h_profile.get('avg_pts', 110.0)
-    a_pts_avg = a_profile.get('avg_pts', 110.0)
-    
-    h_total_line = round(h_pts_avg * 0.95, 1)
-    a_total_line = round(a_pts_avg * 0.95, 1)
-    
-    team_totals_list = [
-        {"team": home_name, "pred": "OVER", "line": h_total_line, "prob": match_data['win_prob']},
-        {"team": away_name, "pred": "UNDER", "line": a_total_line, "prob": round(100 - match_data['win_prob'], 1)}
-    ]
-    
-    # 5. Best Value Bets Ranking
-    best_bets_list = [
-        {"market": f"{match_data['total_pred']} {match_data['total_line']}", "prob": 74, "value": "BEST"},
-        {"market": f"{home_name} O{h_total_line}", "prob": match_data['win_prob'], "value": "SAFE"},
-        {"market": f"Q1 {dynamic_data.get('quarters', {}).get('q1', {}).get('winner')} Win", "prob": 67, "value": "HIGH"}
-    ]
-    
-    # 6. Komponen UI Rich
+    # 3. Create UI Components
     header_panel = create_status_aware_header(match_data)
     
-    # Confidence display
-    meta_data = {**match_data, 'win_prob': dynamic_data.get('confidence', 70.0)}
-    main_table_ui = create_main_table(meta_data)
-    
-    team_table_ui = create_team_total_table(team_totals_list)
-    quarter_table_ui = create_quarter_table(dynamic_data.get('quarters', {}))
-    value_table_ui = create_value_bet_table(best_bets_list)
-    
-    h2h_text = Text.assemble(
-        ("\nH2H: ", "bold magenta"),
-        (match_data.get("h2h_summary", "Matchup analysis reveals unique team patterns."), "white")
+    # Summary Section
+    summary_table = Table(show_header=False, box=box.ROUNDED, border_style="bright_blue", padding=(0, 1), expand=True)
+    summary_table.add_row(
+        "[bold white]PROJECTED FINAL SCORE[/bold white]", 
+        f"[bold green]{away_name} {round(analysis['projected_score']['away'], 1)} - {round(analysis['projected_score']['home'], 1)} {home_name}[/bold green]"
     )
 
-    # 7. Final Render via Layout
+    summary_table.add_row("[bold white]PROJECTED TOTAL[/bold white]", f"[bold yellow]{analysis['projected_total']}[/bold yellow]")
+    summary_table.add_row("[bold white]PACE[/bold white]", f"[bold cyan]{analysis['pace']}[/bold cyan]")
+    
+    # Market Tables
+    bet_tiers_ui = create_bet_tiers_table(analysis['bet_tiers'])
+    team_totals_ui = create_team_totals_table(analysis['team_totals'], home_name, away_name)
+    quarter_ui = create_quarter_projections_table(analysis['quarters'])
+    
+    h2h_text = Text.assemble(
+        ("\nANALYSIS: ", "bold magenta"),
+        (f"Quant engine detected {analysis['pace']} pace with internal variance modeling for this matchup.", "white")
+    )
+
+    # 4. Final Render via Layout
     render_match_layout(
         console, 
         header_panel, 
-        main_table_ui, 
-        team_table_ui, 
-        quarter_table_ui, 
-        value_table_ui, 
+        summary_table, 
+        bet_tiers_ui, 
+        team_totals_ui, 
+        quarter_ui, 
         h2h_text
     )

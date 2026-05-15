@@ -27,24 +27,29 @@ class ProjectionEngine:
             
         return round(base_pace, 1), rating
 
-    def project_team_score(self, team_name, opponent_name, is_home=True):
+    def project_team_score(self, team_name, opponent_name, pace_val=100.0, is_home=True):
         """
-        Projects a team's total score based on offensive/defensive profiles.
+        Projects a team's total score based on offensive/defensive profiles and PACE.
         """
         seed = sum(ord(c) for c in team_name + opponent_name)
         random.seed(seed + (1 if is_home else 0))
         
-        # Base scoring: 105 - 125
-        base_score = random.uniform(105, 120)
+        # Base Efficiency (Points per 100 possessions)
+        # NBA average is around 110-115
+        efficiency = random.uniform(108, 118)
         
-        # Home court advantage
+        # Home court advantage (efficiency boost)
         if is_home:
-            base_score += 3.5
+            efficiency += 2.0
             
         # Matchup variance
-        base_score += random.uniform(-5, 5)
+        efficiency += random.uniform(-3, 3)
         
-        return round(base_score, 1)
+        # Score = (Pace * Efficiency) / 100
+        projected_score = (pace_val * efficiency) / 100.0
+        
+        return round(projected_score, 1)
+
 
     def project_quarters(self, total_score):
         """
