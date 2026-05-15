@@ -6,6 +6,7 @@ from rich.panel import Panel
 from rich.text import Text
 from rich.table import Table
 from rich import box
+from datetime import datetime, timedelta
 
 # Import rendering modules
 from cli.table_renderer import (
@@ -48,7 +49,19 @@ def create_status_aware_header(match_data):
         
     else: # Scheduled
         game_time_str = match_data.get("game_time", "00:00")
-        header_text.append(f"TODAY {game_time_str} | ", style="bold cyan")
+        game_date_str = match_data.get("game_date", "")
+        
+        today = datetime.now().strftime("%Y-%m-%d")
+        tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+        
+        if game_date_str == today:
+            label = "TODAY"
+        elif game_date_str == tomorrow:
+            label = "TOMORROW"
+        else:
+            label = game_date_str if game_date_str else "SCHEDULED"
+            
+        header_text.append(f"{label} {game_time_str} | ", style="bold cyan")
         header_text.append(f"{series_info}", style="white")
 
     return Panel(
