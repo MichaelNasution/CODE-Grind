@@ -1,122 +1,63 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState } from "react";
+import { useCubeStore } from "./store/cubeStore";
+import CubeCanvas from "./components/CubeCanvas";
+import SolverPanel from "./components/SolverPanel";
+import FormulaLibrary from "./components/FormulaLibrary";
+import TutorialPanel from "./components/TutorialPanel";
 
-function App() {
-  const [count, setCount] = useState(0)
+const TABS = [
+  { id:"solver",   label:"Solver",   icon:"⚙" },
+  { id:"library",  label:"Formulas", icon:"📚" },
+  { id:"tutorial", label:"Tutorial", icon:"🎓" },
+];
+
+export default function App() {
+  const { cube, activeTab, setActiveTab, applyMoveSequence } = useCubeStore();
+  const [mobilePanel, setMobilePanel] = useState(false);
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div className="app">
+      {/* Nav */}
+      <nav className="navbar">
+        <div className="nav-logo">
+          <span className="logo-icon">⬡</span>
+          <span className="logo-text">CubeOS</span>
+          <span className="logo-sub">Formula Lab</span>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
+        <div className="nav-tabs">
+          {TABS.map(t => (
+            <button key={t.id} className={`nav-tab ${activeTab===t.id?"active":""}`}
+              onClick={() => setActiveTab(t.id)}>
+              <span>{t.icon}</span> {t.label}
+            </button>
+          ))}
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        <div className="nav-right">
+          <span className="nav-hint">Drag cube to rotate • Double-click to reset</span>
+        </div>
+      </nav>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      {/* Main layout */}
+      <div className="main-layout">
+        {/* Cube viewport */}
+        <div className="cube-viewport">
+          <CubeCanvas cubeState={cube} />
+          <div className="viewport-overlay">
+            <div className="face-labels">
+              <span className="face-label top">U</span>
+              <span className="face-label right">R</span>
+              <span className="face-label front">F</span>
+            </div>
+          </div>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        {/* Right panel */}
+        <div className="right-panel">
+          {activeTab === "solver"   && <SolverPanel />}
+          {activeTab === "library"  && <FormulaLibrary />}
+          {activeTab === "tutorial" && <TutorialPanel onApplyMoves={applyMoveSequence} />}
+        </div>
+      </div>
+    </div>
+  );
 }
-
-export default App
