@@ -3,6 +3,10 @@ import {
   createSolvedCube, cloneCube, applyMove, applyMoves,
   generateScramble, solveByUndo, isSolved, parseMoves
 } from "../engine/cube";
+import { CubeVerifier } from "../engine/verifier";
+
+const verifierReport = CubeVerifier.runAlgebraicChecks();
+console.log("=== CubeVerifier Startup Report ===", verifierReport);
 
 export const useCubeStore = create((set, get) => ({
   // ── State ────────────────────────────────────────────────
@@ -20,8 +24,32 @@ export const useCubeStore = create((set, get) => ({
   searchQuery: "",
   activeCategory: "All",
   playbackIntervalId: null,
+  verifierStatus: verifierReport.allPassed ? "Valid" : "Error",
+  verifierErrors: verifierReport.tests.filter(t => !t.success),
+  
+  // Custom Formula Library
+  customFormulas: [],
+  
+  // Animation Move Queue
+  moveQueue: [],
 
   // ── Mutations ────────────────────────────────────────────
+  addCustomFormula: (formula) => set(state => ({ customFormulas: [...state.customFormulas, formula] })),
+  enqueueMoves: (moves) => set(state => ({ moveQueue: [...state.moveQueue, ...moves] })),
+  
+  dequeueMove: () => {
+    let nextMove = null;
+    set(state => {
+      if (state.moveQueue.length === 0) return {};
+      const queue = [...state.moveQueue];
+      nextMove = queue.shift();
+      return { moveQueue: queue };
+    });
+    return nextMove;
+  },
+
+  clearQueue: () => set({ moveQueue: [] }),
+
   applyMove: (move) => set(state => {
     const newCube = applyMove(state.cube, move);
     const newHistory = state.history.slice(0, state.historyIndex + 1);
@@ -57,6 +85,7 @@ export const useCubeStore = create((set, get) => ({
     solutionMoves: [],
     solutionStep: -1,
     isPlaying: false,
+    moveQueue: []
   }),
 
   scramble: () => set(state => {
@@ -69,6 +98,7 @@ export const useCubeStore = create((set, get) => ({
       scrambleMoves: moves,
       solutionMoves: [],
       solutionStep: -1,
+      moveQueue: []
     };
   }),
 
@@ -82,7 +112,13 @@ export const useCubeStore = create((set, get) => ({
     if (solutionStep >= solutionMoves.length) return state;
     const move = solutionMoves[solutionStep];
     const newCube = applyMove(cube, move);
-    return { cube: newCube, solutionStep: solutionStep + 1 };
+    const nextStep = solutionStep + 1;
+    const isFinished = nextStep >= solutionMoves.length;
+    return {
+      cube: newCube,
+      solutionStep: nextStep,
+      isPlaying: isFinished ? false : state.isPlaying
+    };
   }),
 
   setSpeed: (speed) => set({ speed }),

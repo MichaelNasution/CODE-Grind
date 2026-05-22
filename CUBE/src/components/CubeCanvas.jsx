@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { FACE_COLORS } from "../engine/cube";
+import { useCubeStore } from "../store/cubeStore";
 
 // Face order: U=0 R=1 F=2 D=3 L=4 B=5
 // Cubie positions: 3x3x3 grid from -1 to 1
@@ -48,6 +49,55 @@ function getStickerColor(cubeState, cx, cy, cz, boxFaceIdx) {
   return FACE_COLORS[colorId] ?? "#888";
 }
 
+function getMoveSpec(move) {
+  if (!move) return null;
+  const face = move[0];
+  const prime = move.includes("'");
+  const double = move.includes("2");
+  
+  let axis, filter, angle;
+  
+  switch(face) {
+    case "R":
+      axis = "x";
+      filter = (mesh) => mesh.userData.x > 0.5;
+      angle = -Math.PI / 2;
+      break;
+    case "L":
+      axis = "x";
+      filter = (mesh) => mesh.userData.x < -0.5;
+      angle = Math.PI / 2;
+      break;
+    case "U":
+      axis = "y";
+      filter = (mesh) => mesh.userData.y > 0.5;
+      angle = -Math.PI / 2;
+      break;
+    case "D":
+      axis = "y";
+      filter = (mesh) => mesh.userData.y < -0.5;
+      angle = Math.PI / 2;
+      break;
+    case "F":
+      axis = "z";
+      filter = (mesh) => mesh.userData.z > 0.5;
+      angle = -Math.PI / 2;
+      break;
+    case "B":
+      axis = "z";
+      filter = (mesh) => mesh.userData.z < -0.5;
+      angle = Math.PI / 2;
+      break;
+    default:
+      return null;
+  }
+  
+  if (prime) angle = -angle;
+  if (double) angle = Math.PI;
+  
+  return { axis, filter, angle };
+}
+
 export default function CubeCanvas({ cubeState, style }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
@@ -58,6 +108,10 @@ export default function CubeCanvas({ cubeState, style }) {
   const isDragging = useRef(false);
   const lastMouse = useRef({x:0,y:0});
   const spherical = useRef({theta: Math.PI/5, phi: Math.PI/3.5});
+
+  // Animation refs
+  const activeMoveRef = useRef(null);
+  const animStartTimeRef = useRef(null);
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -105,9 +159,10 @@ export default function CubeCanvas({ cubeState, style }) {
           });
           const geo = new THREE.BoxGeometry(0.95, 0.95, 0.95, 1, 1, 1);
           const mesh = new THREE.Mesh(geo, materials);
-          mesh.position.set(x*GAP, y*GAP, z*GAP);
+          const origPos = new THREE.Vector3(x*GAP, y*GAP, z*GAP);
+          mesh.position.copy(origPos);
           mesh.castShadow = true;
-          mesh.userData = {x,y,z};
+          mesh.userData = { x, y, z, origPos };
           scene.add(mesh);
           cubies.push(mesh);
         }
@@ -128,9 +183,64 @@ export default function CubeCanvas({ cubeState, style }) {
     };
     updateCamera();
 
-    // Animate
+    // Animate loop with smooth 3D rotation support
     const animate = () => {
       frameRef.current = requestAnimationFrame(animate);
+      
+      const activeMove = activeMoveRef.current;
+      if (activeMove) {
+        const now = performance.now();
+        const start = animStartTimeRef.current;
+        const speed = useCubeStore.getState().speed || 1;
+        const duration = 350 / speed; // 350ms base duration
+        
+        let progress = (now - start) / duration;
+        if (progress > 1) progress = 1;
+        
+        const spec = getMoveSpec(activeMove);
+        if (spec) {
+          const axisVector = new THREE.Vector3();
+          axisVector[spec.axis] = 1;
+          const currentAngle = spec.angle * progress;
+          
+          cubiesRef.current.forEach(mesh => {
+            if (spec.filter(mesh)) {
+              mesh.position.copy(mesh.userData.origPos).applyAxisAngle(axisVector, currentAngle);
+              mesh.rotation.set(0, 0, 0);
+              mesh.rotateOnWorldAxis(axisVector, currentAngle);
+            }
+          });
+        }
+        
+        if (progress === 1) {
+          // Reset visual coordinates to solved slots
+          cubiesRef.current.forEach(mesh => {
+            mesh.position.copy(mesh.userData.origPos);
+            mesh.rotation.set(0, 0, 0);
+          });
+          
+          activeMoveRef.current = null;
+          
+          // Apply logical state change
+          const store = useCubeStore.getState();
+          if (store.isPlaying && store.solutionMoves.length > 0 && store.solutionStep < store.solutionMoves.length) {
+            store.stepSolution();
+          } else {
+            store.applyMove(activeMove);
+          }
+        }
+      } else {
+        // No active move animation, dequeue the next one
+        const queue = useCubeStore.getState().moveQueue;
+        if (queue && queue.length > 0) {
+          const nextMove = useCubeStore.getState().dequeueMove();
+          if (nextMove) {
+            activeMoveRef.current = nextMove;
+            animStartTimeRef.current = performance.now();
+          }
+        }
+      }
+
       renderer.render(scene, camera);
     };
     animate();
@@ -197,6 +307,8 @@ export default function CubeCanvas({ cubeState, style }) {
   useEffect(() => {
     cubiesRef.current.forEach(mesh => {
       const {x,y,z} = mesh.userData;
+      mesh.position.copy(mesh.userData.origPos);
+      mesh.rotation.set(0, 0, 0);
       mesh.material.forEach((mat, bi) => {
         mat.color.set(getStickerColor(cubeState, x, y, z, bi));
       });

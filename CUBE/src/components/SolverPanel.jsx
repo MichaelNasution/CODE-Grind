@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useCubeStore } from "../store/cubeStore";
 import { isSolved, parseMoves } from "../engine/cube";
 
@@ -9,51 +9,66 @@ export default function SolverPanel() {
     cube, scramble, solve, reset, undo, redo,
     solutionMoves, solutionStep, stepSolution,
     speed, setSpeed, method, setMethod,
-    applyMoveSequence, historyIndex, history,
-    isPlaying, setIsPlaying, setSolutionStep,
+    historyIndex, history,
+    isPlaying, setIsPlaying,
+    enqueueMoves, clearQueue
   } = useCubeStore();
 
   const solved = isSolved(cube);
-  const intervalRef = useRef(null);
 
-  // Auto-play solution
+  // Pulse CSS effect upon completing a solution
   useEffect(() => {
-    if (!isPlaying) { clearInterval(intervalRef.current); return; }
-    const delay = Math.round(600 / speed);
-    intervalRef.current = setInterval(() => {
-      const { solutionStep: step, solutionMoves: moves } = useCubeStore.getState();
-      if (step >= moves.length) {
-        setIsPlaying(false);
-        clearInterval(intervalRef.current);
-        // Solve complete — CSS pulse
-        const vp = document.querySelector(".cube-viewport");
-        if (vp) { vp.style.transition="transform 0.4s"; vp.style.transform="scale(1.02)"; setTimeout(()=>{ vp.style.transform=""; }, 400); }
-      } else {
-        stepSolution();
+    if (solutionMoves.length > 0 && solutionStep === solutionMoves.length) {
+      const vp = document.querySelector(".cube-viewport");
+      if (vp) {
+        vp.style.transition = "transform 0.4s";
+        vp.style.transform = "scale(1.02)";
+        setTimeout(() => { vp.style.transform = ""; }, 400);
       }
-    }, delay);
-    return () => clearInterval(intervalRef.current);
-  }, [isPlaying, speed]);
+    }
+  }, [solutionStep, solutionMoves.length]);
 
-  const handleScramble = () => { setIsPlaying(false); scramble(); };
+  const handleScramble = () => {
+    clearQueue();
+    setIsPlaying(false);
+    scramble();
+  };
+
   const handleSolve = () => {
+    clearQueue();
     setIsPlaying(false);
     solve();
   };
-  const handlePlayPause = () => setIsPlaying(!isPlaying);
-  const handleStepForward = () => { setIsPlaying(false); stepSolution(); };
+
+  const handlePlayPause = () => {
+    if (isPlaying) {
+      clearQueue();
+      setIsPlaying(false);
+    } else {
+      const remaining = solutionMoves.slice(solutionStep);
+      enqueueMoves(remaining);
+      setIsPlaying(true);
+    }
+  };
+
+  const handleStepForward = () => {
+    clearQueue();
+    setIsPlaying(false);
+    if (solutionStep < solutionMoves.length) {
+      enqueueMoves([solutionMoves[solutionStep]]);
+    }
+  };
 
   const handleInputMove = (e) => {
     if (e.key === "Enter") {
       const val = e.target.value.trim();
       const moves = parseMoves(val);
-      if (moves.length) applyMoveSequence(moves);
+      if (moves.length) enqueueMoves(moves);
       e.target.value = "";
     }
   };
 
   const scrambleStr = useCubeStore.getState().scrambleMoves.join(" ");
-  const solutionStr = solutionMoves.join(" ");
   const progress = solutionMoves.length > 0 ? (solutionStep / solutionMoves.length) * 100 : 0;
 
   return (
@@ -95,7 +110,7 @@ export default function SolverPanel() {
         <div className="move-hint">Press Enter to execute</div>
         <div className="quick-moves">
           {["R","R'","U","U'","F","F'","L","L'","D","D'","B","B'"].map(m => (
-            <button key={m} className="quick-btn" onClick={() => applyMoveSequence([m])}>{m}</button>
+            <button key={m} className="quick-btn" onClick={() => enqueueMoves([m])}>{m}</button>
           ))}
         </div>
       </div>

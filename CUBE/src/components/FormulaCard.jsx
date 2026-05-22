@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { OLLDiagram, PLLDiagram } from "./Diagrams";
 import { DIFFICULTY_LABELS, CATEGORY_COLORS } from "../data/formulas";
+import { useCubeStore } from "../store/cubeStore";
+import { parseMoves } from "../engine/cube";
 
 const STARS = (n) => "★".repeat(n) + "☆".repeat(5-n);
 
 export default function FormulaCard({ formula, onClick, isSelected }) {
   const [copied, setCopied] = useState(false);
+  const enqueueMoves = useCubeStore(state => state.enqueueMoves);
 
   const catColor = CATEGORY_COLORS[formula.group] || CATEGORY_COLORS[formula.category] || "#888";
   const mainAlg = formula.algorithms[0];
@@ -15,6 +18,14 @@ export default function FormulaCard({ formula, onClick, isSelected }) {
     navigator.clipboard.writeText(mainAlg.moves);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleAnimate = (e) => {
+    e.stopPropagation();
+    const parsed = parseMoves(mainAlg.moves);
+    if (parsed.length > 0) {
+      enqueueMoves(parsed);
+    }
   };
 
   return (
@@ -70,9 +81,17 @@ export default function FormulaCard({ formula, onClick, isSelected }) {
               ))}
             </div>
           )}
-          {formula.executionTime && (
-            <div className="card-time">⏱ ~{formula.executionTime}</div>
-          )}
+          
+          <div className="card-actions-row">
+            {formula.executionTime && (
+              <div className="card-time">⏱ ~{formula.executionTime}</div>
+            )}
+            {mainAlg.moves !== "—" && (
+              <button className="btn-card-animate" onClick={handleAnimate}>
+                ▶ Animate
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
