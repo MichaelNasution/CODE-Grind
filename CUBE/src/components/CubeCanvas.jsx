@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { FACE_COLORS } from "../engine/cube";
 import { useCubeStore } from "../store/cubeStore";
 
@@ -145,7 +146,7 @@ export default function CubeCanvas({ cubeState, style }) {
     fill.position.set(-5,3,-4);
     scene.add(fill);
 
-    // Build cubies
+    // Build cubies using premium RoundedBoxGeometry
     const GAP = 1.04;
     const cubies = [];
     for (let x = -1; x <= 1; x++) {
@@ -154,10 +155,11 @@ export default function CubeCanvas({ cubeState, style }) {
           const materials = Array.from({length:6}, (_,bi) => {
             const color = getStickerColor(cubeState, x, y, z, bi);
             return new THREE.MeshStandardMaterial({
-              color, roughness: color === "#1a1a2e" ? 0.9 : 0.3, metalness: 0.1
+              color, roughness: color === "#1a1a2e" ? 0.95 : 0.25, metalness: 0.15
             });
           });
-          const geo = new THREE.BoxGeometry(0.95, 0.95, 0.95, 1, 1, 1);
+          // Rounded corners catch light specular highlights for beautiful premium texture!
+          const geo = new RoundedBoxGeometry(0.95, 0.95, 0.95, 4, 0.08);
           const mesh = new THREE.Mesh(geo, materials);
           const origPos = new THREE.Vector3(x*GAP, y*GAP, z*GAP);
           mesh.position.copy(origPos);
@@ -183,7 +185,7 @@ export default function CubeCanvas({ cubeState, style }) {
     };
     updateCamera();
 
-    // Animate loop with smooth 3D rotation support
+    // Animate loop with smooth 3D rotation and cubic easing
     const animate = () => {
       frameRef.current = requestAnimationFrame(animate);
       
@@ -191,17 +193,23 @@ export default function CubeCanvas({ cubeState, style }) {
       if (activeMove) {
         const now = performance.now();
         const start = animStartTimeRef.current;
-        const speed = useCubeStore.getState().speed || 1;
-        const duration = 350 / speed; // 350ms base duration
+        const storeState = useCubeStore.getState();
+        const speed = storeState.speed || 1;
+        const speedMultiplier = storeState.isScrambling ? 3.0 : 1.0;
+        const duration = 350 / (speed * speedMultiplier); // Accelerated animation for mechanical scrambling
         
         let progress = (now - start) / duration;
         if (progress > 1) progress = 1;
+        
+        // Easing function: easeInOutCubic for elegant realistic turning physics
+        const easeInOutCubic = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+        const easedProgress = easeInOutCubic(progress);
         
         const spec = getMoveSpec(activeMove);
         if (spec) {
           const axisVector = new THREE.Vector3();
           axisVector[spec.axis] = 1;
-          const currentAngle = spec.angle * progress;
+          const currentAngle = spec.angle * easedProgress;
           
           cubiesRef.current.forEach(mesh => {
             if (spec.filter(mesh)) {
@@ -223,10 +231,20 @@ export default function CubeCanvas({ cubeState, style }) {
           
           // Apply logical state change
           const store = useCubeStore.getState();
-          if (store.isPlaying && store.solutionMoves.length > 0 && store.solutionStep < store.solutionMoves.length) {
+          const isSolutionMove = store.solutionMoves.length > 0 &&
+                                 store.solutionStep >= 0 &&
+                                 store.solutionStep < store.solutionMoves.length &&
+                                 store.solutionMoves[store.solutionStep] === activeMove;
+          
+          if (isSolutionMove) {
             store.stepSolution();
           } else {
             store.applyMove(activeMove);
+          }
+
+          // If scramble finishes, toggle isScrambling off
+          if (store.moveQueue.length === 0 && store.isScrambling) {
+            useCubeStore.setState({ isScrambling: false });
           }
         }
       } else {
@@ -284,6 +302,49 @@ export default function CubeCanvas({ cubeState, style }) {
     mount.addEventListener("touchmove", onTouchMove);
     mount.addEventListener("touchend", onMouseUp);
 
+    // Keyboard support for professional interactive control
+    const onKeyDown = (e) => {
+      if (document.activeElement.tagName === "INPUT" || document.activeElement.tagName === "TEXTAREA") {
+        return;
+      }
+      const key = e.key.toLowerCase();
+      const isShift = e.shiftKey;
+      let move = null;
+      switch(key) {
+        case "r": move = isShift ? "R'" : "R"; break;
+        case "l": move = isShift ? "L'" : "L"; break;
+        case "u": move = isShift ? "U'" : "U"; break;
+        case "d": move = isShift ? "D'" : "D"; break;
+        case "f": move = isShift ? "F'" : "F"; break;
+        case "b": move = isShift ? "B'" : "B"; break;
+        case "s":
+          e.preventDefault();
+          useCubeStore.getState().scramble();
+          break;
+        case " ":
+          e.preventDefault();
+          const store = useCubeStore.getState();
+          if (store.solutionMoves.length > 0) {
+            if (store.isPlaying) {
+              store.clearQueue();
+              store.setIsPlaying(false);
+            } else {
+              const remaining = store.solutionMoves.slice(store.solutionStep);
+              store.enqueueMoves(remaining);
+              store.setIsPlaying(true);
+            }
+          }
+          break;
+        default:
+          break;
+      }
+      if (move) {
+        e.preventDefault();
+        useCubeStore.getState().enqueueMoves([move]);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+
     // Resize
     const onResize = () => {
       const w = mount.clientWidth, h = mount.clientHeight;
@@ -299,12 +360,18 @@ export default function CubeCanvas({ cubeState, style }) {
       mount.removeChild(renderer.domElement);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("resize", onResize);
     };
   }, []);
 
   // Update sticker colors when cube state changes
   useEffect(() => {
+    // State synchronized guard: immediately abort active animation if state changed externally
+    if (activeMoveRef.current !== null) {
+      activeMoveRef.current = null;
+    }
+
     cubiesRef.current.forEach(mesh => {
       const {x,y,z} = mesh.userData;
       mesh.position.copy(mesh.userData.origPos);

@@ -12,7 +12,7 @@ const TABS = [
 ];
 
 export default function App() {
-  const { cube, activeTab, setActiveTab, applyMoveSequence } = useCubeStore();
+  const { cube, activeTab, setActiveTab, enqueueMoves, clearQueue } = useCubeStore();
   const [mobilePanel, setMobilePanel] = useState(false);
 
   return (
@@ -55,7 +55,14 @@ export default function App() {
         <div className="right-panel">
           {activeTab === "solver"   && <SolverPanel />}
           {activeTab === "library"  && <FormulaLibrary />}
-          {activeTab === "tutorial" && <TutorialPanel onApplyMoves={applyMoveSequence} />}
+          {activeTab === "tutorial" && (
+            <TutorialPanel
+              onApplyMoves={(moves) => {
+                clearQueue();
+                enqueueMoves(moves);
+              }}
+            />
+          )}
         </div>
       </div>
     </div>

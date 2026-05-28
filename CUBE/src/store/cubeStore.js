@@ -32,7 +32,8 @@ export const useCubeStore = create((set, get) => ({
   
   // Animation Move Queue
   moveQueue: [],
-
+  isScrambling: false,
+  
   // ── Mutations ────────────────────────────────────────────
   addCustomFormula: (formula) => set(state => ({ customFormulas: [...state.customFormulas, formula] })),
   enqueueMoves: (moves) => set(state => ({ moveQueue: [...state.moveQueue, ...moves] })),
@@ -48,7 +49,21 @@ export const useCubeStore = create((set, get) => ({
     return nextMove;
   },
 
-  clearQueue: () => set({ moveQueue: [] }),
+  clearQueue: () => set({ moveQueue: [], isScrambling: false }),
+
+  applyAllQueuedMoves: () => set(state => {
+    if (state.moveQueue.length === 0) return {};
+    const newCube = applyMoves(state.cube, state.moveQueue);
+    const newHistory = state.history.slice(0, state.historyIndex + 1);
+    newHistory.push(newCube);
+    return {
+      cube: newCube,
+      history: newHistory,
+      historyIndex: newHistory.length - 1,
+      moveQueue: [],
+      isScrambling: false
+    };
+  }),
 
   applyMove: (move) => set(state => {
     const newCube = applyMove(state.cube, move);
@@ -65,17 +80,23 @@ export const useCubeStore = create((set, get) => ({
     return { cube: newCube, history: newHistory, historyIndex: newHistory.length - 1 };
   }),
 
-  undo: () => set(state => {
-    if (state.historyIndex <= 0) return state;
-    const idx = state.historyIndex - 1;
-    return { cube: cloneCube(state.history[idx]), historyIndex: idx };
-  }),
+  undo: () => {
+    get().applyAllQueuedMoves();
+    set(state => {
+      if (state.historyIndex <= 0) return {};
+      const idx = state.historyIndex - 1;
+      return { cube: cloneCube(state.history[idx]), historyIndex: idx };
+    });
+  },
 
-  redo: () => set(state => {
-    if (state.historyIndex >= state.history.length - 1) return state;
-    const idx = state.historyIndex + 1;
-    return { cube: cloneCube(state.history[idx]), historyIndex: idx };
-  }),
+  redo: () => {
+    get().applyAllQueuedMoves();
+    set(state => {
+      if (state.historyIndex >= state.history.length - 1) return {};
+      const idx = state.historyIndex + 1;
+      return { cube: cloneCube(state.history[idx]), historyIndex: idx };
+    });
+  },
 
   reset: () => set({
     cube: createSolvedCube(),
@@ -85,27 +106,31 @@ export const useCubeStore = create((set, get) => ({
     solutionMoves: [],
     solutionStep: -1,
     isPlaying: false,
-    moveQueue: []
+    moveQueue: [],
+    isScrambling: false
   }),
 
-  scramble: () => set(state => {
+  scramble: () => {
     const moves = generateScramble(20);
-    const newCube = applyMoves(createSolvedCube(), moves);
-    return {
-      cube: newCube,
-      history: [createSolvedCube(), newCube],
-      historyIndex: 1,
+    set({
+      cube: createSolvedCube(),
+      history: [createSolvedCube()],
+      historyIndex: 0,
       scrambleMoves: moves,
       solutionMoves: [],
       solutionStep: -1,
-      moveQueue: []
-    };
-  }),
+      moveQueue: moves,
+      isScrambling: true
+    });
+  },
 
-  solve: () => set(state => {
-    const sol = solveByUndo(state.scrambleMoves);
-    return { solutionMoves: sol, solutionStep: 0 };
-  }),
+  solve: () => {
+    get().applyAllQueuedMoves();
+    set(state => {
+      const sol = solveByUndo(state.scrambleMoves);
+      return { solutionMoves: sol, solutionStep: 0 };
+    });
+  },
 
   stepSolution: () => set(state => {
     const { solutionMoves, solutionStep, cube } = state;
@@ -117,7 +142,8 @@ export const useCubeStore = create((set, get) => ({
     return {
       cube: newCube,
       solutionStep: nextStep,
-      isPlaying: isFinished ? false : state.isPlaying
+      isPlaying: isFinished ? false : state.isPlaying,
+      isScrambling: false
     };
   }),
 
