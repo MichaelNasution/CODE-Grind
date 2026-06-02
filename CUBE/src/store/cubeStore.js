@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import {
   createSolvedCube, cloneCube, applyMove, applyMoves,
-  generateScramble, solveByUndo, isSolved, parseMoves
+  generateScramble, solveByUndo, parseMoves
 } from "../engine/cube";
 import { CubeVerifier } from "../engine/verifier";
 

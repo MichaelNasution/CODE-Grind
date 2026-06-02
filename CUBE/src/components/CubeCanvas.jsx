@@ -147,13 +147,14 @@ export default function CubeCanvas({ cubeState, style }) {
     scene.add(fill);
 
     // Build cubies using premium RoundedBoxGeometry
+    const initialCube = useCubeStore.getState().cube;
     const GAP = 1.04;
     const cubies = [];
     for (let x = -1; x <= 1; x++) {
       for (let y = -1; y <= 1; y++) {
         for (let z = -1; z <= 1; z++) {
           const materials = Array.from({length:6}, (_,bi) => {
-            const color = getStickerColor(cubeState, x, y, z, bi);
+            const color = getStickerColor(initialCube, x, y, z, bi);
             return new THREE.MeshStandardMaterial({
               color, roughness: color === "#1a1a2e" ? 0.95 : 0.25, metalness: 0.15
             });
@@ -321,7 +322,7 @@ export default function CubeCanvas({ cubeState, style }) {
           e.preventDefault();
           useCubeStore.getState().scramble();
           break;
-        case " ":
+        case " ": {
           e.preventDefault();
           const store = useCubeStore.getState();
           if (store.solutionMoves.length > 0) {
@@ -335,6 +336,7 @@ export default function CubeCanvas({ cubeState, style }) {
             }
           }
           break;
+        }
         default:
           break;
       }

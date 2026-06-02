@@ -494,3 +494,275 @@ code   { font-family: "JetBrains Mono", monospace; }
   .logo-sub, .nav-right { display: none; }
   .solver-panel, .library-panel, .tutorial-panel { padding: 14px; }
 }
+
+/* ── Premium Styling Extensions ────────────────────────────── */
+
+/* Cube Viewport Premium Inner Glow & Shadow */
+.cube-viewport {
+  box-shadow: inset 0 0 50px rgba(0,0,0,0.8), 0 0 20px rgba(0,217,255,0.05);
+  transition: all 0.3s ease;
+}
+
+/* Collapsible Diagnostics Widgets */
+.diagnostics-section {
+  margin-top: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.diagnostics-toggle-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.25s ease;
+  cursor: pointer;
+}
+
+.diagnostics-toggle-btn:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: var(--border2);
+  color: var(--text);
+}
+
+.diagnostics-toggle-btn.open {
+  border-color: var(--cyan);
+  background: rgba(0,217,255,0.04);
+  color: var(--cyan);
+}
+
+.diag-icon {
+  margin-right: 8px;
+  font-size: 14px;
+}
+
+.diag-label {
+  flex: 1;
+  text-align: left;
+}
+
+.diag-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 12px;
+}
+
+.diag-status-dot.valid {
+  background: var(--emerald);
+  box-shadow: 0 0 8px var(--emerald);
+}
+
+.diag-status-dot.error {
+  background: var(--pink);
+  box-shadow: 0 0 8px var(--pink);
+}
+
+.diag-arrow {
+  font-size: 10px;
+  color: var(--text3);
+}
+
+.diagnostics-toggle-btn.open .diag-arrow {
+  color: var(--cyan);
+}
+
+.diagnostics-panel {
+  margin-top: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  backdrop-filter: blur(10px);
+  animation: fadeIn 0.25s ease-out;
+}
+
+.diag-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.diag-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.diag-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.diag-badge.status-valid {
+  background: rgba(16,185,129,0.15);
+  color: #10b981;
+  border: 1px solid rgba(16,185,129,0.3);
+}
+
+.diag-badge.status-error {
+  background: rgba(236,72,153,0.15);
+  color: #ec4899;
+  border: 1px solid rgba(236,72,153,0.3);
+}
+
+.diag-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.diag-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.diag-item-label {
+  font-size: 10px;
+  color: var(--text3);
+}
+
+.diag-item-val {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text2);
+  font-family: "JetBrains Mono", monospace;
+}
+
+.diag-item-val.val-success {
+  color: #10b981;
+}
+
+.diag-tests-list {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.diag-test-header {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.diag-test-row {
+  display: flex;
+  align-items: center;
+  font-size: 11px;
+  gap: 8px;
+}
+
+.test-indicator {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.test-indicator.success {
+  color: var(--emerald);
+}
+
+.test-name {
+  flex: 1;
+  color: var(--text2);
+}
+
+.test-status {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  color: var(--text3);
+}
+
+/* Keyboard Shortcuts Section */
+.keyboard-shortcuts-section {
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.shortcuts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.01);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+
+.shortcut-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text2);
+}
+
+kbd {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-bottom: 3px solid var(--border2);
+  color: var(--cyan);
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 600;
+  box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+  min-width: 20px;
+  text-align: center;
+}
+
+.shortcut-desc {
+  font-size: 11px;
+  color: var(--text3);
+}
+
+/* Premium Button glows & smooth transitions */
+.btn-primary {
+  transition: all 0.25s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: all 0.6s ease;
+}
+
+.btn-primary:hover::after {
+  left: 100%;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.method-btn:active, .quick-btn:active, .cat-btn:active {
+  transform: scale(0.95);
+}

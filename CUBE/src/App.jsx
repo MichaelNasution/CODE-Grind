@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useCubeStore } from "./store/cubeStore";
 import CubeCanvas from "./components/CubeCanvas";
 import SolverPanel from "./components/SolverPanel";
@@ -13,7 +12,6 @@ const TABS = [
 
 export default function App() {
   const { cube, activeTab, setActiveTab, enqueueMoves, clearQueue } = useCubeStore();
-  const [mobilePanel, setMobilePanel] = useState(false);
 
   return (
     <div className="app">

@@ -28,24 +28,7 @@ export function isSolved(cube) {
   return true;
 }
 
-// Rotate a face 90° clockwise (indices)
-function rotateFaceCW(face) {
-  return [
-    face[6], face[3], face[0],
-    face[7], face[4], face[1],
-    face[8], face[5], face[2],
-  ];
-}
-function rotateFaceCCW(face) {
-  return [
-    face[2], face[5], face[8],
-    face[1], face[4], face[7],
-    face[0], face[3], face[6],
-  ];
-}
-function rotateFace180(face) {
-  return [...face].reverse();
-}
+
 
 // ─────── MOVE DEFINITIONS ────────────────────────────────────
 // Each move mutates a clone of the cube
@@ -182,7 +165,6 @@ export function applyNotation(cube, notation) {
 
 // ─────── SCRAMBLE GENERATOR ──────────────────────────────────
 const SCRAMBLE_MOVES = ["R","R'","R2","L","L'","L2","U","U'","U2","D","D'","D2","F","F'","F2","B","B'","B2"];
-const FACE_OF = {R:"R",L:"L",U:"U",D:"D",F:"F",B:"B"};
 const getFace = m => m[0];
 
 export function generateScramble(length = 20) {
