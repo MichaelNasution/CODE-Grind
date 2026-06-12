@@ -33,4 +33,13 @@ class MatchStat extends Model
     {
         return $this->belongsTo(Fixture::class);
     }
+
+    public function isStale(): bool
+    {
+        if ($this->synced_at === null) {
+            return true;
+        }
+
+        return $this->synced_at->lt(now()->subMinutes((int) config('sports.cache_ttl', 600) / 2));
+    }
 }

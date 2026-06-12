@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\SportType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -20,6 +21,7 @@ class Team extends Model
     {
         return [
             'external_id' => 'integer',
+            'sport_type' => SportType::class,
         ];
     }
 

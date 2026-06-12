@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\SportType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -25,6 +26,7 @@ class League extends Model
             'external_id' => 'integer',
             'is_prestigious' => 'boolean',
             'sort_order' => 'integer',
+            'sport_type' => SportType::class,
         ];
     }
 

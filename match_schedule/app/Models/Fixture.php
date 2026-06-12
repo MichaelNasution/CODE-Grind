@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\SportType;
+use App\Services\UrgencyAnalyzer;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -30,6 +32,7 @@ class Fixture extends Model
             'match_time' => 'datetime',
             'home_score' => 'integer',
             'away_score' => 'integer',
+            'sport_type' => SportType::class,
         ];
     }
 
@@ -55,11 +58,19 @@ class Fixture extends Model
 
     public function isLive(): bool
     {
-        return in_array($this->status, ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE', 'Q1', 'Q2', 'Q3', 'Q4', 'OT'], true);
+        return in_array($this->status, ['1H', '2H', 'HT', 'ET', 'BT', 'LIVE', 'Q1', 'Q2', 'Q3', 'Q4'], true);
     }
 
     public function isFinished(): bool
     {
-        return in_array($this->status, ['FT', 'AET', 'PEN', 'AOT', 'POST'], true);
+        return in_array($this->status, ['FT', 'AET', 'PEN', 'AOT'], true);
+    }
+
+    /**
+     * @return array{score: int, label: string, factors: array<int, string>}
+     */
+    public function getUrgencyAttribute(): array
+    {
+        return app(UrgencyAnalyzer::class)->analyze($this);
     }
 }
