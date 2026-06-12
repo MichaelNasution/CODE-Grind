@@ -1,0 +1,15 @@
+D:\CODE\CODE-Grind\UTS_YUDHA\bin\Debug\net8.0\UTS_YUDHA.exe
+D:\CODE\CODE-Grind\UTS_YUDHA\bin\Debug\net8.0\UTS_YUDHA.deps.json
+D:\CODE\CODE-Grind\UTS_YUDHA\bin\Debug\net8.0\UTS_YUDHA.runtimeconfig.json
+D:\CODE\CODE-Grind\UTS_YUDHA\bin\Debug\net8.0\UTS_YUDHA.dll
+D:\CODE\CODE-Grind\UTS_YUDHA\bin\Debug\net8.0\UTS_YUDHA.pdb
+D:\CODE\CODE-Grind\UTS_YUDHA\obj\Debug\net8.0\UTS_YUDHA.GeneratedMSBuildEditorConfig.editorconfig
+D:\CODE\CODE-Grind\UTS_YUDHA\obj\Debug\net8.0\UTS_YUDHA.AssemblyInfoInputs.cache
+D:\CODE\CODE-Grind\UTS_YUDHA\obj\Debug\net8.0\UTS_YUDHA.AssemblyInfo.cs
+D:\CODE\CODE-Grind\UTS_YUDHA\obj\Debug\net8.0\UTS_YUDHA.csproj.CoreCompileInputs.cache
+D:\CODE\CODE-Grind\UTS_YUDHA\obj\Debug\net8.0\UTS_YUDHA.sourcelink.json
+D:\CODE\CODE-Grind\UTS_YUDHA\obj\Debug\net8.0\UTS_YUDHA.dll
+D:\CODE\CODE-Grind\UTS_YUDHA\obj\Debug\net8.0\refint\UTS_YUDHA.dll
+D:\CODE\CODE-Grind\UTS_YUDHA\obj\Debug\net8.0\UTS_YUDHA.pdb
+D:\CODE\CODE-Grind\UTS_YUDHA\obj\Debug\net8.0\UTS_YUDHA.genruntimeconfig.cache
+D:\CODE\CODE-Grind\UTS_YUDHA\obj\Debug\net8.0\ref\UTS_YUDHA.dll

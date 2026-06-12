@@ -19,4 +19,9 @@ return [
         'limit_header' => 'x-ratelimit-requests-limit',
     ],
 
+    'prestigious_league_ids' => [
+        'football' => [39, 140, 135, 2],
+        'basketball' => [12],
+    ],
+
 ];
