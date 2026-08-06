@@ -3,11 +3,11 @@ main.py
 =======
 Entry point for the MLB Analytics CLI System.
 
-Responsibilities:
-  - Centralised application lifecycle management
-  - Main menu routing loop
-  - Top-level exception handling
-  - Graceful degradation on API failures
+Menu structure (v2 — Moneyline-first, Bankroll removed):
+  1. Moneyline Strong Recommendations  (Strategy D)
+  2. Under Home Run Parlay Screener    (Strategy A)
+  3. 5-Factor Score Projection         (Strategy B + C)
+  4. Exit
 """
 
 from __future__ import annotations
@@ -30,12 +30,8 @@ if sys.platform == "win32":
 # ---------------------------------------------------------------------------
 logging.basicConfig(
     level=logging.WARNING,
-    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+    format="%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
-    handlers=[
-        logging.FileHandler("mlb_analytics.log", encoding="utf-8"),
-        # Deliberately NOT adding StreamHandler — rich handles console output
-    ],
 )
 logger = logging.getLogger(__name__)
 
@@ -43,220 +39,208 @@ logger = logging.getLogger(__name__)
 # Local module imports
 # ---------------------------------------------------------------------------
 import analytics
-import bankroll
 import cli_ui
 import data_fetcher
+import mock_data  # direct import for Moneyline-specific lookups
 
 
 # ==============================================================================
-# MENU ACTION HANDLERS
+# STRATEGY D — ACTION: Moneyline Strong Recommendations
 # ==============================================================================
 
-def action_under_hr_parlay() -> None:
+def action_moneyline_screener() -> None:
     """
-    Menu Option 1 — Under Home Run Parlay Screener.
-    Fetches live data, runs Strategy A engine, displays results.
+    Strategy D: Moneyline Strong Recommendation Screener.
+
+    Data pipeline:
+      1. Load today's game slate (via data_fetcher → mock fallback).
+      2. Load moneyline-specific datasets directly from mock_data.
+         (In production these would be fetched via additional API calls.)
+      3. Enrich games with pitcher stats.
+      4. Run the Moneyline Screener analytics engine.
+      5. Generate 3/4/5/8/10-leg parlay combinations.
+      6. Display results via cli_ui.
     """
-    cli_ui.console.print()
-    cli_ui.display_info("Fetching today's game slate and pitcher data…")
+    cli_ui.console.print("\n[accent]Loading today's game slate + Moneyline data...[/]")
 
     try:
-        # Load enriched game slate (with mock fallback)
-        games = cli_ui.with_spinner(
-            "Loading game slate & pitcher stats…",
+        # --- Step 1: Game slate + enriched pitcher data -------------------------
+        games: list[dict] = cli_ui.with_spinner(
+            "Fetching game slate...",
             data_fetcher.load_full_game_slate,
         )
 
-        # Load head-to-head batter records
-        h2h_records = cli_ui.with_spinner(
-            "Loading batter H2H records…",
-            data_fetcher.load_all_h2h_candidates,
-            games,
+        # --- Step 2: Load Moneyline-specific datasets ---------------------------
+        # These are sourced from mock_data for now.
+        # In live production mode these would be fetched from a Moneyline odds API.
+        team_form       = mock_data.MOCK_TEAM_FORM
+        team_ops_splits = mock_data.MOCK_TEAM_OPS_SPLITS
+        ml_odds         = mock_data.MOCK_MONEYLINE_ODDS
+        pitcher_stats   = mock_data.MOCK_PITCHER_STATS
+
+        # --- Step 3: Run Moneyline screener ------------------------------------
+        candidates = cli_ui.with_spinner(
+            "Evaluating Win Confidence scores...",
+            analytics.run_moneyline_screener,
+            games, team_form, team_ops_splits, ml_odds, pitcher_stats,
         )
 
-        # Collect all pitcher stats referenced in H2H records
-        pitcher_ids = list({r["pitcher_id"] for r in h2h_records if "pitcher_id" in r})
-        pitcher_stats = cli_ui.with_spinner(
-            "Fetching pitcher statistics…",
-            data_fetcher.fetch_all_pitcher_stats,
-            pitcher_ids,
+        # --- Step 4: Generate parlay slips -------------------------------------
+        slips_by_legs = cli_ui.with_spinner(
+            "Generating parlay combinations...",
+            analytics.generate_moneyline_parlays,
+            candidates,
         )
 
-        # Also include pitchers from game slate but not in H2H
-        for game in games:
-            for key in ("home_sp", "away_sp"):
-                sp = game.get(key)
-                if sp and sp.get("pitcher_id") and sp["pitcher_id"] not in pitcher_stats:
-                    pitcher_stats[sp["pitcher_id"]] = sp
+        # --- Step 5: Display ---------------------------------------------------
+        cli_ui.display_moneyline_results(candidates, slips_by_legs)
 
-        # Run Under HR engine
-        slips_by_legs = analytics.run_under_hr_engine(h2h_records, pitcher_stats)
-
-        # Load bankroll state for stake display
-        br_state = bankroll.load_state()
-
-        # Display results
-        cli_ui.display_under_hr_results(slips_by_legs, br_state)
-
-    except KeyboardInterrupt:
-        cli_ui.console.print("\n[dim_text]Cancelled by user.[/]")
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("Unhandled error in Under HR engine.")
-        cli_ui.display_error(f"Unexpected error: {exc}")
+    except Exception as exc:
+        logger.exception("Moneyline screener error: %s", exc)
+        cli_ui.display_error(
+            f"An error occurred in the Moneyline Screener:\n{exc}\n\n"
+            "Check the log for full traceback."
+        )
 
     cli_ui.press_enter_to_continue()
 
+
+# ==============================================================================
+# STRATEGY A — ACTION: Under Home Run Parlay Screener
+# ==============================================================================
+
+def action_under_hr_screener() -> None:
+    """
+    Strategy A: Under Home Run Parlay Screener.
+
+    Data pipeline:
+      1. Load H2H records and pitcher stats.
+      2. Run the Under HR parlay engine.
+      3. Display results.
+    """
+    cli_ui.console.print("\n[accent]Loading H2H records and pitcher profiles...[/]")
+
+    try:
+        h2h_records: list[dict] = cli_ui.with_spinner(
+            "Fetching batter H2H data...",
+            data_fetcher.load_batter_h2h_records,
+        )
+        pitcher_stats_raw: list[dict] = cli_ui.with_spinner(
+            "Fetching pitcher stats...",
+            data_fetcher.load_pitcher_stats,
+        )
+        pitcher_stats: dict[int, dict] = {
+            p["pitcher_id"]: p for p in pitcher_stats_raw if "pitcher_id" in p
+        }
+
+        slips_by_legs = cli_ui.with_spinner(
+            "Running Under HR engine...",
+            analytics.run_under_hr_engine,
+            h2h_records, pitcher_stats,
+        )
+
+        cli_ui.display_under_hr_results(slips_by_legs)
+
+    except Exception as exc:
+        logger.exception("Under HR screener error: %s", exc)
+        cli_ui.display_error(f"An error occurred:\n{exc}")
+
+    cli_ui.press_enter_to_continue()
+
+
+# ==============================================================================
+# STRATEGY B+C — ACTION: 5-Factor Score Projection + Props
+# ==============================================================================
 
 def action_score_projection() -> None:
     """
-    Menu Option 2 — 5-Factor Score Projection.
-    Fetches full enriched game data, runs Strategy B engine, displays table.
+    Strategy B: 5-Factor Score Projection (Over/Under).
+    Strategy C: Pitcher Props Goblin + Anchor System.
+
+    Data pipeline:
+      1. Load enriched game slate.
+      2. Project all games.
+      3. Load and run Pitcher Props engine.
+      4. Run Anchor Slip engine.
+      5. Display results.
     """
-    cli_ui.console.print()
-    cli_ui.display_info("Fetching live game slate, pitcher, bullpen, and weather data…")
+    cli_ui.console.print("\n[accent]Loading game data for score projection...[/]")
 
     try:
-        games = cli_ui.with_spinner(
-            "Loading full game slate with weather & odds…",
+        games: list[dict] = cli_ui.with_spinner(
+            "Fetching game slate (pitchers + weather + lines)...",
             data_fetcher.load_full_game_slate,
         )
-
-        projections = cli_ui.with_spinner(
-            "Running 5-Factor projection engine…",
+        projections: list[analytics.GameProjection] = cli_ui.with_spinner(
+            "Running 5-Factor Score Projection...",
             analytics.project_all_games,
             games,
         )
-
-        cli_ui.display_score_projections(projections)
-
-    except KeyboardInterrupt:
-        cli_ui.console.print("\n[dim_text]Cancelled by user.[/]")
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("Unhandled error in Score Projection engine.")
-        cli_ui.display_error(f"Unexpected error: {exc}")
-
-    cli_ui.press_enter_to_continue()
-
-
-def action_pitcher_props() -> None:
-    """
-    Menu Option 3 — Pitcher Props & Anchor System.
-    Runs Strategy C engine, displays goblin props and anchor slips.
-    """
-    cli_ui.console.print()
-    cli_ui.display_info("Loading pitcher prop and anchor system data…")
-
-    try:
-        raw_props = cli_ui.with_spinner(
-            "Loading pitcher prop candidates…",
+        pitcher_props_raw: list[dict] = cli_ui.with_spinner(
+            "Loading pitcher props...",
             data_fetcher.load_pitcher_props,
         )
-        raw_anchors = cli_ui.with_spinner(
-            "Loading batter anchor candidates…",
+        batter_anchor_raw: list[dict] = cli_ui.with_spinner(
+            "Loading batter anchor props...",
             data_fetcher.load_batter_anchor_props,
         )
+        pitcher_props = analytics.run_pitcher_props_engine(pitcher_props_raw)
+        anchor_slips  = analytics.run_anchor_system_engine(batter_anchor_raw, pitcher_props)
 
-        pitcher_props = analytics.run_pitcher_props_engine(raw_props)
-        anchor_slips = analytics.run_anchor_system_engine(raw_anchors, pitcher_props)
-
+        cli_ui.display_score_projections(projections)
         cli_ui.display_pitcher_props(pitcher_props, anchor_slips)
 
-    except KeyboardInterrupt:
-        cli_ui.console.print("\n[dim_text]Cancelled by user.[/]")
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("Unhandled error in Pitcher Props engine.")
-        cli_ui.display_error(f"Unexpected error: {exc}")
-
-    cli_ui.press_enter_to_continue()
-
-
-def action_bankroll_manager() -> None:
-    """
-    Menu Option 4 — Bankroll Manager.
-    Displays dashboard and routes to edit sub-menu.
-    """
-    cli_ui.console.print()
-    try:
-        cli_ui.display_bankroll_dashboard()
-    except KeyboardInterrupt:
-        cli_ui.console.print("\n[dim_text]Cancelled by user.[/]")
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("Unhandled error in Bankroll Manager.")
-        cli_ui.display_error(f"Unexpected error: {exc}")
+    except Exception as exc:
+        logger.exception("Score projection error: %s", exc)
+        cli_ui.display_error(f"An error occurred:\n{exc}")
 
     cli_ui.press_enter_to_continue()
 
 
 # ==============================================================================
-# MAIN APPLICATION LOOP
+# MENU ROUTING
 # ==============================================================================
 
-MENU_ACTIONS = {
-    "1": action_under_hr_parlay,
-    "2": action_score_projection,
-    "3": action_pitcher_props,
-    "4": action_bankroll_manager,
+MENU_ACTIONS: dict[str, object] = {
+    "1": action_moneyline_screener,
+    "2": action_under_hr_screener,
+    "3": action_score_projection,
+    "4": None,   # Exit
 }
 
 
-def run() -> None:
-    """Main application entry point. Runs the interactive menu loop."""
-    # Clear terminal for a clean start
-    cli_ui.console.clear()
+# ==============================================================================
+# MAIN LOOP
+# ==============================================================================
 
-    # Print the animated banner
+def main() -> None:
     cli_ui.print_banner()
 
-    cli_ui.console.print(
-        "[dim_text]  ⚠  For educational and entertainment purposes only."
-        " Always gamble responsibly.[/]"
-    )
-    cli_ui.console.print()
-
-    # Main menu loop
     while True:
-        cli_ui.console.clear()
-        cli_ui.print_banner()
-        cli_ui.print_main_menu()
-
         try:
+            cli_ui.print_main_menu()
             choice = cli_ui.get_menu_choice()
-        except KeyboardInterrupt:
-            choice = "5"
 
-        if choice == "5":
+            if choice == "4":
+                cli_ui.display_exit_message()
+                sys.exit(0)
+
+            action = MENU_ACTIONS.get(choice)
+            if callable(action):
+                cli_ui.console.clear()
+                cli_ui.print_banner()
+                action()
+            else:
+                cli_ui.display_error(f"Unrecognised choice: {choice}")
+
+        except KeyboardInterrupt:
+            cli_ui.console.print("\n[dim_text]Interrupted by user.[/]")
             cli_ui.display_exit_message()
             sys.exit(0)
+        except Exception as exc:
+            cli_ui.display_error(f"Unexpected error: {exc}")
+            logger.critical("Unhandled exception in main loop: %s", traceback.format_exc())
 
-        action = MENU_ACTIONS.get(choice)
-        if action:
-            cli_ui.console.clear()
-            try:
-                action()
-            except SystemExit:
-                raise
-            except KeyboardInterrupt:
-                cli_ui.console.print("\n[dim_text]Returning to main menu…[/]")
-            except Exception as exc:  # noqa: BLE001
-                logger.exception("Unhandled top-level error for choice=%s", choice)
-                cli_ui.display_error(
-                    f"A critical error occurred: {exc}\n"
-                    "Check mlb_analytics.log for details."
-                )
-                cli_ui.press_enter_to_continue()
-
-
-# ==============================================================================
-# ENTRY POINT
-# ==============================================================================
 
 if __name__ == "__main__":
-    try:
-        run()
-    except KeyboardInterrupt:
-        cli_ui.console.print("\n[dim_text]Exiting. Goodbye![/]\n")
-        sys.exit(0)
-    except Exception as fatal:  # noqa: BLE001
-        # Last-resort fallback — show error without rich if it hasn't been imported
-        print(f"\n[FATAL] Unhandled exception at startup:\n{traceback.format_exc()}")
-        sys.exit(1)
+    main()
