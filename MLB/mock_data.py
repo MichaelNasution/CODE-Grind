@@ -3,8 +3,12 @@ mock_data.py
 ============
 Fallback engine with structured mock data.
 Automatically activates if any live API fails or is rate-limited.
-Covers all three strategies: Under HR, Score Projection, Moneyline Screener.
+Covers all four strategies: Moneyline, Under HR, Score Projection, Props.
 Extended to 12 games to support 10-leg parlay generation.
+
+Date-aware accessors (get_mock_games, get_mock_odds_for_date) return the
+same fixed dataset for any requested date so the program runs cleanly in
+offline / mock mode regardless of which analysis date the user selects.
 """
 
 from __future__ import annotations
@@ -707,3 +711,26 @@ MOCK_BATTER_ANCHOR_PROPS: list[dict] = [
         "pair_confidence": "Medium",
     },
 ]
+
+
+# ==============================================================================
+# DATE-AWARE ACCESSORS (for data_fetcher compatibility)
+# ==============================================================================
+
+def get_mock_games(date_str: str) -> list[dict]:
+    """
+    Return the mock game slate for any requested date.
+    In offline / mock mode the same 12-game slate is used regardless of date.
+    """
+    import logging as _logging
+    _logging.getLogger(__name__).info(
+        "Mock data serving %d games for date %s.", len(MOCK_GAMES), date_str
+    )
+    return list(MOCK_GAMES)
+
+
+def get_mock_odds_for_date(date_str: str) -> dict:
+    """Return mock O/U odds lines for any requested date."""
+    return dict(MOCK_ODDS_LINES)
+
+ 

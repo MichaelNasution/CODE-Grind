@@ -1,13 +1,13 @@
 """
 analytics.py
 ============
-Core mathematical analytics engine for the MLB Handicapping System.
+Core mathematical analytics engine for the MLB Handicapping System v3.
 
 Contains four strategy engines:
-  A. Under Home Run Parlay Engine      (Strategy A)
-  B. 5-Factor Score Projection         (Strategy B)
-  C. Pitcher Props & Anchor System     (Strategy C)
-  D. Moneyline Strong Recommendation   (Strategy D) ← NEW
+  A. Moneyline Strong Recommendation & Lock of the Day  (Strategy A)
+  B. Under Home Run Parlay Engine                      (Strategy B)
+  C. 5-Factor Score Projection (Over/Under)            (Strategy C)
+  D. Pitcher Props & System Anchor                     (Strategy D)
 """
 
 from __future__ import annotations
@@ -22,94 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 # ==============================================================================
-# DATA MODELS — STRATEGY A (Under HR)
-# ==============================================================================
-
-@dataclass
-class BatterCandidate:
-    """A batter who passes all Under HR parlay filters."""
-    batter_id: int
-    batter_name: str
-    team: str
-    pitcher_id: int
-    pitcher_name: str
-    career_pa_vs_pitcher: int
-    career_hr_vs_pitcher: int
-    season_hr: int
-    season_pa: int
-    prev_season_hr: int
-    prev_season_pa: int
-    true_no_hr_prob: float
-
-
-@dataclass
-class ParlaySlip:
-    """A generated Under HR parlay slip with its legs and math metrics."""
-    legs: list[BatterCandidate]
-    n_legs: int
-    combined_probability: float
-    fair_implied_odds: float
-    fair_american_odds: int
-
-
-# ==============================================================================
-# DATA MODELS — STRATEGY B (Score Projection)
-# ==============================================================================
-
-@dataclass
-class GameProjection:
-    """Result of the 5-Factor Score Projection for one game."""
-    game_id: object
-    matchup: str
-    venue: str
-    home_team: str
-    away_team: str
-    ou_line: float | None
-    home_starter_expected_runs: float
-    away_starter_expected_runs: float
-    home_bullpen_expected_runs: float
-    away_bullpen_expected_runs: float
-    home_team_expected_score: float
-    away_team_expected_score: float
-    park_factor: float
-    raw_total: float
-    weather_adjustment: float
-    projected_total: float
-    temp_f: float
-    wind_speed_mph: float
-    wind_direction: str
-    conditions: str
-    edge: float | None
-    recommendation: str
-
-
-# ==============================================================================
-# DATA MODELS — STRATEGY C (Props)
-# ==============================================================================
-
-@dataclass
-class PitcherPropRecommendation:
-    pitcher_name: str
-    team: str
-    k_per9: float
-    avg_pitch_count: int
-    goblin_line: float
-    full_prop_line: float
-    prop_label: str
-
-
-@dataclass
-class AnchorSlip:
-    pitcher_prop: PitcherPropRecommendation
-    batter_name: str
-    batter_team: str
-    batter_prop_label: str
-    opponent_pitcher_opp_avg: float
-    pair_confidence: str
-
-
-# ==============================================================================
-# DATA MODELS — STRATEGY D (Moneyline Screener) ← NEW
+# DATA MODELS — STRATEGY A (Moneyline Screener & Lock of the Day)
 # ==============================================================================
 
 @dataclass
@@ -159,8 +72,103 @@ class MoneylineSlip:
     ev_edge: float                  # combined_confidence - implied_probability
 
 
+@dataclass
+class LockOfDay:
+    """The single most dominant Moneyline pick on a given slate."""
+    candidate: MoneylineCandidate
+    rationale: str
+    stake_label: str = "1.00 Unit — Lock of the Day / Single Pick"
+
+
 # ==============================================================================
-# STRATEGY D CONSTANTS
+# DATA MODELS — STRATEGY B (Under HR Parlay)
+# ==============================================================================
+
+@dataclass
+class BatterCandidate:
+    """A batter who passes all Under HR parlay filters."""
+    batter_id: int
+    batter_name: str
+    team: str
+    pitcher_id: int
+    pitcher_name: str
+    career_pa_vs_pitcher: int
+    career_hr_vs_pitcher: int
+    season_hr: int
+    season_pa: int
+    prev_season_hr: int
+    prev_season_pa: int
+    true_no_hr_prob: float
+
+
+@dataclass
+class ParlaySlip:
+    """A generated Under HR parlay slip with its legs and math metrics."""
+    legs: list[BatterCandidate]
+    n_legs: int
+    combined_probability: float
+    fair_implied_odds: float
+    fair_american_odds: int
+
+
+# ==============================================================================
+# DATA MODELS — STRATEGY C (Score Projection)
+# ==============================================================================
+
+@dataclass
+class GameProjection:
+    """Result of the 5-Factor Score Projection for one game."""
+    game_id: object
+    matchup: str
+    venue: str
+    home_team: str
+    away_team: str
+    ou_line: float | None
+    home_starter_expected_runs: float
+    away_starter_expected_runs: float
+    home_bullpen_expected_runs: float
+    away_bullpen_expected_runs: float
+    home_team_expected_score: float
+    away_team_expected_score: float
+    park_factor: float
+    raw_total: float
+    weather_adjustment: float
+    projected_total: float
+    temp_f: float
+    wind_speed_mph: float
+    wind_direction: str
+    conditions: str
+    edge: float | None
+    recommendation: str
+
+
+# ==============================================================================
+# DATA MODELS — STRATEGY D (Props)
+# ==============================================================================
+
+@dataclass
+class PitcherPropRecommendation:
+    pitcher_name: str
+    team: str
+    k_per9: float
+    avg_pitch_count: int
+    goblin_line: float
+    full_prop_line: float
+    prop_label: str
+
+
+@dataclass
+class AnchorSlip:
+    pitcher_prop: PitcherPropRecommendation
+    batter_name: str
+    batter_team: str
+    batter_prop_label: str
+    opponent_pitcher_opp_avg: float
+    pair_confidence: str
+
+
+# ==============================================================================
+# STRATEGY A — CONSTANTS & HELPERS
 # ==============================================================================
 
 # Weight allocation across 4 factors (must sum to 1.0)
@@ -169,41 +177,26 @@ _WEIGHT_FORM  = 0.30
 _WEIGHT_OPS   = 0.25
 _WEIGHT_WHIP  = 0.10
 
-# Minimum win confidence to qualify (65%)
-MIN_ML_WIN_CONFIDENCE = 0.65
-
-# Maximum parlay combo iterations (performance cap)
+# Maximum parlay combo iterations
 _MAX_ML_COMBOS = 50
 
 
-# ==============================================================================
-# STRATEGY D — SCORING HELPERS
-# ==============================================================================
-
 def _score_era(era_diff: float) -> float:
-    """
-    ERA Advantage score (0.0 → 1.0).
-    era_diff = opponent_ERA - our_ERA  (positive = our pitcher is better)
-    Spec threshold for full credit: >= 1.25.
-    """
+    """ERA Advantage score (0.0 → 1.0). positive = our pitcher better."""
     if era_diff >= 1.25:
-        return 1.00   # Spec: dominant ERA advantage
+        return 1.00
     elif era_diff >= 0.75:
-        return 0.75   # Strong advantage
+        return 0.75
     elif era_diff >= 0.25:
-        return 0.50   # Moderate advantage
+        return 0.50
     elif era_diff >= 0.00:
-        return 0.20   # Slight advantage
+        return 0.20
     else:
-        # Penalise unfavourable matchup gradually
         return max(0.0, 0.20 + era_diff * 0.16)
 
 
 def _score_whip(whip_diff: float) -> float:
-    """
-    WHIP Advantage score (0.0 → 1.0).
-    whip_diff = opp_WHIP - our_WHIP  (positive = our pitcher cleaner)
-    """
+    """WHIP Advantage score (0.0 → 1.0). positive = our pitcher cleaner."""
     if whip_diff >= 0.20:
         return 1.00
     elif whip_diff >= 0.10:
@@ -215,36 +208,23 @@ def _score_whip(whip_diff: float) -> float:
 
 
 def _score_form(win_rate: float) -> float:
-    """
-    Recent form score = Last 10 win rate (linear, 0.0 → 1.0).
-    Spec threshold for positive signal: >= 60%.
-    """
+    """Recent form score = Last 10 win rate."""
     return min(1.0, max(0.0, win_rate))
 
 
 def _score_ops(ops_advantage: float) -> float:
-    """
-    OPS Matchup Advantage score (0.0 → 1.0).
-    ops_advantage = (our_team_OPS_vs_opp_type - their_team_OPS_vs_our_type)
-                    / their_team_OPS_vs_our_type
-    Spec threshold for positive signal: >= 10% (0.10).
-    """
+    """OPS Matchup Advantage score (0.0 → 1.0)."""
     if ops_advantage >= 0.10:
-        return 1.00   # Spec: dominant offensive matchup
+        return 1.00
     elif ops_advantage >= 0.05:
-        return 0.60   # Good matchup
+        return 0.60
     elif ops_advantage >= 0.00:
-        return 0.30   # Slight advantage
+        return 0.30
     else:
         return max(0.0, 0.30 + ops_advantage * 3.0)
 
 
-# ==============================================================================
-# STRATEGY D — TEAM EVALUATOR
-# ==============================================================================
-
 def _american_to_decimal(american: int) -> float:
-    """Convert American moneyline odds to decimal odds."""
     if american > 0:
         return 1.0 + american / 100.0
     else:
@@ -252,7 +232,6 @@ def _american_to_decimal(american: int) -> float:
 
 
 def _decimal_to_american(decimal: float) -> int:
-    """Convert decimal odds to American odds."""
     if decimal >= 2.0:
         return int(round((decimal - 1.0) * 100))
     else:
@@ -276,27 +255,21 @@ def _evaluate_team_moneyline(
     opp_team_name: str,
     opp_pitcher_name: str,
 ) -> MoneylineCandidate:
-    """
-    Evaluate a single team in a single game for Moneyline strength.
-    Returns a MoneylineCandidate with all components scored.
-    """
     our_era  = our_sp.get("era",  4.50)
     opp_era  = opp_sp.get("era",  4.50)
     our_whip = our_sp.get("whip", 1.30)
     opp_whip = opp_sp.get("whip", 1.30)
 
-    era_diff  = round(opp_era  - our_era,  3)   # positive = our pitcher better
-    whip_diff = round(opp_whip - our_whip, 3)   # positive = our pitcher cleaner
+    era_diff  = round(opp_era  - our_era,  3)
+    whip_diff = round(opp_whip - our_whip, 3)
 
-    # Recent form
     wins   = our_form.get("last_10_wins",   5)
     losses = our_form.get("last_10_losses", 5)
     total  = wins + losses
     last10_win_rate = (wins / total) if total > 0 else 0.5
 
-    # OPS matchup — compare each team's offense vs the specific pitcher handedness they face
-    opp_throws = opp_sp.get("throws", "R")   # what we bat against
-    our_throws  = our_sp.get("throws",  "R") # what they bat against
+    opp_throws  = opp_sp.get("throws", "R")
+    our_throws  = our_sp.get("throws", "R")
     ops_key_ours  = f"ops_vs_{'r' if opp_throws == 'R' else 'l'}hp"
     ops_key_theirs = f"ops_vs_{'r' if our_throws  == 'R' else 'l'}hp"
 
@@ -304,7 +277,6 @@ def _evaluate_team_moneyline(
     their_ops = opp_ops_splits.get(ops_key_theirs, 0.720)
     ops_advantage = (our_ops - their_ops) / their_ops if their_ops > 0 else 0.0
 
-    # Compute component scores
     sc_era  = _score_era(era_diff)
     sc_whip = _score_whip(whip_diff)
     sc_form = _score_form(last10_win_rate)
@@ -341,7 +313,7 @@ def _evaluate_team_moneyline(
 
 
 # ==============================================================================
-# STRATEGY D — MAIN SCREENER
+# STRATEGY A — MONEYLINE SCREENER & PARLAY GENERATOR & LOCK OF THE DAY
 # ==============================================================================
 
 def run_moneyline_screener(
@@ -351,36 +323,23 @@ def run_moneyline_screener(
     ml_odds: dict[int, dict],
     pitcher_stats: dict[int, dict],
 ) -> list[MoneylineCandidate]:
-    """
-    Strategy D — Moneyline Strong Recommendation Screener.
-
-    For each game:
-      1. Evaluate both home and away teams across 4 quantitative factors.
-      2. Pick the single stronger-qualifying team per game (avoids same-game correlation).
-      3. Filter: win_confidence >= MIN_ML_WIN_CONFIDENCE (65%).
-      4. Sort by win_confidence descending.
-
-    Returns a list of qualified MoneylineCandidate objects.
-    """
     candidates: list[MoneylineCandidate] = []
 
     for game in games:
-        game_id    = game.get("game_id")
-        home_id    = game.get("home_team_id")
-        away_id    = game.get("away_team_id")
-        home_name  = game.get("home_team", "Home")
-        away_name  = game.get("away_team", "Away")
-        home_sp    = game.get("home_sp") or {}
-        away_sp    = game.get("away_sp") or {}
-        ml         = ml_odds.get(game_id, {})
+        game_id   = game.get("game_id")
+        home_id   = game.get("home_team_id")
+        away_id   = game.get("away_team_id")
+        home_name = game.get("home_team", "Home")
+        away_name = game.get("away_team", "Away")
+        home_sp   = game.get("home_sp") or {}
+        away_sp   = game.get("away_sp") or {}
+        ml        = ml_odds.get(game_id, {})
 
-        # Enrich SP dicts with pitcher_stats if available
         if home_sp.get("pitcher_id") and home_sp["pitcher_id"] in pitcher_stats:
             home_sp = pitcher_stats[home_sp["pitcher_id"]]
         if away_sp.get("pitcher_id") and away_sp["pitcher_id"] in pitcher_stats:
             away_sp = pitcher_stats[away_sp["pitcher_id"]]
 
-        # Also try looking up by home/away starter IDs from game dict
         if not home_sp and game.get("home_starter_id"):
             home_sp = pitcher_stats.get(game["home_starter_id"], {})
         if not away_sp and game.get("away_starter_id"):
@@ -391,83 +350,43 @@ def run_moneyline_screener(
         home_ops  = team_ops_splits.get(home_id, {})
         away_ops  = team_ops_splits.get(away_id, {})
 
-        home_ml = ml.get("home_ml", -110)
-        away_ml = ml.get("away_ml", +110)
-
-        # Evaluate home team
         home_cand = _evaluate_team_moneyline(
-            team_id=home_id or 0,
-            team_name=home_name,
-            is_home=True,
-            game_id=game_id,
-            our_sp=home_sp,
-            opp_sp=away_sp,
-            our_form=home_form,
-            our_ops_splits=home_ops,
-            opp_ops_splits=away_ops,
-            ml_american=home_ml,
-            opp_team_name=away_name,
+            team_id=home_id or 0, team_name=home_name, is_home=True, game_id=game_id,
+            our_sp=home_sp, opp_sp=away_sp, our_form=home_form,
+            our_ops_splits=home_ops, opp_ops_splits=away_ops,
+            ml_american=ml.get("home_ml", -110), opp_team_name=away_name,
             opp_pitcher_name=away_sp.get("full_name", game.get("away_starter_name", "TBD")),
         )
 
-        # Evaluate away team
         away_cand = _evaluate_team_moneyline(
-            team_id=away_id or 0,
-            team_name=away_name,
-            is_home=False,
-            game_id=game_id,
-            our_sp=away_sp,
-            opp_sp=home_sp,
-            our_form=away_form,
-            our_ops_splits=away_ops,
-            opp_ops_splits=home_ops,
-            ml_american=away_ml,
-            opp_team_name=home_name,
+            team_id=away_id or 0, team_name=away_name, is_home=False, game_id=game_id,
+            our_sp=away_sp, opp_sp=home_sp, our_form=away_form,
+            our_ops_splits=away_ops, opp_ops_splits=home_ops,
+            ml_american=ml.get("away_ml", +110), opp_team_name=home_name,
             opp_pitcher_name=home_sp.get("full_name", game.get("home_starter_name", "TBD")),
         )
 
-        # Pick the single stronger qualifying team per game
         best: MoneylineCandidate | None = None
         for cand in (home_cand, away_cand):
-            if cand.win_confidence >= MIN_ML_WIN_CONFIDENCE:
+            if cand.win_confidence >= config.MIN_ML_WIN_CONFIDENCE:
                 if best is None or cand.win_confidence > best.win_confidence:
                     best = cand
 
         if best:
             candidates.append(best)
 
-    # Sort by win_confidence descending
     candidates.sort(key=lambda c: c.win_confidence, reverse=True)
     return candidates
 
 
-# ==============================================================================
-# STRATEGY D — PARLAY GENERATOR
-# ==============================================================================
-
 def generate_moneyline_parlays(
     candidates: list[MoneylineCandidate],
 ) -> dict[int, list[MoneylineSlip]]:
-    """
-    Generate Moneyline parlay slips for 3, 4, 5, 8, and 10 legs.
-
-    Combines qualifying candidates (already sorted by win_confidence desc).
-    Each combination's metrics:
-      - combined_confidence: product of win_confidence (our probability estimate)
-      - combined_decimal_odds: product of decimal ML odds (sportsbook payout)
-      - ev_edge: combined_confidence - implied_probability (positive = +EV)
-
-    Returns: dict mapping leg_count -> list[MoneylineSlip] (sorted by combined_confidence desc)
-    """
     target_legs = [3, 4, 5, 8, 10]
     slips_by_legs: dict[int, list[MoneylineSlip]] = {}
 
     for n_legs in target_legs:
         if len(candidates) < n_legs:
-            logger.info(
-                "Only %d qualifying teams — skipping %d-leg parlay.",
-                len(candidates), n_legs,
-            )
             continue
 
         slip_list: list[MoneylineSlip] = []
@@ -480,7 +399,7 @@ def generate_moneyline_parlays(
                 comb_conf    *= leg.win_confidence
                 comb_decimal *= leg.moneyline_decimal
 
-            comb_conf    = round(comb_conf,    6)
+            comb_conf    = round(comb_conf, 6)
             comb_decimal = round(comb_decimal, 4)
             implied_prob = round(1.0 / comb_decimal, 6) if comb_decimal > 0 else 0.0
             ev_edge      = round(comb_conf - implied_prob, 4)
@@ -504,8 +423,42 @@ def generate_moneyline_parlays(
     return slips_by_legs
 
 
+def pick_lock_of_day(candidates: list[MoneylineCandidate]) -> LockOfDay | None:
+    """
+    Select the single Lock of the Day / Must-Win pick.
+    Requires win_confidence >= LOCK_OF_DAY_MIN_CONFIDENCE (80%).
+    Tie-break: pitcher advantage (score_era * score_whip).
+    """
+    qualifiers = [c for c in candidates if c.win_confidence >= config.LOCK_OF_DAY_MIN_CONFIDENCE]
+    if not qualifiers:
+        return None
+
+    # Sort by win_confidence DESC, then pitcher quality DESC
+    qualifiers.sort(
+        key=lambda c: (c.win_confidence, c.score_era * c.score_whip),
+        reverse=True,
+    )
+    best = qualifiers[0]
+
+    # Build quantitative rationale
+    era_sign = "+" if best.era_advantage >= 0 else ""
+    ops_sign = "+" if best.ops_advantage_pct >= 0 else ""
+    form_wins = int(best.last10_win_rate * 10)
+    
+    rationale = (
+        f"Dominant Starter Pitcher {best.pitcher_name} ({era_sign}{best.era_advantage:.2f} ERA advantage) "
+        f"paired with strong recent form ({form_wins}-{(10 - form_wins)} L10) and "
+        f"ofensive split superiority ({ops_sign}{best.ops_advantage_pct * 100:.1f}% OPS advantage)."
+    )
+
+    return LockOfDay(
+        candidate=best,
+        rationale=rationale,
+    )
+
+
 # ==============================================================================
-# STRATEGY A — UNDER HOME RUN PARLAY ENGINE
+# STRATEGY B — UNDER HOME RUN PARLAY ENGINE
 # ==============================================================================
 
 def _calc_true_no_hr_prob(
@@ -530,16 +483,6 @@ def run_under_hr_engine(
     h2h_records: list[dict],
     pitcher_stats: dict[int, dict],
 ) -> dict[int, list[ParlaySlip]]:
-    """
-    Strategy A: Under Home Run Parlay Engine.
-
-    Steps:
-      1. Filter pitchers: HR/9 <= config threshold (0.80).
-      2. Filter H2H: 0 career HR vs that pitcher, min PA threshold.
-      3. Compute True No-HR Probability.
-      4. Filter: prob >= config threshold (94%).
-      5. Generate parlay combinations 3/4/5/8/10 legs.
-    """
     elite_ids: set[int] = {
         pid
         for pid, s in pitcher_stats.items()
@@ -618,7 +561,7 @@ def run_under_hr_engine(
 
 
 # ==============================================================================
-# STRATEGY B — 5-FACTOR SCORE PROJECTION ENGINE
+# STRATEGY C — 5-FACTOR SCORE PROJECTION ENGINE
 # ==============================================================================
 
 def _get_park_factor(venue: str) -> float:
@@ -650,7 +593,6 @@ def _calc_weather_adjustment(weather: dict) -> tuple[float, str]:
 
 
 def project_game_total(game: dict) -> GameProjection:
-    """5-Factor Score Projection for a single enriched game dict."""
     home_team = game.get("home_team", "Home")
     away_team = game.get("away_team", "Away")
     venue     = game.get("venue", "DEFAULT")
@@ -739,20 +681,15 @@ def project_all_games(games: list[dict]) -> list[GameProjection]:
 
 
 # ==============================================================================
-# STRATEGY C — PITCHER PROPS & ANCHOR SYSTEM
+# STRATEGY D — PITCHER PROPS & ANCHOR SYSTEM
 # ==============================================================================
-
-_MIN_PITCH_COUNT_FOR_ELITE = 90
-_MIN_K_RATE_FOR_GOBLIN     = 0.25   # K/9 >= ~7.5
-_MIN_OPP_AVG_FOR_ANCHOR    = 0.270
-
 
 def run_pitcher_props_engine(pitcher_props_raw: list[dict]) -> list[PitcherPropRecommendation]:
     recommendations: list[PitcherPropRecommendation] = []
     for prop in pitcher_props_raw:
         avg_pc = prop.get("avg_pitch_count", 0)
         k_per9 = prop.get("k_per9", 0.0)
-        if avg_pc < _MIN_PITCH_COUNT_FOR_ELITE or (k_per9 / 27.0) < _MIN_K_RATE_FOR_GOBLIN:
+        if avg_pc < config.MIN_PITCH_COUNT_GOBLIN or (k_per9 / 27.0) < (config.MIN_K9_GOBLIN / 27.0):
             continue
         recommendations.append(
             PitcherPropRecommendation(
