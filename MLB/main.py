@@ -1,10 +1,10 @@
 """
 main.py
 =======
-Entry point for the MLB Analytics CLI System v3.
+Entry point for the MLB Analytics CLI System v3.1.
 
 Menu structure (7 Options):
-  1. Moneyline Strong Recommendations & Parlays (3, 4, 5, 8, 10 Legs + Lock of Day)
+  1. Moneyline Recommendations & Parlays (50%-68% Capped Conf + Lock of Day)
   2. Under Home Run Parlay Screener (3, 4, 5, 8, 10 Legs)
   3. 5-Factor Score Projection (Over/Under Total Runs)
   4. Pitcher Props & Anchor / Goblin Systems
@@ -50,21 +50,23 @@ class AppState:
     """Global application state."""
     analysis_date: str
     bankroll_state: bankroll.BankrollState
+    is_live_data: bool = True
 
 
 # ==============================================================================
-# ACTION 1: MONEYLINE STRONG RECOMMENDATIONS & LOCK OF THE DAY
+# ACTION 1: MONEYLINE RECOMMENDATIONS & LOCK OF THE DAY
 # ==============================================================================
 
 def action_moneyline_screener(state: AppState) -> None:
     cli_ui.console.print(f"\n[accent]Loading slate & Moneyline data for {state.analysis_date}...[/]")
 
     try:
-        games: list[dict] = cli_ui.with_spinner(
+        games, is_live_data = cli_ui.with_spinner(
             f"Fetching game slate for {state.analysis_date}...",
             data_fetcher.load_full_game_slate,
             state.analysis_date,
         )
+        state.is_live_data = is_live_data
 
         team_form       = mock_data.MOCK_TEAM_FORM
         team_ops_splits = mock_data.MOCK_TEAM_OPS_SPLITS
@@ -72,9 +74,9 @@ def action_moneyline_screener(state: AppState) -> None:
         pitcher_stats   = mock_data.MOCK_PITCHER_STATS
 
         candidates = cli_ui.with_spinner(
-            "Evaluating Win Confidence scores...",
+            "Evaluating Win Confidence scores (Capped 50% - 68%)...",
             analytics.run_moneyline_screener,
-            games, team_form, team_ops_splits, ml_odds, pitcher_stats,
+            games, team_form, team_ops_splits, ml_odds, pitcher_stats, is_live_data,
         )
 
         slips_by_legs = cli_ui.with_spinner(
@@ -86,7 +88,7 @@ def action_moneyline_screener(state: AppState) -> None:
         lock_of_day = analytics.pick_lock_of_day(candidates)
         summary = bankroll.build_summary(state.bankroll_state)
 
-        cli_ui.display_moneyline_results(candidates, slips_by_legs, lock_of_day, summary)
+        cli_ui.display_moneyline_results(candidates, slips_by_legs, lock_of_day, summary, is_live_data)
 
     except Exception as exc:
         logger.exception("Moneyline screener error: %s", exc)
@@ -141,7 +143,7 @@ def action_score_projection(state: AppState) -> None:
     cli_ui.console.print(f"\n[accent]Loading game data & weather for {state.analysis_date}...[/]")
 
     try:
-        games: list[dict] = cli_ui.with_spinner(
+        games, is_live = cli_ui.with_spinner(
             f"Fetching game slate for {state.analysis_date}...",
             data_fetcher.load_full_game_slate,
             state.analysis_date,
@@ -231,7 +233,7 @@ def main() -> None:
         try:
             cli_ui.console.clear()
             cli_ui.print_banner()
-            cli_ui.display_analysis_header(app_state.analysis_date)
+            cli_ui.display_analysis_header(app_state.analysis_date, app_state.is_live_data)
             cli_ui.print_main_menu()
 
             choice = cli_ui.get_menu_choice()
@@ -239,22 +241,22 @@ def main() -> None:
             if choice == "1":
                 cli_ui.console.clear()
                 cli_ui.print_banner()
-                cli_ui.display_analysis_header(app_state.analysis_date)
+                cli_ui.display_analysis_header(app_state.analysis_date, app_state.is_live_data)
                 action_moneyline_screener(app_state)
             elif choice == "2":
                 cli_ui.console.clear()
                 cli_ui.print_banner()
-                cli_ui.display_analysis_header(app_state.analysis_date)
+                cli_ui.display_analysis_header(app_state.analysis_date, app_state.is_live_data)
                 action_under_hr_screener(app_state)
             elif choice == "3":
                 cli_ui.console.clear()
                 cli_ui.print_banner()
-                cli_ui.display_analysis_header(app_state.analysis_date)
+                cli_ui.display_analysis_header(app_state.analysis_date, app_state.is_live_data)
                 action_score_projection(app_state)
             elif choice == "4":
                 cli_ui.console.clear()
                 cli_ui.print_banner()
-                cli_ui.display_analysis_header(app_state.analysis_date)
+                cli_ui.display_analysis_header(app_state.analysis_date, app_state.is_live_data)
                 action_pitcher_props(app_state)
             elif choice == "5":
                 cli_ui.console.clear()

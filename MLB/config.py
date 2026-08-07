@@ -1,15 +1,15 @@
 """
 config.py
 =========
-Central configuration hub for the MLB Analytics CLI System v3.
+Central configuration hub for the MLB Analytics CLI System v4.0 Production Grade.
 """
 
 # ==============================================================================
 # API KEYS
 # ==============================================================================
 API_KEYS = {
-    "the_odds_api": "YOUR_ODDS_API_KEY_HERE",   # replace with actual key
-    "open_meteo": None,                          # no key needed
+    "the_odds_api": "YOUR_ODDS_API_KEY_HERE",   # Replace with actual API key
+    "open_meteo": None,                          # No key needed
 }
 
 # ==============================================================================
@@ -27,22 +27,60 @@ DEFAULT_BULLPEN_INNINGS = 3.5
 OVER_UNDER_EDGE_THRESHOLD = 0.75
 
 # ==============================================================================
-# DATE HANDLING
+# DATE & LOOKBACK ENGINE
 # ==============================================================================
-DATE_FORMAT = "%Y-%m-%d"
+DATE_FORMAT   = "%Y-%m-%d"
+LOOKBACK_DAYS = 4   # 4-day historical lookback engine (H-4 to H-1)
 
 # ==============================================================================
-# STRATEGY A — MONEYLINE THRESHOLDS
+# STRATEGY A — MONEYLINE & REALISTIC PROBABILITY THRESHOLDS
 # ==============================================================================
-MIN_ML_WIN_CONFIDENCE     = 0.65   # Minimum to qualify as "Strong Rec"
-LOCK_OF_DAY_MIN_CONFIDENCE = 0.80  # Minimum for Lock of the Day
+MAX_WIN_CONFIDENCE_CAP        = 0.680  # 68.0% max confidence cap (MLB high variance)
+MIN_WIN_CONFIDENCE_CAP        = 0.500  # 50.0% min confidence cap
+BALANCED_ODDS_CONFIDENCE_CAP  = 0.580  # 58.0% cap for pick'em (-115 to +115)
+
+MIN_ML_WIN_CONFIDENCE         = 0.580  # Minimum to qualify in screener table
+LOCK_OF_DAY_MIN_CONFIDENCE     = 0.620  # Minimum for Lock of the Day
+
+STRONG_PICK_MIN_ERA_ADV       = 1.25   # Starter ERA advantage >= +1.25
+STRONG_PICK_MAX_WHIP          = 1.18   # Starter WHIP <= 1.18
+STRONG_PICK_MAX_L3_ERA        = 3.20   # Last 3 Starts ERA <= 3.20
+STRONG_PICK_MAX_ML_AMERICAN   = -140   # Moneyline <= -140 (Decimal <= 1.71)
+
+LAST3_ERA_PENALTY_THRESHOLD   = 4.50   # L3 ERA > 4.50 incurs heavy trend penalty
 
 # ==============================================================================
-# STRATEGY B — UNDER HOME RUN THRESHOLDS
+# STRATEGY B1 — UNDER 0.5 HOME RUN PARLAY THRESHOLDS
 # ==============================================================================
 MAX_HR9_FOR_TOP_PITCHER      = 0.80   # HR/9 ceiling
 MIN_PLATE_APPEARANCES_H2H    = 3      # Minimum career PA vs pitcher
 MIN_TRUE_NO_HR_PROBABILITY   = 0.94  # 94% threshold
+
+# ==============================================================================
+# STRATEGY B2 — UNDER 1.5 HITS SCREENER THRESHOLDS
+# ==============================================================================
+UNDER_HITS_MAX_BA            = 0.200  # Max BA vs SP
+UNDER_HITS_MIN_AB            = 10     # Min At-Bats vs SP
+UNDER_HITS_MIN_PROB          = 0.70   # Min 70% seasonal Under 1.5 Hits prob
+UNDER_HITS_SINGLE_ODDS_MIN   = -330   # Odds >= -330 -> Single Bet
+UNDER_HITS_PARLAY_PROB_MIN   = 0.80   # Odds -500 to -700 -> 2-Team Parlay (Prob >= 80%)
+
+# ==============================================================================
+# STRATEGY B3 — ALTERNATE TEAM TOTAL OVER 1.5 RUNS THRESHOLDS
+# ==============================================================================
+ALT_TT_MIN_RPG               = 4.60   # Top 10 Runs Per Game
+ALT_TT_MIN_HRPG              = 1.20   # Top 10 Home Runs Per Game
+ALT_TT_OPP_SP_ERA_MIN        = 4.00   # Opponent Starter ERA >= 4.0
+ALT_TT_OPP_SP_HR9_MIN        = 1.40   # Opponent Starter HR/9 >= 1.4
+ALT_TT_OPP_BP_ERA_MIN        = 4.20   # Opponent Bullpen ERA >= 4.20 (Bottom 10)
+ALT_TT_MIN_PARK_FACTOR       = 1.00   # Park Factor >= 1.00
+
+# ==============================================================================
+# STRATEGY B4 — AT-BAT OUTCOME "OUT OR ERROR" TARGETS ($100/DAY SYSTEM)
+# ==============================================================================
+OUT_OR_ERROR_MAX_BA          = 0.500  # Eliminate opposing batters with BA > .500 vs SP (min 10 AB)
+OUT_OR_ERROR_MAX_K_PCT       = 0.250  # Eliminate batters in Top 25 K% (> 25%)
+OUT_OR_ERROR_TARGET_COUNT    = 5      # Output 5 remaining batter targets
 
 # ==============================================================================
 # STRATEGY C — SCORE PROJECTION WEATHER ADJUSTMENTS
@@ -59,12 +97,6 @@ WEATHER_RULES = {
 }
 
 # ==============================================================================
-# STRATEGY D — PITCHER PROPS
-# ==============================================================================
-MIN_PITCH_COUNT_GOBLIN = 90       # Min avg pitch count
-MIN_K9_GOBLIN          = 7.5      # Min K/9 for goblin props
-
-# ==============================================================================
 # BANKROLL MANAGEMENT
 # ==============================================================================
 BANKROLL_DAILY_RISK_PCT = 0.10    # Max 10% of bankroll per day
@@ -72,33 +104,31 @@ UNIT_SIZE_PCT           = 0.02    # 1 Unit = 2% of bankroll
 DEFAULT_BANKROLL        = 1000.00
 BANKROLL_FILE           = "bankroll.json"
 
-# Stake allocation per parlay size (in units)
 PARLAY_UNIT_ALLOCATION: dict[int, float] = {
-    3:  1.00,   # Standard
-    4:  0.75,   # Moderate
-    5:  0.50,   # Reduced
-    8:  0.25,   # Lottery
-    10: 0.25,   # Lottery
+    3:  1.00,
+    4:  0.75,
+    5:  0.50,
+    8:  0.25,
+    10: 0.25,
+    15: 0.25,  # Ultimate Slate-Wide Slip
 }
-
-# Special single-pick stake (Lock of Day, 2-Man Anchor, 2-Man Goblin)
 SINGLE_PICK_UNIT_ALLOCATION = 1.00
 
 # ==============================================================================
-# THE ODDS API
+# THE ODDS API & LINE SHOPPING
 # ==============================================================================
-ODDS_SPORT_KEY  = "baseball_mlb"
-ODDS_REGIONS    = "us"
-ODDS_MARKETS    = "totals"
-ODDS_FORMAT     = "american"
-ODDS_API_BASE   = "https://api.the-odds-api.com/v4"
-ODDS_API_TIMEOUT = 10
+ODDS_SPORT_KEY       = "baseball_mlb"
+ODDS_REGIONS         = "us"
+ODDS_MARKETS         = "h2h,totals"
+ODDS_FORMAT          = "american"
+ODDS_API_BASE        = "https://api.the-odds-api.com/v4"
+ODDS_API_TIMEOUT     = 10
+SUPPORTED_SPORTSBOOKS = ["BetMGM", "DraftKings", "Caesars", "FanDuel", "ESPN Bet"]
 
 # ==============================================================================
 # PARK FACTORS
 # ==============================================================================
 PARK_FACTORS: dict[str, float] = {
-    # American League
     "Fenway Park":            1.05,
     "Yankee Stadium":         1.07,
     "Camden Yards":           1.04,
@@ -114,7 +144,6 @@ PARK_FACTORS: dict[str, float] = {
     "Oakland Coliseum":       0.94,
     "T-Mobile Park":          0.93,
     "Globe Life Field":       1.03,
-    # National League
     "Truist Park":            1.01,
     "Wrigley Field":          1.04,
     "Great American Ball Park": 1.10,
@@ -134,7 +163,7 @@ PARK_FACTORS: dict[str, float] = {
 }
 
 # ==============================================================================
-# STADIUM GPS COORDINATES (for weather API)
+# STADIUM GPS COORDINATES
 # ==============================================================================
 STADIUM_COORDINATES: dict[str, dict[str, float]] = {
     "Fenway Park":               {"lat": 42.3467, "lon": -71.0972},
