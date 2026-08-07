@@ -222,10 +222,6 @@ def _decimal_to_american(decimal: float) -> int:
 # ==============================================================================
 
 def calibrate_model_weights(lookback_data: dict[str, list[dict]]) -> CalibrationReport:
-    """
-    Analyzes H-4 to H-1 historical results to dynamically calibrate component weights.
-    Evaluates bullpen volatility and pitcher WHIP accuracy without breaking core rules.
-    """
     log_entries: list[str] = []
     total_games = 0
     total_error = 0.0
@@ -243,12 +239,10 @@ def calibrate_model_weights(lookback_data: dict[str, list[dict]]) -> Calibration
     avg_error = total_error / len(lookback_data) if lookback_data else 0.05
     avg_bp_vol = bullpen_volatility / len(lookback_data) if lookback_data else 3.50
 
-    # Base weights
     base_pitcher = 0.40
     base_form    = 0.30
     base_ops     = 0.30
 
-    # Adjust if recent bullpen volatility was high
     if avg_bp_vol > 4.00:
         adj_pitcher = base_pitcher + 0.05
         adj_form    = base_form - 0.05
@@ -376,7 +370,6 @@ def _evaluate_team_moneyline(
     model_prob    = 0.50 + (raw_model_val - 0.50) * 0.36
     model_prob    = min(config.MAX_WIN_CONFIDENCE_CAP, max(config.MIN_WIN_CONFIDENCE_CAP, model_prob))
 
-    # Line Shopping Best Price
     best_book = "DraftKings"
     best_ml   = ml_american
     if line_shopping_game:
@@ -492,14 +485,9 @@ def run_moneyline_screener(
             is_live_data=is_live_data, line_shopping_game=ls_game, calib_report=calib_report,
         )
 
-        best: MoneylineCandidate | None = None
-        for cand in (home_cand, away_cand):
-            if cand.win_confidence >= config.MIN_ML_WIN_CONFIDENCE:
-                if best is None or cand.win_confidence > best.win_confidence:
-                    best = cand
-
-        if best:
-            candidates.append(best)
+        # Select best team for EVERY game so Ultimate Slate Slip gets all games
+        best = home_cand if home_cand.win_confidence >= away_cand.win_confidence else away_cand
+        candidates.append(best)
 
     candidates.sort(key=lambda c: c.win_confidence, reverse=True)
     return candidates
@@ -508,16 +496,19 @@ def run_moneyline_screener(
 def generate_moneyline_parlays(
     candidates: list[MoneylineCandidate],
 ) -> dict[int, list[MoneylineSlip]]:
+    # Filter only candidates that meet minimum Win Confidence for standard parlays
+    qualified = [c for c in candidates if c.win_confidence >= config.MIN_ML_WIN_CONFIDENCE]
+
     target_legs = [3, 4, 5, 8, 10]
     slips_by_legs: dict[int, list[MoneylineSlip]] = {}
 
     for n_legs in target_legs:
-        if len(candidates) < n_legs:
+        if len(qualified) < n_legs:
             continue
 
         slip_list: list[MoneylineSlip] = []
         for combo in itertools.islice(
-            itertools.combinations(candidates, n_legs), 50
+            itertools.combinations(qualified, n_legs), 50
         ):
             comb_conf = 1.0
             comb_decimal = 1.0
@@ -550,14 +541,9 @@ def generate_moneyline_parlays(
 
 
 def generate_ultimate_slate_slip(candidates: list[MoneylineCandidate]) -> MoneylineSlip | None:
-    """
-    Generates the Ultimate Slate-Wide Moneyline Slip (e.g. 15/15 matches) for luck testing & post-mortem error learning.
-    Picks 1 prediction per match on the slate.
-    """
     if not candidates:
         return None
 
-    # Group by game_id to get 1 best pick per game
     by_game: dict[object, MoneylineCandidate] = {}
     for c in candidates:
         if c.game_id not in by_game or c.win_confidence > by_game[c.game_id].win_confidence:
@@ -707,10 +693,6 @@ def run_under_hr_engine(
 # ==============================================================================
 
 def run_under_1_5_hits_screener(h2h_records: list[dict]) -> list[Under15HitsRecommendation]:
-    """
-    Filters batters with BA <= .200 vs SP (min 10 AB) and Seasonal Prob Under 1.5 Hits >= 70%.
-    Categorizes bet as SINGLE BET (odds >= -330 & prob ~77%) or 2-TEAM PARLAY (odds -500 to -700 & prob >= 80%).
-    """
     recs: list[Under15HitsRecommendation] = []
     for r in h2h_records:
         ab = r.get("career_ab_vs_pitcher", 0)
@@ -741,13 +723,6 @@ def run_under_1_5_hits_screener(h2h_records: list[dict]) -> list[Under15HitsReco
 # ==============================================================================
 
 def run_alternate_team_total_screener(games: list[dict]) -> list[AlternateTeamTotalCandidate]:
-    """
-    Filters teams matching:
-      1. Top 10 RPG (>= 4.60) AND Top 10 HR/Game (>= 1.20)
-      2. Opposing SP ERA >= 4.0 AND HR/9 >= 1.4
-      3. Opposing Bullpen ERA >= 4.20 (Bottom 10)
-      4. Stadium Park Factor >= 1.00
-    """
     candidates: list[AlternateTeamTotalCandidate] = []
 
     for g in games:
@@ -765,7 +740,6 @@ def run_alternate_team_total_screener(games: list[dict]) -> list[AlternateTeamTo
         home_bp   = g.get("home_bullpen") or {}
         away_bp   = g.get("away_bullpen") or {}
 
-        # Evaluate Home Team vs Away Pitching
         if (
             home_off.get("runs_per_game", 0) >= config.ALT_TT_MIN_RPG and
             home_off.get("hr_per_game", 0) >= config.ALT_TT_MIN_HRPG and
@@ -787,7 +761,6 @@ def run_alternate_team_total_screener(games: list[dict]) -> list[AlternateTeamTo
                 )
             )
 
-        # Evaluate Away Team vs Home Pitching
         if (
             away_off.get("runs_per_game", 0) >= config.ALT_TT_MIN_RPG and
             away_off.get("hr_per_game", 0) >= config.ALT_TT_MIN_HRPG and
@@ -817,10 +790,6 @@ def run_alternate_team_total_screener(games: list[dict]) -> list[AlternateTeamTo
 # ==============================================================================
 
 def run_at_bat_outcome_screener(h2h_records: list[dict]) -> list[AtBatOutcomeTarget]:
-    """
-    Identifies DFS Top Picked SP matchup batters, eliminates BA > .500 vs SP and Top 25 K% hitters.
-    Outputs 5 remaining batter targets for Flat Stake "Out or Error" (+115 to +130 odds).
-    """
     targets: list[AtBatOutcomeTarget] = []
     for r in h2h_records:
         if not r.get("is_dfs_top_pitcher_matchup", False):
@@ -829,7 +798,6 @@ def run_at_bat_outcome_screener(h2h_records: list[dict]) -> list[AtBatOutcomeTar
         ba = r.get("batting_avg_vs_pitcher", 0.0)
         k_pct = r.get("strikeout_pct", 0.0)
 
-        # Eliminate BA > .500 (min 10 AB) and Top 25 K% (> 25%)
         if (ab >= 10 and ba > config.OUT_OR_ERROR_MAX_BA) or k_pct > config.OUT_OR_ERROR_MAX_K_PCT:
             continue
 
@@ -867,7 +835,7 @@ def _calc_weather_adjustment(weather: dict) -> tuple[float, str]:
         notes.append(f"Wind out {wind_speed:.1f}mph (+{rules['wind_out_adjustment']})")
     if wind_dir == "in" and wind_speed >= rules["wind_in_threshold_mph"]:
         adjustment += rules["wind_in_adjustment"]
-        notes.append(f"Wind in {wind_speed:.1f}mph ({rules['wind_in_adjustment']})")
+        notes.append(f"Wind in {rules['wind_in_threshold_mph']}mph ({rules['wind_in_adjustment']})")
     if temp_f > rules["temp_hot_threshold_f"]:
         adjustment += rules["temp_hot_adjustment"]
         notes.append(f"Hot {temp_f:.0f}F (+{rules['temp_hot_adjustment']})")

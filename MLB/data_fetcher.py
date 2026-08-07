@@ -1,8 +1,8 @@
 """
 data_fetcher.py
 ===============
-API handler layer for the MLB Analytics CLI System v4.0.
-Accepts `date_str` parameter (YYYY-MM-DD).
+API handler layer for the MLB Analytics CLI System v4.1.
+Silent logging & quiet API timeout engine (Logs exclusively to app.log).
 
 Fetches:
   1. MLB StatsAPI Game Schedule & Probable Starters
@@ -24,6 +24,10 @@ import requests
 import config
 import mock_data
 
+# Silence third-party network loggers completely from stdout
+logging.getLogger("urllib3").setLevel(logging.ERROR)
+logging.getLogger("requests").setLevel(logging.ERROR)
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,21 +35,21 @@ logger = logging.getLogger(__name__)
 # INTERNAL HELPERS
 # ==============================================================================
 
-def _get(url: str, params: dict | None = None, timeout: int = 15) -> dict | list | None:
+def _get(url: str, params: dict | None = None, timeout: int = 2) -> dict | list | None:
+    """
+    Silent HTTP GET — catches timeouts & connection errors silently,
+    logs to app.log, and returns None for immediate mock fallback.
+    """
     try:
         resp = requests.get(url, params=params, timeout=timeout)
         resp.raise_for_status()
         return resp.json()
-    except requests.exceptions.Timeout:
-        logger.warning("Request timed out: %s", url)
-    except requests.exceptions.ConnectionError:
-        logger.warning("Connection error: %s", url)
+    except (requests.exceptions.Timeout, requests.exceptions.ConnectionError):
+        logger.debug("Silent fallback (Timeout/Connection) for URL: %s", url)
     except requests.exceptions.HTTPError as exc:
-        logger.warning("HTTP error %s: %s", exc.response.status_code, url)
-    except requests.exceptions.RequestException as exc:
-        logger.warning("Request exception: %s | URL: %s", exc, url)
+        logger.debug("HTTP error %s for URL: %s", exc.response.status_code if exc.response else 0, url)
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Unexpected error fetching %s: %s", url, exc)
+        logger.debug("Unexpected error fetching %s: %s", url, exc)
     return None
 
 
@@ -72,10 +76,6 @@ def _current_season() -> int:
 # ==============================================================================
 
 def fetch_4day_lookback_data(target_date_str: str) -> dict[str, list[dict]]:
-    """
-    Fetch game results and bullpen/pitcher performance for the prior 4 days (H-4 to H-1).
-    Used by the Calibration Engine in analytics.py.
-    """
     try:
         target_dt = date.fromisoformat(target_date_str)
     except ValueError:
@@ -102,14 +102,9 @@ def fetch_4day_lookback_data(target_date_str: str) -> dict[str, list[dict]]:
                     home_name = home.get("team", {}).get("name", "")
                     away_name = away.get("team", {}).get("name", "")
 
-                    if home.get("isWinner"):
-                        winner = home_name
-                    elif away.get("isWinner"):
-                        winner = away_name
-                    else:
-                        winner = "TBD"
-
+                    winner = home_name if home.get("isWinner") else (away_name if away.get("isWinner") else "TBD")
                     score_str = f"{home.get('score', 0)}-{away.get('score', 0)}"
+
                     day_results.append({
                         "game": f"{away_name} @ {home_name}",
                         "winner": winner,
@@ -141,7 +136,7 @@ def fetch_games_for_date(date_str: str) -> list[dict]:
     data = _get(url, params, timeout=config.MLB_API_TIMEOUT)
 
     if not data:
-        logger.info("Using mock game data (API unavailable) for date %s.", date_str)
+        logger.debug("Using mock game data (API unavailable) for date %s.", date_str)
         return mock_data.get_mock_games(date_str)
 
     games: list[dict] = []
@@ -169,11 +164,11 @@ def fetch_games_for_date(date_str: str) -> list[dict]:
                     "away_starter_name":  away_pp.get("fullName", "TBD"),
                 })
     except (KeyError, TypeError, AttributeError) as exc:
-        logger.warning("Game parse error: %s — falling back to mock.", exc)
+        logger.debug("Game parse error: %s — falling back to mock.", exc)
         return mock_data.get_mock_games(date_str)
 
     if not games:
-        logger.info("No games returned for %s — using mock.", date_str)
+        logger.debug("No games returned for %s — using mock.", date_str)
         return mock_data.get_mock_games(date_str)
 
     return games
@@ -211,7 +206,7 @@ def fetch_recent_starts_era(pitcher_id: int, n_starts: int = 3) -> float | None:
             return None
         return round((total_er / total_ip) * 9, 2)
     except (KeyError, IndexError, TypeError) as exc:
-        logger.warning("Last %d ERA parse error pitcher %s: %s", n_starts, pitcher_id, exc)
+        logger.debug("Last %d ERA parse error pitcher %s: %s", n_starts, pitcher_id, exc)
         return None
 
 
@@ -266,7 +261,7 @@ def fetch_pitcher_stats(pitcher_id: int, season: int | None = None) -> dict | No
             "throws":          mock_p.get("throws", "R"),
         }
     except (KeyError, IndexError, TypeError) as exc:
-        logger.warning("Pitcher %s parse error: %s — using mock.", pitcher_id, exc)
+        logger.debug("Pitcher %s parse error: %s — using mock.", pitcher_id, exc)
         return mock_p or None
 
 
@@ -290,7 +285,7 @@ def fetch_bullpen_stats(team_id: int, season: int | None = None) -> dict | None:
             "whip":        _safe_float(s.get("whip"), mock_bp["whip"]       if mock_bp else 1.30),
         }
     except (KeyError, IndexError, TypeError) as exc:
-        logger.warning("Bullpen stats parse error team %s: %s", team_id, exc)
+        logger.debug("Bullpen stats parse error team %s: %s", team_id, exc)
         return mock_bp
 
 
@@ -319,7 +314,7 @@ def fetch_team_offense(team_id: int, season: int | None = None) -> dict | None:
             "ops": ops,
         }
     except (KeyError, IndexError, TypeError) as exc:
-        logger.warning("Team offense parse error team %s: %s", team_id, exc)
+        logger.debug("Team offense parse error team %s: %s", team_id, exc)
         return mock_off
 
 
@@ -361,7 +356,7 @@ def fetch_weather(venue: str, date_str: str | None = None) -> dict:
     else:
         params["hourly"] = "temperature_2m,wind_speed_10m,wind_direction_10m,weather_code"
 
-    data = _get(url, params, timeout=10)
+    data = _get(url, params, timeout=2)
     if not data:
         return mock_w
 
@@ -394,7 +389,7 @@ def fetch_weather(venue: str, date_str: str | None = None) -> dict:
             "conditions":      "Clear" if wcode < 3 else "Overcast",
         }
     except (KeyError, TypeError, ValueError, IndexError) as exc:
-        logger.warning("Weather parse error (%s): %s — using mock.", venue, exc)
+        logger.debug("Weather parse error (%s): %s — using mock.", venue, exc)
         return mock_w
 
 
@@ -403,13 +398,9 @@ def fetch_weather(venue: str, date_str: str | None = None) -> dict:
 # ==============================================================================
 
 def fetch_odds_lines() -> tuple[dict[int, dict], dict[str, float], bool, dict[int, dict]]:
-    """
-    Fetch live Moneyline, Total Lines, and Line Shopping comparison from The Odds API.
-    Returns: (ml_odds_by_game_id, ou_lines_dict, is_live_data: bool, line_shopping_data).
-    """
     api_key = config.API_KEYS.get("the_odds_api", "")
     if not api_key or api_key == "YOUR_ODDS_API_KEY_HERE":
-        logger.info("The Odds API key unverified — using mock odds with is_live_data=False.")
+        logger.debug("The Odds API key unverified — using mock odds with is_live_data=False.")
         return mock_data.MOCK_MONEYLINE_ODDS, _mock_totals_lines(), False, mock_data.MOCK_LINE_SHOPPING
 
     url    = f"{config.ODDS_API_BASE}/sports/{config.ODDS_SPORT_KEY}/odds"
@@ -421,7 +412,7 @@ def fetch_odds_lines() -> tuple[dict[int, dict], dict[str, float], bool, dict[in
     }
     data = _get(url, params, timeout=config.ODDS_API_TIMEOUT)
     if not data or not isinstance(data, list):
-        logger.warning("The Odds API returned no data — falling back to mock odds.")
+        logger.debug("The Odds API returned no data — falling back to mock odds.")
         return mock_data.MOCK_MONEYLINE_ODDS, _mock_totals_lines(), False, mock_data.MOCK_LINE_SHOPPING
 
     ml_lines: dict[int, dict] = {}
@@ -479,7 +470,7 @@ def fetch_odds_lines() -> tuple[dict[int, dict], dict[str, float], bool, dict[in
             line_shopping or mock_data.MOCK_LINE_SHOPPING,
         )
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Error parsing live odds: %s", exc)
+        logger.debug("Error parsing live odds: %s", exc)
         return mock_data.MOCK_MONEYLINE_ODDS, _mock_totals_lines(), False, mock_data.MOCK_LINE_SHOPPING
 
 
@@ -492,10 +483,6 @@ def _mock_totals_lines() -> dict[str, float]:
 # ==============================================================================
 
 def load_full_game_slate(date_str: str | None = None) -> tuple[list[dict], bool, dict[int, dict]]:
-    """
-    Primary slate loader.
-    Returns: (enriched_games_list, is_live_data: bool, line_shopping_data).
-    """
     if date_str is None:
         date_str = date.today().strftime(config.DATE_FORMAT)
 

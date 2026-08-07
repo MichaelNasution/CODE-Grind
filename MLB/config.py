@@ -1,7 +1,7 @@
 """
 config.py
 =========
-Central configuration hub for the MLB Analytics CLI System v4.0 Production Grade.
+Central configuration hub for the MLB Analytics CLI System v4.1 Production Grade.
 """
 
 # ==============================================================================
@@ -13,10 +13,11 @@ API_KEYS = {
 }
 
 # ==============================================================================
-# MLB STATS API
+# MLB STATS API & REQUEST TIMEOUTS (Quiet 2-second timeout)
 # ==============================================================================
-MLB_API_BASE    = "https://statsapi.mlb.com/api/v1"
-MLB_API_TIMEOUT = 15  # seconds
+MLB_API_BASE     = "https://statsapi.mlb.com/api/v1"
+MLB_API_TIMEOUT  = 2  # Max 2 seconds timeout for fast silent fallback
+ODDS_API_TIMEOUT = 2  # Max 2 seconds timeout for fast silent fallback
 
 # ==============================================================================
 # LEAGUE CONSTANTS
@@ -122,7 +123,6 @@ ODDS_REGIONS         = "us"
 ODDS_MARKETS         = "h2h,totals"
 ODDS_FORMAT          = "american"
 ODDS_API_BASE        = "https://api.the-odds-api.com/v4"
-ODDS_API_TIMEOUT     = 10
 SUPPORTED_SPORTSBOOKS = ["BetMGM", "DraftKings", "Caesars", "FanDuel", "ESPN Bet"]
 
 # ==============================================================================
