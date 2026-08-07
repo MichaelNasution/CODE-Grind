@@ -1,17 +1,19 @@
 """
 cli_ui.py
 =========
-Modern, aesthetic CLI interface using the `rich` library v3.1.
+Minimalist, elegant CLI interface using the `rich` library v4.0.
 
-Renders:
-  - Animated header banner & active date indicator
-  - Live Data Verification Banner (`[LIVE ODDS VERIFIED]` vs `[DATA UNVERIFIED / MOCK]`)
-  - 7-option interactive main menu
-  - Strategy A: Moneyline Recommendations + WHIP Adv + L3 ERA columns + LOCK OF THE DAY
-  - Strategy B: Under HR Parlay slip tables + stake allocations
-  - Strategy C: 5-Factor Score Projection (O/U) breakdown
-  - Strategy D: Pitcher Props Goblin & 2-Man Anchor System
-  - Bankroll Manager Dashboard & Stake Allocator Grid
+Provides rendering for:
+  1. Ultimate Slate-Wide Moneyline (Seluruh Matchday + 15-Leg Test Luck Slip)
+  2. Strong Moneyline Recommendations, Line Shopping & Parlay Slips
+  3. Under 0.5 Home Run Parlays (3, 4, 5, 8, 10 Legs)
+  4. Under 1.5 Hits Screener (Single Bets vs 2-Team Parlays)
+  5. Alternate Team Total Over 1.5 Runs Screener
+  6. At-Bat Outcome "Out or Error" Targets ($100/day system)
+  7. 5-Factor Score Projection Engine (Over/Under)
+  8. 4-Day Historical Calibration Engine Log
+  9. Bankroll Status & Line Shopping Prices
+  10. Active Date Selection & Clean Header
 """
 
 from __future__ import annotations
@@ -22,7 +24,6 @@ from typing import Any
 
 from rich import box
 from rich.align import Align
-from rich.columns import Columns
 from rich.console import Console
 from rich.markup import escape
 from rich.panel import Panel
@@ -57,7 +58,6 @@ MLB_THEME = Theme({
     "table_header": "bold #00d4ff on #0f1e35",
     "ev_pos":       "bold bright_green",
     "ev_neg":       "bold #ff6666",
-    "lock_title":   "bold white on #b30000",
 })
 
 console = Console(theme=MLB_THEME, highlight=False)
@@ -67,39 +67,26 @@ console = Console(theme=MLB_THEME, highlight=False)
 # BANNER & HEADER
 # ==============================================================================
 
-BANNER_TEXT = r"""
-  ███╗   ███╗██╗     ██████╗      █████╗ ███╗   ██╗ █████╗ ██╗  ██╗   ██╗████████╗██╗ ██████╗███████╗
-  ████╗ ████║██║     ██╔══██╗    ██╔══██╗████╗  ██║██╔══██╗██║  ╚██╗ ██╔╝╚══██╔══╝██║██╔════╝██╔════╝
-  ██╔████╔██║██║     ██████╔╝    ███████║██╔██╗ ██║███████║██║   ╚████╔╝    ██║   ██║██║     ███████╗
-  ██║╚██╔╝██║██║     ██╔══██║    ██╔══██║██║╚██╗██║██╔══██║██║    ╚██╔╝     ██║   ██║██║     ╚════██║
-  ██║ ╚═╝ ██║███████╗██████╔╝    ██║  ██║██║ ╚████║██║  ██║███████╗██║      ██║   ██║╚██████╗███████║
-  ╚═╝     ╚═╝╚══════╝╚═════╝     ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝╚══════╝╚═╝      ╚═╝   ╚═╝ ╚═════╝╚══════╝
-"""
-
-
 def print_banner() -> None:
     console.print()
-    console.print(Align.center(Text(BANNER_TEXT, style="bold #00d4ff")))
     console.print(Align.center(Text(
-        "⚾  Quantitative MLB Handicapping System  |  v3.1 Production",
-        style="bold #ffd700",
+        "⚾  MLB QUANTITATIVE ANALYTICS ENGINE  |  v4.0 Production Grade",
+        style="bold #00d4ff",
     )))
     console.print(Align.center(Text(
-        "Powered by MLB StatsAPI  ·  Open-Meteo  ·  The Odds API",
+        "4-Day Calibration Engine  ·  Line Shopping  ·  5-Props Suite  ·  Capped 68% Moneyline",
         style="dim #6699cc",
     )))
     console.print()
 
 
 def display_analysis_header(date_str: str, is_live_data: bool = True) -> None:
-    """Display persistent bar with active analysis date and live data verification status."""
     dt_obj = date.fromisoformat(date_str)
     day_name = dt_obj.strftime("%A")
-    formatted_date = f"{day_name}, {date_str}"
 
     header_text = Text()
-    header_text.append("📅 Analysis Date: ", style="bold dim_text")
-    header_text.append(formatted_date, style="bold gold")
+    header_text.append("📅 Active Date: ", style="bold dim_text")
+    header_text.append(f"{day_name}, {date_str}", style="bold gold")
 
     if is_live_data:
         header_text.append("  |  [LIVE ODDS VERIFIED]", style="bold green_bright")
@@ -109,7 +96,7 @@ def display_analysis_header(date_str: str, is_live_data: bool = True) -> None:
     console.print(Align.center(Panel(
         header_text,
         border_style="panel_border" if is_live_data else "orange",
-        padding=(0, 3),
+        padding=(0, 2),
     )))
     console.print()
 
@@ -118,15 +105,11 @@ def print_rule(title: str = "") -> None:
     console.print(Rule(title, style="#1a4a8a", characters="─"))
 
 
-# ==============================================================================
-# PROGRESS SPINNER
-# ==============================================================================
-
 def make_progress() -> Progress:
     return Progress(
         SpinnerColumn(spinner_name="dots", style="accent"),
         TextColumn("[accent]{task.description}"),
-        BarColumn(bar_width=40, style="#1a4a8a", complete_style="#00d4ff"),
+        BarColumn(bar_width=30, style="#1a4a8a", complete_style="#00d4ff"),
         TimeElapsedColumn(),
         console=console,
         transient=True,
@@ -158,18 +141,17 @@ def prompt_date_selection() -> str:
 
     menu_table.add_row("A", "Hari Ini (Today)", today_str)
     menu_table.add_row("B", "Besok (Tomorrow)", tomorrow_str)
-    menu_table.add_row("C", "Custom Date", "Input Format: YYYY-MM-DD")
+    menu_table.add_row("C", "Custom Date", "Format: YYYY-MM-DD")
 
     console.print(Panel(
         menu_table,
-        title="[gold]📅  PILIH TANGGAL PERTANDINGAN / ANALYSIS DATE[/]",
-        subtitle="[dim_text]Select slate date to analyze[/]",
+        title="[gold]📅  SELECT ANALYSIS DATE[/]",
         border_style="panel_border",
-        padding=(1, 3),
+        padding=(1, 2),
     ))
 
     choice = Prompt.ask(
-        "\n[accent]Select date option[/]",
+        "\n[accent]Select option[/]",
         choices=["A", "a", "B", "b", "C", "c"],
         default="A",
     ).upper()
@@ -180,129 +162,119 @@ def prompt_date_selection() -> str:
         return tomorrow_str
     else:
         while True:
-            custom_input = Prompt.ask("[gold]Enter custom date (YYYY-MM-DD)[/]")
+            custom_input = Prompt.ask("[gold]Enter date (YYYY-MM-DD)[/]")
             if re.match(r"^\d{4}-\d{2}-\d{2}$", custom_input):
                 try:
                     date.fromisoformat(custom_input)
                     return custom_input
                 except ValueError:
-                    console.print("[red_bright]Invalid calendar date. Please enter a valid date.[/]")
+                    console.print("[red_bright]Invalid calendar date.[/]")
             else:
-                console.print("[red_bright]Invalid format. Use YYYY-MM-DD (e.g. 2026-08-10).[/]")
+                console.print("[red_bright]Use format YYYY-MM-DD.[/]")
 
 
 # ==============================================================================
-# MAIN MENU (7 Options)
+# MAIN MENU (10 Options)
 # ==============================================================================
 
 def print_main_menu() -> None:
-    menu_table = Table(show_header=False, box=box.SIMPLE, padding=(0, 2))
-    menu_table.add_column("Num", style="gold", width=5)
-    menu_table.add_column("Option", style="bold white")
-    menu_table.add_column("Desc", style="dim_text")
+    table = Table(show_header=False, box=box.SIMPLE, padding=(0, 1))
+    table.add_column("Num", style="gold", width=4)
+    table.add_column("Strategy / Option", style="bold white")
 
-    menu_items = [
-        ("1", "🏆  Moneyline Recommendations & Parlays",
-         "Capped 50%-68% Win Conf | WHIP & L3 Trend | Slips: 3/4/5/8/10 legs"),
-        ("2", "🎯  Under Home Run Parlay Screener",
-         "True No-HR Prob | Slips: 3/4/5/8/10 legs"),
-        ("3", "📊  5-Factor Score Projection (O/U)",
-         "Full game total projections | OVER / UNDER / SKIP"),
-        ("4", "⚡  Pitcher Props & Anchor / Goblin Systems",
-         "Goblin K-Props & 2-Man Anchor Slips"),
-        ("5", "💰  Bankroll Manager & Daily Risk Status",
-         "View Bankroll balance, daily risk limits & stake allocations"),
-        ("6", "📅  Ganti Tanggal Analisis (Change Date)",
-         "Switch active date slate (Today / Tomorrow / Custom)"),
-        ("7", "🚪  Exit", "Close application"),
+    items = [
+        ("1", "🚀  Ultimate Slate-Wide Moneyline Slip  (Full Matchday + 15-Leg Slip)"),
+        ("2", "🏆  Strong Moneyline Recommendations & Parlays  (Slips 3, 4, 5, 8, 10 + Lock)"),
+        ("3", "🎯  Under 0.5 Home Run Parlays  (Win Rate 90% | Slips 3, 4, 5, 8, 10 Legs)"),
+        ("4", "⚾  Under 1.5 Hits Screener  (Win Rate 70%+ | Single Bets vs 2-Team Parlays)"),
+        ("5", "🔥  Alternate Team Total Over 1.5 Runs Screener  (Win Rate 90%)"),
+        ("6", "🎯  At-Bat Outcome 'Out or Error' Targets  ($100/Day Flat Stake System)"),
+        ("7", "📊  5-Factor Total Score Projection  (Over / Under Total Runs)"),
+        ("8", "🔄  4-Day Historical Calibration Engine Log  (H-4 to H-1 Performance)"),
+        ("9", "💰  Bankroll Status & Sportsbook Line Shopping Prices"),
+        ("10", "📅  Ganti Tanggal Analisis / Keluar  (Change Date / Exit)"),
     ]
-    for num, opt, desc in menu_items:
-        menu_table.add_row(num, opt, desc)
+    for num, opt in items:
+        table.add_row(num, opt)
 
     console.print(Panel(
-        menu_table,
-        title="[gold]⚾  MAIN MENU[/]",
-        subtitle="[dim_text]Select strategy or settings[/]",
+        table,
+        title="[gold]⚾  MAIN MENU — MLB ANALYTICS V4.0[/]",
         border_style="panel_border",
-        padding=(1, 3),
+        padding=(1, 2),
     ))
 
 
 def get_menu_choice() -> str:
     return Prompt.ask(
         "\n[accent]Select option[/]",
-        choices=["1", "2", "3", "4", "5", "6", "7"],
+        choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
         show_choices=True,
     )
 
 
 # ==============================================================================
-# STRATEGY A: MONEYLINE DISPLAY
+# MENU 1: ULTIMATE SLATE-WIDE MONEYLINE SLIP
 # ==============================================================================
 
-def _conf_style(conf: float, is_strong: bool = False) -> str:
-    if is_strong:
-        return "green_bright"
-    elif conf >= 0.60:
-        return "med_prob"
-    else:
-        return "dim_text"
+def display_ultimate_slate_slip(slip: analytics.MoneylineSlip | None, bankroll_summary: bankroll.BankrollSummary | None) -> None:
+    print_rule("🚀  ULTIMATE SLATE-WIDE MONEYLINE SLIP (15-LEG TEST LUCK SLIP)")
+    console.print()
 
-
-def _ev_style(ev: float) -> str:
-    return "ev_pos" if ev >= 0 else "ev_neg"
-
-
-def _ev_label(ev: float) -> str:
-    sign = "+" if ev >= 0 else ""
-    return f"{sign}{ev * 100:.1f}%"
-
-
-def display_lock_of_day(lock: analytics.LockOfDay | None, unit_val: float, is_live_data: bool) -> None:
-    if not is_live_data:
-        console.print(Panel(
-            "[orange]⚠️ DATA UNVERIFIED / MOCK: Lock of the Day signals are disabled on mock/unverified odds data.[/]",
-            title="[gold]🔒  LOCK OF THE DAY / MUST-WIN SLIP[/]",
-            border_style="orange", padding=(0, 2),
-        ))
-        console.print()
+    if not slip:
+        console.print("[red_bright]Not enough candidate games to build full slate slip.[/]")
         return
 
-    if not lock:
-        console.print(Panel(
-            "[dim_text]No pick met all 4 strict criteria today (ERA Adv >= 1.25, WHIP <= 1.18, L3 ERA <= 3.20, ML <= -140).[/]",
-            title="[gold]🔒  LOCK OF THE DAY / MUST-WIN SLIP[/]",
-            border_style="dim", padding=(0, 2),
-        ))
-        console.print()
-        return
+    alloc = bankroll_summary.allocations.get(15) if bankroll_summary else None
+    stake_str = f"Stake: 0.25 Unit (${alloc.dollar_stake:.2f})" if alloc else "Stake: 0.25 Unit (High Var / Test Luck)"
 
-    cand = lock.candidate
-    loc = "Home" if cand.is_home else "Away"
-    ml_str = analytics.format_ml_american(cand.moneyline_american)
-    dollar_stake = round(unit_val * 1.00, 2)
+    table = Table(
+        title=f"[gold]Ultimate Matchday Slate Slip — {slip.n_legs} Matches Total[/]  [dim_text]({stake_str})[/]",
+        box=box.ROUNDED, border_style="panel_border",
+        header_style="table_header", show_lines=True, padding=(0, 1),
+    )
+    table.add_column("#", justify="center", width=4)
+    table.add_column("Pick (Team)", style="white", min_width=22)
+    table.add_column("Matchup", style="dim_text", min_width=20)
+    table.add_column("Best Odds", justify="center", min_width=10)
+    table.add_column("Sportsbook", justify="center", style="accent", min_width=12)
+    table.add_column("Win Conf", justify="center", min_width=10)
 
-    content = Table(show_header=False, box=box.SIMPLE, padding=(0, 2))
-    content.add_column("Key", style="gold", min_width=20)
-    content.add_column("Value", style="bold white")
+    for idx, leg in enumerate(slip.legs, start=1):
+        loc = "H" if leg.is_home else "A"
+        ml_str = analytics.format_american_odds(leg.best_line_american)
+        table.add_row(
+            str(idx),
+            f"[bold white]{escape(leg.team_name)}[/] [dim_text]({loc})[/]",
+            f"vs {escape(leg.opponent_team[:16])}",
+            f"[gold]{ml_str}[/]",
+            escape(leg.best_sportsbook),
+            f"[green_bright]{leg.win_confidence * 100:.1f}%[/]",
+        )
 
-    content.add_row("Lock Pick", f"[bold green_bright]{escape(cand.team_name)}[/] ({loc})")
-    content.add_row("Matchup", f"vs {escape(cand.opponent_team)}")
-    content.add_row("Starter Pitcher", f"{escape(cand.pitcher_name)} (vs {escape(cand.opponent_pitcher)})")
-    content.add_row("Moneyline Odds", f"[gold]{ml_str}[/] (Decimal: {cand.moneyline_decimal:.2f})")
-    content.add_row("Starter Metrics", f"WHIP: [accent]{cand.our_whip:.2f}[/] | L3 ERA: [accent]{cand.last3_era:.2f}[/]")
-    content.add_row("Win Confidence", f"[bold green_bright]{cand.win_confidence * 100:.1f}%[/] (Capped Max 68%)")
-    content.add_row("Recommended Stake", f"[bold accent]1.00 Unit (${dollar_stake:.2f})[/]")
-    content.add_row("Quantitative Rationale", f"[dim_text]{escape(lock.rationale)}[/]")
+    console.print(table)
+    console.print()
+
+    payout_table = Table(show_header=False, box=box.SIMPLE, padding=(0, 2))
+    payout_table.add_column("Metric", style="bold white")
+    payout_table.add_column("Value", style="gold")
+
+    payout_table.add_row("Combined Decimal Odds", f"{slip.combined_decimal_odds:,.2f}x")
+    payout_table.add_row("Combined American Odds", analytics.format_american_odds(slip.combined_american_odds))
+    payout_table.add_row("Combined Win Probability", f"{slip.combined_confidence * 100:.6f}%")
+    payout_table.add_row("Book Implied Probability", f"{slip.implied_probability * 100:.6f}%")
 
     console.print(Panel(
-        content,
-        title="[bold white on #b30000] 🔒 LOCK OF THE DAY / MUST-WIN SLIP (VERIFIED SINGLE PICK) [/]",
-        border_style="green_bright",
-        padding=(1, 2),
+        payout_table,
+        title="[gold]🎰  Ultimate Mega Parlay Odds Summary[/]",
+        border_style="panel_border", padding=(1, 2),
     ))
     console.print()
 
+
+# ==============================================================================
+# MENU 2: STRONG MONEYLINE RECOMMENDATIONS
+# ==============================================================================
 
 def display_moneyline_results(
     candidates: list[analytics.MoneylineCandidate],
@@ -311,176 +283,75 @@ def display_moneyline_results(
     bankroll_summary: bankroll.BankrollSummary | None,
     is_live_data: bool = True,
 ) -> None:
-    print_rule("🏆  MONEYLINE RECOMMENDATIONS & PARLAY SLIPS")
+    print_rule("🏆  STRONG MONEYLINE RECOMMENDATIONS & PARLAY SLIPS")
     console.print()
 
-    if not is_live_data:
+    if lock_of_day and is_live_data:
+        cand = lock_of_day.candidate
+        ml_str = analytics.format_american_odds(cand.best_line_american)
+        unit_val = bankroll_summary.unit_value if bankroll_summary else 20.00
         console.print(Panel(
-            "[bold orange]⚠️ WARNING: Running on MOCK / UNVERIFIED DATA.[/]\n"
-            "[dim_text]Live odds API was unreachable or unverified. Green 'Strong Pick' signals are disabled.[/]",
-            border_style="orange", padding=(1, 2),
+            f"[bold green_bright]Lock Pick: {escape(cand.team_name)} ({ml_str} @ {cand.best_sportsbook})[/]\n"
+            f"Starter: [accent]{escape(cand.pitcher_name)}[/] (WHIP: {cand.our_whip:.2f} | L3 ERA: {cand.last3_era:.2f})\n"
+            f"Win Conf: [bold green_bright]{cand.win_confidence * 100:.1f}%[/] | Recommended Stake: [gold]1.00 Unit (${unit_val:.2f})[/]\n"
+            f"[dim_text]Rationale: {escape(lock_of_day.rationale)}[/]",
+            title="[bold white on #b30000] 🔒 LOCK OF THE DAY / MUST-WIN SLIP [/]",
+            border_style="green_bright", padding=(1, 2),
         ))
         console.print()
 
-    unit_val = bankroll_summary.unit_value if bankroll_summary else 20.00
-
-    # Render Lock of the Day Panel
-    display_lock_of_day(lock_of_day, unit_val, is_live_data)
-
-    if not candidates:
-        console.print(Panel(
-            "[red_bright]No qualifying teams found for today's slate.[/]\n"
-            "[dim_text]No team clears the minimum Win Confidence threshold (>= 58.0%).[/]",
-            border_style="red", padding=(1, 3),
-        ))
-        return
-
-    # Qualified Candidates Table with WHIP and L3 ERA
     cand_table = Table(
         title="[gold]🎯 Evaluated Moneyline Picks (Win Confidence Capped 50% - 68%)[/]",
-        box=box.DOUBLE_EDGE,
-        border_style="panel_border",
-        header_style="table_header",
-        show_lines=True,
-        padding=(0, 1),
+        box=box.ROUNDED, border_style="panel_border",
+        header_style="table_header", show_lines=True, padding=(0, 1),
     )
-    cand_table.add_column("#",              justify="center", width=4)
-    cand_table.add_column("Team",           style="white",   min_width=22)
-    cand_table.add_column("Matchup",        style="dim_text", min_width=20)
-    cand_table.add_column("Starter",        style="accent",   min_width=16)
-    cand_table.add_column("ML Odds",        justify="center", min_width=9)
-    cand_table.add_column("ERA Adv",        justify="center", min_width=8)
-    cand_table.add_column("WHIP",           justify="center", min_width=7)
-    cand_table.add_column("L3 ERA",         justify="center", min_width=8)
-    cand_table.add_column("Form L10",       justify="center", min_width=9)
-    cand_table.add_column("Win Conf",       justify="center", min_width=10)
-    cand_table.add_column("Signal",         justify="center", min_width=14)
+    cand_table.add_column("#", justify="center", width=4)
+    cand_table.add_column("Team", style="white", min_width=20)
+    cand_table.add_column("Starter", style="accent", min_width=16)
+    cand_table.add_column("Best Line", justify="center", min_width=10)
+    cand_table.add_column("Book", justify="center", style="gold", min_width=10)
+    cand_table.add_column("ERA Adv", justify="center", min_width=8)
+    cand_table.add_column("WHIP", justify="center", min_width=7)
+    cand_table.add_column("L3 ERA", justify="center", min_width=8)
+    cand_table.add_column("Win Conf", justify="center", min_width=10)
+    cand_table.add_column("Signal", justify="center", min_width=14)
 
     for idx, cand in enumerate(candidates, start=1):
         loc = "H" if cand.is_home else "A"
-        matchup_str = f"vs {escape(cand.opponent_team[:16])}"
-        era_sign  = "+" if cand.era_advantage >= 0 else ""
-        ml_str    = analytics.format_ml_american(cand.moneyline_american)
-        form_str  = f"{int(cand.last10_win_rate * 10)}-{10 - int(cand.last10_win_rate * 10)}"
-        conf_str  = f"{cand.win_confidence * 100:.1f}%"
+        era_sign = "+" if cand.era_advantage >= 0 else ""
+        ml_str   = analytics.format_american_odds(cand.best_line_american)
+        conf_str = f"{cand.win_confidence * 100:.1f}%"
 
-        # L3 ERA styling: if slump (>4.50), highlight red!
         l3_style = "red_bright" if cand.last3_era > 4.50 else ("green_bright" if cand.last3_era <= 3.20 else "white")
-        whip_style = "green_bright" if cand.our_whip <= 1.18 else "white"
-
-        # GREEN STRONG PICK ONLY IF ALL 4 CRITERIA MET!
-        if cand.is_strong_recommendation:
-            signal_str = "[bold green_bright]STRONG PICK[/]"
-            row_style  = "green_bright"
-        else:
-            signal_str = "[dim_text]NEUTRAL / PASS[/]"
-            row_style  = _conf_style(cand.win_confidence)
+        signal_str = "[bold green_bright]STRONG PICK[/]" if cand.is_strong_recommendation else "[dim_text]NEUTRAL[/]"
 
         cand_table.add_row(
-            f"[dim_text]{idx}[/]",
-            f"[bold white]{escape(cand.team_name)}[/] [dim_text]({loc})[/]",
-            matchup_str,
+            str(idx),
+            f"{escape(cand.team_name)} ({loc})",
             escape(cand.pitcher_name[:16]),
             f"[gold]{ml_str}[/]",
+            escape(cand.best_sportsbook),
             f"[accent]{era_sign}{cand.era_advantage:.2f}[/]",
-            f"[{whip_style}]{cand.our_whip:.2f}[/]",
+            f"{cand.our_whip:.2f}",
             f"[{l3_style}]{cand.last3_era:.2f}[/]",
-            f"[dim_text]{form_str}[/]",
-            f"[{row_style}]{conf_str}[/]",
+            f"[green_bright]{conf_str}[/]" if cand.win_confidence >= 0.60 else f"{conf_str}",
             signal_str,
         )
 
     console.print(cand_table)
     console.print()
 
-    if not slips_by_legs:
-        console.print("[dim_text]Not enough qualified teams to generate parlay slips.[/]")
-        return
-
-    print_rule("🎰  Moneyline Parlay Slips with Risk Allocations")
-    console.print()
-
-    for n_legs in sorted(slips_by_legs.keys()):
-        slip_list = slips_by_legs[n_legs]
-        if not slip_list:
-            continue
-        _display_ml_slip_table(slip_list, n_legs, bankroll_summary)
-        console.print()
-
-
-def _display_ml_slip_table(
-    slips: list[analytics.MoneylineSlip],
-    n_legs: int,
-    bankroll_summary: bankroll.BankrollSummary | None,
-) -> None:
-    alloc = bankroll_summary.allocations.get(n_legs) if bankroll_summary else None
-    stake_info = f"Stake: {alloc.unit_multiplier:.2f} Unit (${alloc.dollar_stake:.2f})" if alloc else ""
-
-    table = Table(
-        title=f"[gold]{n_legs}-LEG MONEYLINE PARLAY SLIPS[/]  [dim_text]({stake_info})[/]",
-        box=box.ROUNDED,
-        border_style="panel_border",
-        header_style="table_header",
-        show_lines=True,
-        padding=(0, 1),
-    )
-    table.add_column("#",             justify="center", width=4)
-    table.add_column("Legs  (Team · ML · Confidence)", min_width=50, no_wrap=False)
-    table.add_column("Combined\nConf %", justify="center", min_width=11)
-    table.add_column("Parlay Odds\n(American)", justify="center", min_width=13)
-    table.add_column("Book Implied\nProb %",  justify="center", min_width=13)
-    table.add_column("EV Edge",       justify="center", min_width=10)
-
-    for idx, slip in enumerate(slips[:5], start=1):
-        legs_parts: list[str] = []
-        for leg in slip.legs:
-            ml_str  = analytics.format_ml_american(leg.moneyline_american)
-            conf_st = _conf_style(leg.win_confidence, leg.is_strong_recommendation)
-            legs_parts.append(
-                f"[{conf_st}]{escape(leg.team_name)}[/] "
-                f"[gold]({ml_str})[/] "
-                f"[dim_text]{leg.win_confidence * 100:.1f}%[/]"
-            )
-        legs_str = "\n".join(legs_parts)
-
-        comb_conf_str  = f"{slip.combined_confidence * 100:.2f}%"
-        implied_str    = f"{slip.implied_probability * 100:.2f}%"
-        odds_str       = analytics.format_ml_american(slip.combined_american_odds)
-        ev_st          = _ev_style(slip.ev_edge)
-        ev_str         = _ev_label(slip.ev_edge)
-
-        table.add_row(
-            str(idx),
-            legs_str,
-            f"[accent]{comb_conf_str}[/]",
-            f"[gold]{odds_str}[/]",
-            f"[dim_text]{implied_str}[/]",
-            f"[{ev_st}]{ev_str}[/]",
-        )
-
-    if len(slips) > 5:
-        table.add_row("...", f"[dim_text]+ {len(slips) - 5} more combinations available[/]", "", "", "", "")
-
-    console.print(table)
-
 
 # ==============================================================================
-# STRATEGY B: UNDER HOME RUN PARLAY DISPLAY
+# MENU 3: UNDER 0.5 HOME RUN PARLAYS
 # ==============================================================================
 
-def display_under_hr_results(
-    slips_by_legs: dict[int, list[analytics.ParlaySlip]],
-    bankroll_summary: bankroll.BankrollSummary | None,
-) -> None:
-    print_rule("🎯  UNDER HOME RUN PARLAY SCREENER — RESULTS")
+def display_under_hr_results(slips_by_legs: dict[int, list[analytics.UnderHRParlaySlip]], bankroll_summary: bankroll.BankrollSummary | None) -> None:
+    print_rule("🎯  UNDER 0.5 HOME RUN PARLAY SCREENER (WIN RATE 90%)")
     console.print()
 
     if not slips_by_legs:
-        console.print(Panel(
-            "[red_bright]No qualifying candidates for today's slate.[/]\n"
-            "[dim_text]Try again after lineups are confirmed (~3 hrs before first pitch).[/]",
-            border_style="red", padding=(1, 3),
-        ))
+        console.print("[dim_text]No qualifying candidates for today's slate.[/]")
         return
 
     for n_legs in sorted(slips_by_legs.keys()):
@@ -497,249 +368,244 @@ def display_under_hr_results(
             header_style="table_header", show_lines=True, padding=(0, 1),
         )
         table.add_column("#", style="dim_text", width=4, justify="center")
-        table.add_column("Legs  (Batter → Pitcher · True Prob)", min_width=52, no_wrap=False)
-        table.add_column("Combined\nProb", justify="center", min_width=13)
-        table.add_column("Fair Odds\n(US)", justify="center", min_width=12)
+        table.add_column("Legs (Batter → Pitcher · True Prob)", min_width=50, no_wrap=False)
+        table.add_column("Comb Prob", justify="center", min_width=12)
+        table.add_column("Fair Odds", justify="center", min_width=12)
 
-        for idx, slip in enumerate(slips[:5], start=1):
+        for idx, slip in enumerate(slips[:3], start=1):
             parts = []
             for leg in slip.legs:
                 pct = analytics.format_prob_pct(leg.true_no_hr_prob)
-                parts.append(
-                    f"[green_bright]{escape(leg.batter_name)}[/] [{escape(leg.team[:3].upper())}] "
-                    f"vs [accent]{escape(leg.pitcher_name)}[/] ({pct})"
-                )
+                parts.append(f"[green_bright]{escape(leg.batter_name)}[/] vs [accent]{escape(leg.pitcher_name)}[/] ({pct})")
             legs_str = "\n".join(parts)
-            comb_str = analytics.combined_prob_to_str(slip.combined_probability)
-            odds_str = analytics.format_american_odds(slip.fair_american_odds)
-            table.add_row(str(idx), legs_str, f"[med_prob]{comb_str}[/]", f"[gold]{odds_str}[/]")
-
-        if len(slips) > 5:
-            table.add_row("...", f"[dim_text]+ {len(slips) - 5} more combinations[/]", "", "")
-
+            table.add_row(
+                str(idx), legs_str,
+                f"[med_prob]{slip.combined_probability*100:.1f}%[/]",
+                f"[gold]{analytics.format_american_odds(slip.fair_american_odds)}[/]",
+            )
         console.print(table)
         console.print()
 
 
 # ==============================================================================
-# STRATEGY C: 5-FACTOR SCORE PROJECTION DISPLAY
+# MENU 4: UNDER 1.5 HITS SCREENER
+# ==============================================================================
+
+def display_under_1_5_hits(recs: list[analytics.Under15HitsRecommendation]) -> None:
+    print_rule("⚾  UNDER 1.5 HITS SCREENER (WIN RATE 70%+)")
+    console.print()
+
+    if not recs:
+        console.print("[dim_text]No qualifying batters found for Under 1.5 Hits today.[/]")
+        return
+
+    table = Table(
+        title="[gold]Under 1.5 Hits Recommendations (BA vs SP <= .200, Min 10 AB)[/]",
+        box=box.ROUNDED, border_style="panel_border",
+        header_style="table_header", show_lines=True, padding=(0, 1),
+    )
+    table.add_column("#", justify="center", width=4)
+    table.add_column("Batter", style="white", min_width=20)
+    table.add_column("Opp Pitcher", style="accent", min_width=18)
+    table.add_column("H2H BA", justify="center", min_width=10)
+    table.add_column("Seasonal Under 1.5 Prob", justify="center", min_width=20)
+    table.add_column("Odds", justify="center", style="gold", min_width=10)
+    table.add_column("Recommendation", justify="center", style="green_bright", min_width=18)
+
+    for idx, r in enumerate(recs, start=1):
+        table.add_row(
+            str(idx),
+            f"{escape(r.batter_name)} ({escape(r.team)})",
+            escape(r.opponent_pitcher),
+            f".{int(r.batting_avg_vs_sp * 1000):03d} ({r.at_bats_vs_sp} AB)",
+            f"{r.seasonal_prob * 100:.1f}%",
+            f"{r.odds_american:+d}",
+            f"[green_bright]{r.bet_type}[/]",
+        )
+
+    console.print(table)
+    console.print()
+
+
+# ==============================================================================
+# MENU 5: ALTERNATE TEAM TOTAL OVER 1.5 RUNS
+# ==============================================================================
+
+def display_alternate_team_total(cands: list[analytics.AlternateTeamTotalCandidate]) -> None:
+    print_rule("🔥  ALTERNATE TEAM TOTAL OVER 1.5 RUNS SCREENER (WIN RATE 90%)")
+    console.print()
+
+    if not cands:
+        console.print("[dim_text]No teams cleared all 4 strict criteria for Over 1.5 Team Total today.[/]")
+        return
+
+    table = Table(
+        title="[gold]Over 1.5 Runs Candidates (Top 10 RPG/HR vs SP ERA >= 4.0 & HR/9 >= 1.4 & Weak BP)[/]",
+        box=box.ROUNDED, border_style="panel_border",
+        header_style="table_header", show_lines=True, padding=(0, 1),
+    )
+    table.add_column("Team", style="bold white", min_width=20)
+    table.add_column("RPG / HRPG", justify="center", min_width=14)
+    table.add_column("Opponent SP", style="accent", min_width=18)
+    table.add_column("SP ERA / HR9", justify="center", min_width=14)
+    table.add_column("Opp BP ERA", justify="center", min_width=12)
+    table.add_column("Park Factor", justify="center", min_width=12)
+    table.add_column("Recommendation", justify="center", style="green_bright", min_width=18)
+
+    for c in cands:
+        table.add_row(
+            escape(c.team_name),
+            f"{c.runs_per_game:.2f} / {c.hr_per_game:.2f}",
+            escape(c.opp_starter_name),
+            f"{c.opp_starter_era:.2f} / {c.opp_starter_hr9:.2f}",
+            f"{c.opp_bullpen_era:.2f}",
+            f"{c.park_factor:.2f}",
+            "[bold green_bright]OVER 1.5 RUNS[/]",
+        )
+
+    console.print(table)
+    console.print()
+
+
+# ==============================================================================
+# MENU 6: AT-BAT OUTCOME "OUT OR ERROR" TARGETS
+# ==============================================================================
+
+def display_at_bat_outcome_targets(targets: list[analytics.AtBatOutcomeTarget]) -> None:
+    print_rule("🎯  AT-BAT OUTCOME 'OUT OR ERROR' TARGETS ($100/DAY SYSTEM)")
+    console.print()
+
+    if not targets:
+        console.print("[dim_text]No qualifying DFS matchup targets today.[/]")
+        return
+
+    table = Table(
+        title="[gold]Top 5 Target Batters for Flat Stake 'Out or Error' (+115 to +130 Odds)[/]",
+        box=box.ROUNDED, border_style="panel_border",
+        header_style="table_header", show_lines=True, padding=(0, 1),
+    )
+    table.add_column("#", justify="center", width=4)
+    table.add_column("Target Batter", style="white", min_width=20)
+    table.add_column("Opp DFS SP", style="accent", min_width=18)
+    table.add_column("H2H BA", justify="center", min_width=10)
+    table.add_column("K Rate", justify="center", min_width=10)
+    table.add_column("Bet Recommendation", style="green_bright", min_width=28)
+
+    for idx, t in enumerate(targets, start=1):
+        table.add_row(
+            str(idx),
+            f"{escape(t.batter_name)} ({escape(t.team)})",
+            escape(t.opponent_pitcher),
+            f".{int(t.batting_avg_vs_sp * 1000):03d}",
+            f"{t.strikeout_pct * 100:.1f}%",
+            "[green_bright]Out or Error (+115 to +130)[/]",
+        )
+
+    console.print(table)
+    console.print("[dim_text]Strategy Note: Flat Stake bet; Re-bet 2nd half if Starting Pitcher has not been replaced.[/]")
+    console.print()
+
+
+# ==============================================================================
+# MENU 7: 5-FACTOR SCORE PROJECTION
 # ==============================================================================
 
 def display_score_projections(projections: list[analytics.GameProjection]) -> None:
     print_rule("📊  5-FACTOR SCORE PROJECTION ENGINE (OVER/UNDER)")
     console.print()
 
-    if not projections:
-        console.print("[red_bright]No game data available.[/]")
-        return
-
-    main_table = Table(
+    table = Table(
         title="[gold]Game Totals — 5-Factor Projection Engine[/]",
-        box=box.DOUBLE_EDGE, border_style="panel_border",
+        box=box.ROUNDED, border_style="panel_border",
         header_style="table_header", show_lines=True, padding=(0, 1),
     )
-    main_table.add_column("Matchup",          style="white",    min_width=28)
-    main_table.add_column("Venue",            style="dim_text", min_width=18)
-    main_table.add_column("Book Line",        justify="center", min_width=10)
-    main_table.add_column("Projection",       justify="center", min_width=12)
-    main_table.add_column("Edge",             justify="center", min_width=8)
-    main_table.add_column("Weather",          min_width=20)
-    main_table.add_column("Recommendation",   justify="center", min_width=14)
+    table.add_column("Matchup", style="white", min_width=28)
+    table.add_column("Book Line", justify="center", min_width=10)
+    table.add_column("Projection", justify="center", min_width=12)
+    table.add_column("Edge", justify="center", min_width=8)
+    table.add_column("Recommendation", justify="center", min_width=14)
 
     for proj in projections:
         book_line = f"{proj.ou_line:.1f}" if proj.ou_line else "N/A"
-        proj_str  = f"[accent]{proj.projected_total:.2f}[/]"
-        edge_str  = "N/A"
-        if proj.edge is not None:
-            sign  = "+" if proj.edge >= 0 else ""
-            est   = "green_bright" if proj.edge >= 0.75 else ("red_bright" if proj.edge <= -0.75 else "dim_text")
-            edge_str = f"[{est}]{sign}{proj.edge:.2f}[/]"
+        edge_str  = f"{proj.edge:+.2f}" if proj.edge is not None else "N/A"
+        rec_st    = {"OVER": "over", "UNDER": "under", "SKIP": "skip"}.get(proj.recommendation, "white")
 
-        w_icon = {"out": ">", "in": "<", "none": "~", "crosswind": "x"}.get(proj.wind_direction, "")
-        weather_str = f"{w_icon}{proj.wind_speed_mph:.0f}mph {proj.temp_f:.0f}F\n[dim_text]{proj.conditions[:18]}[/]"
-        if proj.weather_adjustment != 0:
-            sign = "+" if proj.weather_adjustment > 0 else ""
-            weather_str += f"\n[accent]{sign}{proj.weather_adjustment:.2f} adj[/]"
-
-        rec_st  = {"OVER": "over", "UNDER": "under", "SKIP": "skip", "NO LINE": "dim_text"}.get(proj.recommendation, "white")
-        rec_str = f"[{rec_st}]{proj.recommendation}[/]"
-
-        main_table.add_row(
+        table.add_row(
             escape(proj.matchup),
-            escape(proj.venue[:18]),
             book_line,
-            proj_str,
+            f"[accent]{proj.projected_total:.2f}[/]",
             edge_str,
-            weather_str,
-            rec_str,
+            f"[{rec_st}]{proj.recommendation}[/]",
         )
 
-    console.print(main_table)
+    console.print(table)
     console.print()
 
 
 # ==============================================================================
-# STRATEGY D: PITCHER PROPS DISPLAY
+# MENU 8: 4-DAY HISTORICAL CALIBRATION ENGINE LOG
 # ==============================================================================
 
-def display_pitcher_props(
-    pitcher_props: list[analytics.PitcherPropRecommendation],
-    anchor_slips: list[analytics.AnchorSlip],
-    bankroll_summary: bankroll.BankrollSummary | None,
-) -> None:
-    print_rule("⚡  PITCHER PROPS & ANCHOR / GOBLIN SYSTEMS")
+def display_calibration_log(report: analytics.CalibrationReport) -> None:
+    print_rule("🔄  4-DAY HISTORICAL CALIBRATION ENGINE LOG")
     console.print()
 
-    unit_val = bankroll_summary.unit_value if bankroll_summary else 20.0
-    anchor_stake_str = f"Recommended Stake per 2-Man Slip: 1.00 Unit (${unit_val:.2f})"
+    summary_table = Table(show_header=False, box=box.SIMPLE, padding=(0, 2))
+    summary_table.add_column("Metric", style="bold white")
+    summary_table.add_column("Value", style="gold")
 
-    goblin_tbl = Table(
-        title="[gold]Elite Pitcher Goblin Strikeout Props[/]",
-        box=box.ROUNDED, border_style="panel_border",
-        header_style="table_header", show_lines=True, padding=(0, 1),
-    )
-    goblin_tbl.add_column("Pitcher",         style="white",    min_width=22)
-    goblin_tbl.add_column("Team",            style="dim_text", min_width=14)
-    goblin_tbl.add_column("K/9",             justify="center", min_width=7)
-    goblin_tbl.add_column("Avg PC",          justify="center", min_width=8)
-    goblin_tbl.add_column("Goblin Line",     justify="center", min_width=13)
-    goblin_tbl.add_column("Recommendation",  style="green_bright", min_width=24)
+    summary_table.add_row("Lookback Window", f"{report.lookback_days} Days (H-4 to H-1)")
+    summary_table.add_row("Total Games Analyzed", f"{report.total_games_analyzed} Matches")
+    summary_table.add_row("Historical Error Rate", f"{report.avg_error_rate * 100:.1f}%")
+    summary_table.add_row("Bullpen Volatility Score", f"{report.bullpen_volatility_score:.2f} ERA")
+    summary_table.add_row("Calibrated Pitcher Weight", f"{report.calibrated_pitcher_weight:.2f}")
+    summary_table.add_row("Calibrated Form Weight", f"{report.calibrated_form_weight:.2f}")
+    summary_table.add_row("Calibrated OPS Weight", f"{report.calibrated_ops_weight:.2f}")
 
-    for prop in pitcher_props:
-        goblin_tbl.add_row(
-            escape(prop.pitcher_name), escape(prop.team),
-            f"[accent]{prop.k_per9:.1f}[/]", str(prop.avg_pitch_count),
-            f"[gold]{prop.goblin_line:.1f} K[/]",
-            f"[green_bright]{escape(prop.prop_label)}[/]",
-        )
-    console.print(goblin_tbl)
+    console.print(Panel(
+        summary_table,
+        title="[gold]⚙️ Model Calibration Status[/]",
+        border_style="panel_border", padding=(1, 2),
+    ))
     console.print()
 
-    anchor_tbl = Table(
-        title=f"[gold]2-Man Anchor Slips (Pitcher K + Batter Hits)[/]  [dim_text]({anchor_stake_str})[/]",
-        box=box.ROUNDED, border_style="panel_border",
-        header_style="table_header", show_lines=True, padding=(0, 1),
-    )
-    anchor_tbl.add_column("#",               style="dim_text", width=4, justify="center")
-    anchor_tbl.add_column("Pitcher Prop",    style="white",    min_width=30)
-    anchor_tbl.add_column("Batter Prop",     style="white",    min_width=28)
-    anchor_tbl.add_column("Confidence",      justify="center", min_width=12)
+    log_table = Table(title="[gold]Historical Performance Logs[/]", box=box.ROUNDED, border_style="panel_border")
+    log_table.add_column("Log Entry", style="dim_text")
+    for entry in report.calibration_log:
+        log_table.add_row(entry)
 
-    for idx, slip in enumerate(anchor_slips, start=1):
-        conf_st = {"High": "green_bright", "Medium": "gold", "Low": "red_bright"}.get(
-            slip.pair_confidence, "white"
-        )
-        anchor_tbl.add_row(
-            str(idx),
-            f"[accent]{escape(slip.pitcher_prop.pitcher_name)}[/]\n[dim_text]{escape(slip.pitcher_prop.prop_label or slip.pitcher_prop.pitcher_name)}[/]",
-            f"[gold]{escape(slip.batter_name)}[/]\n[dim_text]{escape(slip.batter_prop_label)}[/]",
-            f"[{conf_st}]{slip.pair_confidence}[/]",
-        )
-    console.print(anchor_tbl)
+    console.print(log_table)
     console.print()
 
 
 # ==============================================================================
-# BANKROLL DASHBOARD
+# MENU 9: BANKROLL DASHBOARD & LINE SHOPPING
 # ==============================================================================
 
 def display_bankroll_dashboard(summary: bankroll.BankrollSummary) -> None:
-    print_rule("💰  BANKROLL MANAGER & RISK ALLOCATOR DASHBOARD")
+    print_rule("💰  BANKROLL DASHBOARD & LINE SHOPPING PRICES")
     console.print()
 
-    budget_util_pct = (summary.daily_budget_used / summary.max_daily_risk) if summary.max_daily_risk > 0 else 0.0
-    util_color = "green_bright" if budget_util_pct < 0.70 else ("orange" if budget_util_pct < 1.0 else "red_bright")
+    table = Table(show_header=False, box=box.SIMPLE, padding=(0, 2))
+    table.add_column("Metric", style="bold white")
+    table.add_column("Value", style="gold", justify="right")
 
-    overview_table = Table(show_header=False, box=box.SIMPLE, padding=(0, 2))
-    overview_table.add_column("Metric", style="bold white", min_width=25)
-    overview_table.add_column("Value", style="gold", justify="right", min_width=15)
+    table.add_row("Total Bankroll Balance", f"${summary.balance:,.2f}")
+    table.add_row("1 Unit Size (2.0%)", f"${summary.unit_value:,.2f}")
+    table.add_row("Max Daily Risk Limit (10.0%)", f"${summary.max_daily_risk:,.2f}")
+    table.add_row("Daily Budget Risked Today", f"${summary.daily_budget_used:,.2f}")
+    table.add_row("Remaining Daily Budget", f"${summary.remaining_daily_budget:,.2f}")
 
-    overview_table.add_row("Total Bankroll Balance", f"${summary.balance:,.2f}")
-    overview_table.add_row("1 Unit Size (2.0%)", f"${summary.unit_value:,.2f}")
-    overview_table.add_row("Max Daily Risk Limit (10.0%)", f"${summary.max_daily_risk:,.2f}")
-    overview_table.add_row("Daily Budget Risked Today", f"[{util_color}]${summary.daily_budget_used:,.2f} ({budget_util_pct * 100:.1f}%)[/]")
-    overview_table.add_row("Remaining Daily Budget", f"[bold green_bright]${summary.remaining_daily_budget:,.2f}[/]")
-
-    console.print(Panel(
-        overview_table,
-        title="[gold]🏦  Current Bankroll Status[/]",
-        border_style="panel_border",
-        padding=(1, 3),
-    ))
+    console.print(Panel(table, title="[gold]🏦 Bankroll Status[/]", border_style="panel_border", padding=(1, 2)))
     console.print()
-
-    alloc_table = Table(
-        title="[gold]📋 Automated Stake Allocation Grid per Slip Type[/]",
-        box=box.ROUNDED, border_style="panel_border",
-        header_style="table_header", show_lines=True, padding=(0, 1),
-    )
-    alloc_table.add_column("Slip Type", style="white", min_width=24)
-    alloc_table.add_column("Risk Category", justify="center", min_width=15)
-    alloc_table.add_column("Unit Mult", justify="center", min_width=10)
-    alloc_table.add_column("Dollar Stake", justify="center", style="gold", min_width=14)
-
-    single_dollar = round(summary.unit_value * 1.00, 2)
-    alloc_table.add_row(
-        "Single / Lock of Day / 2-Man Anchor",
-        "[green_bright]Dominant / Low Var[/]",
-        "1.00 Unit",
-        f"${single_dollar:,.2f}",
-    )
-
-    for legs, alloc in sorted(summary.allocations.items()):
-        cat_style = "green_bright" if alloc.n_legs == 3 else ("gold" if alloc.n_legs in (4, 5) else "red_bright")
-        alloc_table.add_row(
-            f"{legs}-Leg Parlay Slip",
-            f"[{cat_style}]{alloc.risk_label}[/]",
-            f"{alloc.unit_multiplier:.2f} Unit",
-            f"${alloc.dollar_stake:,.2f}",
-        )
-
-    console.print(alloc_table)
-    console.print()
-
-
-def bankroll_edit_menu(state: bankroll.BankrollState) -> bankroll.BankrollState:
-    console.print("\n[gold]Bankroll Actions:[/]")
-    console.print("  [accent]1.[/] Set New Bankroll Balance")
-    console.print("  [accent]2.[/] Add Deposit / Top-up")
-    console.print("  [accent]3.[/] Reset Bankroll to Default ($1,000)")
-    console.print("  [accent]4.[/] Return to Main Menu")
-
-    choice = Prompt.ask("\n[accent]Select action[/]", choices=["1", "2", "3", "4"], default="4")
-
-    if choice == "1":
-        new_val_str = Prompt.ask("[gold]Enter new balance ($)[/]")
-        try:
-            val = float(new_val_str)
-            state = bankroll.set_balance(val)
-            console.print(f"[green_bright]Bankroll balance updated to ${state.balance:,.2f}[/]")
-        except ValueError:
-            console.print("[red_bright]Invalid number entered.[/]")
-    elif choice == "2":
-        dep_str = Prompt.ask("[gold]Enter deposit amount ($)[/]")
-        try:
-            val = float(dep_str)
-            state = bankroll.add_to_balance(val)
-            console.print(f"[green_bright]Added ${val:,.2f}. New balance: ${state.balance:,.2f}[/]")
-        except ValueError:
-            console.print("[red_bright]Invalid number entered.[/]")
-    elif choice == "3":
-        state = bankroll.reset_bankroll()
-        console.print("[green_bright]Bankroll reset to default $1,000.00[/]")
-
-    return state
 
 
 def display_error(message: str) -> None:
-    console.print(Panel(
-        f"[red_bright]{escape(message)}[/]",
-        border_style="red", padding=(0, 2),
-    ))
+    console.print(Panel(f"[red_bright]{escape(message)}[/]", border_style="red", padding=(0, 2)))
 
 
 def press_enter_to_continue() -> None:
-    console.print("\n[dim_text]Press Enter to return to the main menu...[/]")
+    console.print("\n[dim_text]Press Enter to return to main menu...[/]")
     try:
         input()
     except (EOFError, KeyboardInterrupt):
@@ -747,10 +613,4 @@ def press_enter_to_continue() -> None:
 
 
 def display_exit_message() -> None:
-    console.print()
-    console.print(Align.center(Panel(
-        "[gold]Thank you for using MLB Analytics System.[/]\n"
-        "[dim_text]Bet responsibly. Always track your edge.[/]",
-        border_style="panel_border", padding=(1, 6),
-    )))
-    console.print()
+    console.print("\n[gold]Thank you for using MLB Analytics System. Bet responsibly.[/]\n")
