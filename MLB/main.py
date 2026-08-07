@@ -1,7 +1,7 @@
 """
 main.py
 =======
-Entry point for the MLB Analytics CLI System v4.1.
+Entry point for the MLB Analytics CLI System v5.0.
 
 Clean Screen Workflow & Silent File Logging to app.log.
 """
@@ -10,10 +10,20 @@ from __future__ import annotations
 
 import io
 import logging
+import os
 import sys
 import traceback
+import warnings
 from dataclasses import dataclass
+from pathlib import Path
 
+# ── Always run from the script's own directory ────────────────────────────────
+_HERE = Path(__file__).parent.resolve()
+os.chdir(_HERE)
+if str(_HERE) not in sys.path:
+    sys.path.insert(0, str(_HERE))
+
+# ── Windows UTF-8 console fix ──────────────────────────────────────────────────
 if sys.platform == "win32":
     try:
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
@@ -21,14 +31,23 @@ if sys.platform == "win32":
     except AttributeError:
         pass
 
-# Redirect all application logs exclusively to app.log (Silent Terminal)
+# ── Suppress ALL warnings before any third-party imports ──────────────────────
+warnings.filterwarnings("ignore")
+
+# ── Redirect all app logs exclusively to app.log (Silent Terminal) ─────────────
+_LOG_FILE = str(_HERE / "app.log")
 logging.basicConfig(
-    filename="app.log",
+    filename=_LOG_FILE,
     filemode="a",
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s | %(name)-20s | %(levelname)-8s | %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+# Force all third-party loggers silent in terminal
+for _noisy in ("urllib3", "requests", "urllib3.connectionpool",
+               "charset_normalizer", "httpcore", "httpx"):
+    logging.getLogger(_noisy).setLevel(logging.CRITICAL)
+
 logger = logging.getLogger(__name__)
 
 import analytics
@@ -65,7 +84,7 @@ def action_ultimate_slate(state: AppState) -> None:
             is_live, line_shopping, state.calib_report,
         )
         ultimate_slip = analytics.generate_ultimate_slate_slip(candidates)
-        summary = bankroll.build_summary(state.bankroll_state)
+        summary       = bankroll.build_summary(state.bankroll_state)
 
         cli_ui.display_ultimate_slate_slip(ultimate_slip, summary)
     except Exception as exc:
@@ -75,6 +94,11 @@ def action_ultimate_slate(state: AppState) -> None:
 
 
 def action_moneyline_screener(state: AppState) -> None:
+    """
+    Menu 2 — Moneyline Trust Screener + Full Bet Slip Suite
+    Generates all 7 slip types: 2-Leg Anchor, 3-Leg, 4-Leg, 3-of-5 Combo,
+    5-Leg, 6-Leg, 8-Leg Ultimate.
+    """
     try:
         games, is_live, line_shopping = cli_ui.with_spinner(
             "Evaluating Moneyline picks...",
@@ -88,11 +112,13 @@ def action_moneyline_screener(state: AppState) -> None:
             mock_data.MOCK_MONEYLINE_ODDS, mock_data.MOCK_PITCHER_STATS,
             is_live, line_shopping, state.calib_report,
         )
-        slips_by_legs = analytics.generate_moneyline_parlays(candidates)
-        lock_of_day = analytics.pick_lock_of_day(candidates)
-        summary = bankroll.build_summary(state.bankroll_state)
 
-        cli_ui.display_moneyline_results(candidates, slips_by_legs, lock_of_day, summary, is_live)
+        # Generate the full 7-type bet slip suite
+        slip_suite  = analytics.generate_bet_slip_suite(candidates)
+        lock_of_day = analytics.pick_lock_of_day(candidates)
+        summary     = bankroll.build_summary(state.bankroll_state)
+
+        cli_ui.display_moneyline_results(candidates, slip_suite, lock_of_day, summary, is_live)
     except Exception as exc:
         logger.exception("Moneyline error: %s", exc)
         cli_ui.display_error(f"Error in Moneyline screener:\n{exc}")
@@ -101,10 +127,10 @@ def action_moneyline_screener(state: AppState) -> None:
 
 def action_under_hr_screener(state: AppState) -> None:
     try:
-        h2h_records = data_fetcher.load_batter_h2h_records(state.analysis_date)
+        h2h_records  = data_fetcher.load_batter_h2h_records(state.analysis_date)
         pitcher_stats = {p["pitcher_id"]: p for p in data_fetcher.load_pitcher_stats(state.analysis_date)}
         slips_by_legs = analytics.run_under_hr_engine(h2h_records, pitcher_stats)
-        summary = bankroll.build_summary(state.bankroll_state)
+        summary       = bankroll.build_summary(state.bankroll_state)
 
         cli_ui.display_under_hr_results(slips_by_legs, summary)
     except Exception as exc:
@@ -116,7 +142,7 @@ def action_under_hr_screener(state: AppState) -> None:
 def action_under_1_5_hits(state: AppState) -> None:
     try:
         h2h_records = data_fetcher.load_batter_h2h_records(state.analysis_date)
-        recs = analytics.run_under_1_5_hits_screener(h2h_records)
+        recs        = analytics.run_under_1_5_hits_screener(h2h_records)
 
         cli_ui.display_under_1_5_hits(recs)
     except Exception as exc:
@@ -128,7 +154,7 @@ def action_under_1_5_hits(state: AppState) -> None:
 def action_alternate_team_total(state: AppState) -> None:
     try:
         games, is_live, _ = data_fetcher.load_full_game_slate(state.analysis_date)
-        cands = analytics.run_alternate_team_total_screener(games)
+        cands             = analytics.run_alternate_team_total_screener(games)
 
         cli_ui.display_alternate_team_total(cands)
     except Exception as exc:
@@ -140,7 +166,7 @@ def action_alternate_team_total(state: AppState) -> None:
 def action_at_bat_outcome(state: AppState) -> None:
     try:
         h2h_records = data_fetcher.load_batter_h2h_records(state.analysis_date)
-        targets = analytics.run_at_bat_outcome_screener(h2h_records)
+        targets     = analytics.run_at_bat_outcome_screener(h2h_records)
 
         cli_ui.display_at_bat_outcome_targets(targets)
     except Exception as exc:
@@ -152,7 +178,7 @@ def action_at_bat_outcome(state: AppState) -> None:
 def action_score_projection(state: AppState) -> None:
     try:
         games, is_live, _ = data_fetcher.load_full_game_slate(state.analysis_date)
-        projections = analytics.project_all_games(games)
+        projections       = analytics.project_all_games(games)
 
         cli_ui.display_score_projections(projections)
     except Exception as exc:
@@ -179,7 +205,7 @@ def action_change_date(state: AppState) -> None:
     new_date = cli_ui.prompt_date_selection()
     state.analysis_date = new_date
 
-    lookback_data = data_fetcher.fetch_4day_lookback_data(new_date)
+    lookback_data    = data_fetcher.fetch_4day_lookback_data(new_date)
     state.calib_report = analytics.calibrate_model_weights(lookback_data)
 
     cli_ui.console.print(f"[green_bright]Analysis date updated to {state.analysis_date}[/]")
@@ -191,11 +217,11 @@ def action_change_date(state: AppState) -> None:
 # ==============================================================================
 
 def main() -> None:
-    initial_date = cli_ui.prompt_date_selection()
-    b_state = bankroll.load_state()
+    initial_date  = cli_ui.prompt_date_selection()
+    b_state       = bankroll.load_state()
 
-    lookback_data = data_fetcher.fetch_4day_lookback_data(initial_date)
-    calib_report  = analytics.calibrate_model_weights(lookback_data)
+    lookback_data  = data_fetcher.fetch_4day_lookback_data(initial_date)
+    calib_report   = analytics.calibrate_model_weights(lookback_data)
 
     app_state = AppState(
         analysis_date=initial_date,

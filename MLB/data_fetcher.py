@@ -1,7 +1,7 @@
 """
 data_fetcher.py
 ===============
-API handler layer for the MLB Analytics CLI System v4.1.
+API handler layer for the MLB Analytics CLI System v5.0.
 Silent logging & quiet API timeout engine (Logs exclusively to app.log).
 
 Fetches:
@@ -16,17 +16,24 @@ Fetches:
 from __future__ import annotations
 
 import logging
+import warnings
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import requests
+import urllib3
 
 import config
 import mock_data
 
-# Silence third-party network loggers completely from stdout
-logging.getLogger("urllib3").setLevel(logging.ERROR)
-logging.getLogger("requests").setLevel(logging.ERROR)
+# ── Silence ALL HTTP-related warnings & logs from stdout ──────────────────────
+warnings.filterwarnings("ignore")                       # suppress all Python warnings
+urllib3.disable_warnings()                              # suppress InsecureRequestWarning etc.
+logging.getLogger("urllib3").setLevel(logging.CRITICAL)
+logging.getLogger("requests").setLevel(logging.CRITICAL)
+logging.getLogger("urllib3.connectionpool").setLevel(logging.CRITICAL)
+logging.getLogger("charset_normalizer").setLevel(logging.CRITICAL)
+# ─────────────────────────────────────────────────────────────────────────────
 
 logger = logging.getLogger(__name__)
 

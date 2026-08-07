@@ -1,16 +1,13 @@
 """
 analytics.py
 ============
-Core mathematical analytics engine for the MLB Handicapping System v4.0.
+Core mathematical analytics engine for the MLB Handicapping System v5.0.
 
-Integrates:
-  1. 4-Day Historical Calibration Engine (H-4 to H-1 performance logging)
-  2. Recalibrated Moneyline Engine & Ultimate Slate-Wide Slip (15-Leg Mega Slip)
-  3. Strategi 1: Parlay "Under 0.5 Home Run" (3, 4, 5, 8, 10 Legs)
-  4. Strategi 2: Parlay / Single "Under 1.5 Hits" (Single Bets vs 2-Team Parlays)
-  5. Strategi 3: Alternate Team Total "Over 1.5 Runs" Screener
-  6. Strategi 4: At-Bat Outcome "Out or Error" ($100/day system targets)
-  7. Strategi 5: 5-Factor Total Score Projection (Over/Under)
+Key changes in v5.0:
+  - New generate_bet_slip_suite(): produces 2-Leg Anchor, 3-Leg, 4-Leg,
+    3-5 Leg Combo, 5-Leg, 6-Leg, and 8-Leg Ultimate slips
+  - Win Confidence capped at 50.0% - 68.0% (realistic MLB range)
+  - Trust level classifier: HIGH (>=65%), MEDIUM (58-64.9%), PASS (<58%)
 """
 
 from __future__ import annotations
@@ -43,7 +40,7 @@ class CalibrationReport:
 
 
 # ==============================================================================
-# DATA MODELS — STRATEGY A (Moneyline & Ultimate Slate)
+# DATA MODELS — STRATEGY A (Moneyline & Bet Slip Suite)
 # ==============================================================================
 
 @dataclass
@@ -72,7 +69,9 @@ class MoneylineCandidate:
     model_prob: float
     win_confidence: float
 
+    trust_level: str          # "HIGH" | "MEDIUM" | "PASS"
     is_strong_recommendation: bool
+    is_qualified: bool
     is_live_data: bool
 
 
@@ -85,6 +84,19 @@ class MoneylineSlip:
     combined_american_odds: int
     implied_probability: float
     ev_edge: float
+    slip_label: str = ""      # e.g. "2-Leg Anchor", "8-Leg Ultimate"
+
+
+@dataclass
+class BetSlipSuite:
+    """Complete 7-type bet slip suite generated from ranked candidates."""
+    anchor_2leg: MoneylineSlip | None       # Rank 1 + 2
+    parlay_3leg: MoneylineSlip | None       # Rank 1-3
+    parlay_4leg: MoneylineSlip | None       # Rank 1-4
+    combo_3of5:  list[MoneylineSlip]        # All C(5,3) combos from top-5
+    parlay_5leg: MoneylineSlip | None       # Rank 1-5
+    parlay_6leg: MoneylineSlip | None       # Rank 1-6
+    ultimate_8leg: MoneylineSlip | None     # Rank 1-8 (Test Luck)
 
 
 @dataclass
@@ -217,6 +229,41 @@ def _decimal_to_american(decimal: float) -> int:
         return int(round(-100.0 / (decimal - 1.0)))
 
 
+def _classify_trust(win_confidence: float) -> str:
+    """Classify trust level based on Win Confidence %."""
+    if win_confidence >= 0.650:
+        return "HIGH"
+    elif win_confidence >= 0.580:
+        return "MEDIUM"
+    else:
+        return "PASS"
+
+
+def _build_slip(
+    legs: list[MoneylineCandidate],
+    label: str,
+) -> MoneylineSlip:
+    comb_conf = 1.0
+    comb_dec  = 1.0
+    for leg in legs:
+        comb_conf *= leg.win_confidence
+        comb_dec  *= leg.moneyline_decimal
+    comb_conf = round(comb_conf, 6)
+    comb_dec  = round(comb_dec, 4)
+    implied   = round(1.0 / comb_dec, 6) if comb_dec > 0 else 0.0
+    ev_edge   = round(comb_conf - implied, 4)
+    return MoneylineSlip(
+        legs=list(legs),
+        n_legs=len(legs),
+        combined_confidence=comb_conf,
+        combined_decimal_odds=comb_dec,
+        combined_american_odds=_decimal_to_american(comb_dec),
+        implied_probability=implied,
+        ev_edge=ev_edge,
+        slip_label=label,
+    )
+
+
 # ==============================================================================
 # 1. 4-DAY HISTORICAL CALIBRATION ENGINE
 # ==============================================================================
@@ -230,13 +277,15 @@ def calibrate_model_weights(lookback_data: dict[str, list[dict]]) -> Calibration
     for day_label, games in lookback_data.items():
         n_games = len(games)
         total_games += n_games
-        day_error = sum(g.get("error_rate", 0.05) for g in games) / n_games if n_games > 0 else 0.05
+        day_error  = sum(g.get("error_rate", 0.05) for g in games) / n_games if n_games > 0 else 0.05
         day_bp_era = sum(g.get("bullpen_era", 3.50) for g in games) / n_games if n_games > 0 else 3.50
         total_error += day_error
         bullpen_volatility += day_bp_era
-        log_entries.append(f"{day_label}: {n_games} games analyzed | Error Rate: {day_error*100:.1f}% | Avg BP ERA: {day_bp_era:.2f}")
+        log_entries.append(
+            f"{day_label}: {n_games} games analyzed | Error Rate: {day_error*100:.1f}% | Avg BP ERA: {day_bp_era:.2f}"
+        )
 
-    avg_error = total_error / len(lookback_data) if lookback_data else 0.05
+    avg_error  = total_error / len(lookback_data) if lookback_data else 0.05
     avg_bp_vol = bullpen_volatility / len(lookback_data) if lookback_data else 3.50
 
     base_pitcher = 0.40
@@ -246,7 +295,7 @@ def calibrate_model_weights(lookback_data: dict[str, list[dict]]) -> Calibration
     if avg_bp_vol > 4.00:
         adj_pitcher = base_pitcher + 0.05
         adj_form    = base_form - 0.05
-        log_entries.append("High 4-day Bullpen volatility detected -> Increased Pitcher Advantage weight to 0.45")
+        log_entries.append("High 4-day Bullpen volatility -> Increased Pitcher Advantage weight to 0.45")
     else:
         adj_pitcher = base_pitcher
         adj_form    = base_form
@@ -265,7 +314,7 @@ def calibrate_model_weights(lookback_data: dict[str, list[dict]]) -> Calibration
 
 
 # ==============================================================================
-# 2. RECALIBRATED MONEYLINE ENGINE & ULTIMATE SLATE SLIP
+# 2. RECALIBRATED MONEYLINE ENGINE
 # ==============================================================================
 
 def _calculate_pitcher_score(
@@ -349,8 +398,8 @@ def _evaluate_team_moneyline(
     total  = wins + losses
     last10_win_rate = (wins / total) if total > 0 else 0.5
 
-    opp_throws   = opp_sp.get("throws", "R")
-    our_throws   = opp_sp.get("throws", "R")
+    opp_throws = opp_sp.get("throws", "R")
+    our_throws = our_sp.get("throws", "R")
     ops_key_ours   = f"ops_vs_{'r' if opp_throws == 'R' else 'l'}hp"
     ops_key_theirs = f"ops_vs_{'r' if our_throws == 'R' else 'l'}hp"
 
@@ -372,17 +421,15 @@ def _evaluate_team_moneyline(
 
     best_book = "DraftKings"
     best_ml   = ml_american
-    if line_shopping_game:
+    if line_shopping_game and isinstance(line_shopping_game, dict):
         for book_name, odds_dict in line_shopping_game.items():
-            b_ml = odds_dict.get("home_ml" if is_home else "away_ml", ml_american)
-            if is_home and b_ml > best_ml:
-                best_ml = b_ml
-                best_book = book_name
-            elif not is_home and b_ml > best_ml:
-                best_ml = b_ml
-                best_book = book_name
+            if isinstance(odds_dict, dict):
+                b_ml = odds_dict.get("home_ml" if is_home else "away_ml", ml_american)
+                if b_ml > best_ml:
+                    best_ml   = b_ml
+                    best_book = book_name
 
-    implied_prob  = odds_to_implied_prob(best_ml)
+    implied_prob   = odds_to_implied_prob(best_ml)
     composite_prob = (model_prob * 0.50) + (implied_prob * 0.50)
 
     if -115 <= best_ml <= 115:
@@ -393,6 +440,8 @@ def _evaluate_team_moneyline(
         4,
     )
 
+    trust_level = _classify_trust(final_win_confidence)
+
     is_strong = (
         is_live_data and
         (era_diff >= config.STRONG_PICK_MIN_ERA_ADV) and
@@ -400,6 +449,8 @@ def _evaluate_team_moneyline(
         (our_last3_era <= config.STRONG_PICK_MAX_L3_ERA) and
         (best_ml <= config.STRONG_PICK_MAX_ML_AMERICAN)
     )
+
+    is_qualified = final_win_confidence >= 0.530
 
     return MoneylineCandidate(
         team_id=team_id,
@@ -422,7 +473,9 @@ def _evaluate_team_moneyline(
         implied_prob=round(implied_prob, 4),
         model_prob=round(model_prob, 4),
         win_confidence=final_win_confidence,
+        trust_level=trust_level,
         is_strong_recommendation=is_strong,
+        is_qualified=is_qualified,
         is_live_data=is_live_data,
     )
 
@@ -485,7 +538,6 @@ def run_moneyline_screener(
             is_live_data=is_live_data, line_shopping_game=ls_game, calib_report=calib_report,
         )
 
-        # Select best team for EVERY game so Ultimate Slate Slip gets all games
         best = home_cand if home_cand.win_confidence >= away_cand.win_confidence else away_cand
         candidates.append(best)
 
@@ -493,11 +545,61 @@ def run_moneyline_screener(
     return candidates
 
 
+# ==============================================================================
+# 3. BET SLIP SUITE GENERATOR (2, 3, 4, 3-5, 5, 6, 8 LEGS)
+# ==============================================================================
+
+def generate_bet_slip_suite(candidates: list[MoneylineCandidate]) -> BetSlipSuite:
+    """
+    Generate the full 7-type Bet Slip Suite from ranked MoneylineCandidate list.
+
+    Slip types:
+      1. 2-Leg Anchor  — Rank 1 + 2 (Paling Dominan)
+      2. 3-Leg Parlay  — Rank 1-3
+      3. 4-Leg Parlay  — Rank 1-4
+      4. 3-of-5 Combo  — All C(5,3) combinations from Top 5
+      5. 5-Leg Parlay  — Rank 1-5
+      6. 6-Leg Parlay  — Rank 1-6
+      7. 8-Leg Ultimate— Rank 1-8 (Test Luck)
+    """
+    n = len(candidates)
+
+    anchor_2leg   = _build_slip(candidates[:2], "2-Leg Anchor") if n >= 2 else None
+    parlay_3leg   = _build_slip(candidates[:3], "3-Leg Parlay") if n >= 3 else None
+    parlay_4leg   = _build_slip(candidates[:4], "4-Leg Parlay") if n >= 4 else None
+    parlay_5leg   = _build_slip(candidates[:5], "5-Leg Parlay") if n >= 5 else None
+    parlay_6leg   = _build_slip(candidates[:6], "6-Leg Parlay") if n >= 6 else None
+    ultimate_8leg = _build_slip(candidates[:8], "8-Leg Ultimate") if n >= 8 else None
+
+    # 3-of-5 Combination: all C(5,3) = 10 combos
+    combo_3of5: list[MoneylineSlip] = []
+    top5 = candidates[:5]
+    if len(top5) >= 3:
+        for combo in itertools.combinations(top5, 3):
+            combo_3of5.append(_build_slip(list(combo), "3-of-5 Combo"))
+        combo_3of5.sort(key=lambda s: s.combined_confidence, reverse=True)
+
+    return BetSlipSuite(
+        anchor_2leg=anchor_2leg,
+        parlay_3leg=parlay_3leg,
+        parlay_4leg=parlay_4leg,
+        combo_3of5=combo_3of5,
+        parlay_5leg=parlay_5leg,
+        parlay_6leg=parlay_6leg,
+        ultimate_8leg=ultimate_8leg,
+    )
+
+
+# ==============================================================================
+# 4. LEGACY MONEYLINE PARLAYS (kept for backward-compat with other menu items)
+# ==============================================================================
+
 def generate_moneyline_parlays(
     candidates: list[MoneylineCandidate],
 ) -> dict[int, list[MoneylineSlip]]:
-    # Filter only candidates that meet minimum Win Confidence for standard parlays
-    qualified = [c for c in candidates if c.win_confidence >= config.MIN_ML_WIN_CONFIDENCE]
+    qualified = [c for c in candidates if c.win_confidence >= 0.530]
+    if not qualified:
+        qualified = list(candidates)
 
     target_legs = [3, 4, 5, 8, 10]
     slips_by_legs: dict[int, list[MoneylineSlip]] = {}
@@ -507,32 +609,8 @@ def generate_moneyline_parlays(
             continue
 
         slip_list: list[MoneylineSlip] = []
-        for combo in itertools.islice(
-            itertools.combinations(qualified, n_legs), 50
-        ):
-            comb_conf = 1.0
-            comb_decimal = 1.0
-            for leg in combo:
-                comb_conf    *= leg.win_confidence
-                comb_decimal *= leg.moneyline_decimal
-
-            comb_conf    = round(comb_conf, 6)
-            comb_decimal = round(comb_decimal, 4)
-            implied_prob = round(1.0 / comb_decimal, 6) if comb_decimal > 0 else 0.0
-            ev_edge      = round(comb_conf - implied_prob, 4)
-            comb_american = _decimal_to_american(comb_decimal)
-
-            slip_list.append(
-                MoneylineSlip(
-                    legs=list(combo),
-                    n_legs=n_legs,
-                    combined_confidence=comb_conf,
-                    combined_decimal_odds=comb_decimal,
-                    combined_american_odds=comb_american,
-                    implied_probability=implied_prob,
-                    ev_edge=ev_edge,
-                )
-            )
+        for combo in itertools.islice(itertools.combinations(qualified, n_legs), 50):
+            slip_list.append(_build_slip(list(combo), f"{n_legs}-Leg Parlay"))
 
         slip_list.sort(key=lambda s: s.combined_confidence, reverse=True)
         slips_by_legs[n_legs] = slip_list
@@ -550,37 +628,19 @@ def generate_ultimate_slate_slip(candidates: list[MoneylineCandidate]) -> Moneyl
             by_game[c.game_id] = c
 
     slate_legs = list(by_game.values())
-    n_legs     = len(slate_legs)
-
-    comb_conf = 1.0
-    comb_decimal = 1.0
-    for leg in slate_legs:
-        comb_conf    *= leg.win_confidence
-        comb_decimal *= leg.moneyline_decimal
-
-    comb_conf    = round(comb_conf, 8)
-    comb_decimal = round(comb_decimal, 4)
-    implied_prob = round(1.0 / comb_decimal, 8) if comb_decimal > 0 else 0.0
-    ev_edge      = round(comb_conf - implied_prob, 4)
-
-    return MoneylineSlip(
-        legs=slate_legs,
-        n_legs=n_legs,
-        combined_confidence=comb_conf,
-        combined_decimal_odds=comb_decimal,
-        combined_american_odds=_decimal_to_american(comb_decimal),
-        implied_probability=implied_prob,
-        ev_edge=ev_edge,
-    )
+    return _build_slip(slate_legs, "Ultimate Slate-Wide")
 
 
 def pick_lock_of_day(candidates: list[MoneylineCandidate]) -> LockOfDay | None:
     qualifiers = [
         c for c in candidates
-        if c.is_live_data and c.is_strong_recommendation and c.win_confidence >= config.LOCK_OF_DAY_MIN_CONFIDENCE
+        if c.is_live_data and (c.is_strong_recommendation or c.is_qualified)
+        and c.win_confidence >= config.LOCK_OF_DAY_MIN_CONFIDENCE
     ]
     if not qualifiers:
-        return None
+        qualifiers = [c for c in candidates if c.win_confidence >= 0.580]
+        if not qualifiers:
+            return None
 
     qualifiers.sort(key=lambda c: (c.win_confidence, c.era_advantage), reverse=True)
     best = qualifiers[0]
@@ -591,14 +651,15 @@ def pick_lock_of_day(candidates: list[MoneylineCandidate]) -> LockOfDay | None:
     rationale = (
         f"Starter {best.pitcher_name} ({era_sign}{best.era_advantage:.2f} ERA adv, "
         f"WHIP {best.our_whip:.2f}, L3 ERA {best.last3_era:.2f}) with optimal sportsbook pricing "
-        f"at {best.best_sportsbook} ({best.best_line_american:+d}) and offensive split superiority ({ops_sign}{best.ops_advantage_pct * 100:.1f}% OPS adv)."
+        f"at {best.best_sportsbook} ({best.best_line_american:+d}) and offensive split superiority "
+        f"({ops_sign}{best.ops_advantage_pct * 100:.1f}% OPS adv)."
     )
 
     return LockOfDay(candidate=best, rationale=rationale)
 
 
 # ==============================================================================
-# 3. STRATEGI 1: PARLAY "UNDER 0.5 HOME RUN" (WIN RATE 90%)
+# 5. STRATEGI 1: PARLAY "UNDER 0.5 HOME RUN"
 # ==============================================================================
 
 def _calc_true_no_hr_prob(season_hr: int, season_pa: int, prev_season_hr: int, prev_season_pa: int) -> float:
@@ -689,18 +750,18 @@ def run_under_hr_engine(
 
 
 # ==============================================================================
-# 4. STRATEGI 2: PARLAY / SINGLE "UNDER 1.5 HITS" SCREENER
+# 6. STRATEGI 2: UNDER 1.5 HITS SCREENER
 # ==============================================================================
 
 def run_under_1_5_hits_screener(h2h_records: list[dict]) -> list[Under15HitsRecommendation]:
     recs: list[Under15HitsRecommendation] = []
     for r in h2h_records:
-        ab = r.get("career_ab_vs_pitcher", 0)
-        ba = r.get("batting_avg_vs_pitcher", 0.999)
+        ab   = r.get("career_ab_vs_pitcher", 0)
+        ba   = r.get("batting_avg_vs_pitcher", 0.999)
         prob = r.get("under_1_5_hits_seasonal_prob", 0.65)
 
         if ab >= config.UNDER_HITS_MIN_AB and ba <= config.UNDER_HITS_MAX_BA and prob >= config.UNDER_HITS_MIN_PROB:
-            odds = -310 if prob >= 0.76 else -450
+            odds  = -310 if prob >= 0.76 else -450
             btype = "SINGLE BET" if odds >= config.UNDER_HITS_SINGLE_ODDS_MIN else "2-TEAM PARLAY"
             recs.append(
                 Under15HitsRecommendation(
@@ -719,7 +780,7 @@ def run_under_1_5_hits_screener(h2h_records: list[dict]) -> list[Under15HitsReco
 
 
 # ==============================================================================
-# 5. STRATEGI 3: ALTERNATE TEAM TOTAL "OVER 1.5 RUNS" SCREENER
+# 7. STRATEGI 3: ALTERNATE TEAM TOTAL "OVER 1.5 RUNS"
 # ==============================================================================
 
 def run_alternate_team_total_screener(games: list[dict]) -> list[AlternateTeamTotalCandidate]:
@@ -786,7 +847,7 @@ def run_alternate_team_total_screener(games: list[dict]) -> list[AlternateTeamTo
 
 
 # ==============================================================================
-# 6. STRATEGI 4: AT-BAT OUTCOME "OUT OR ERROR" TARGETS ($100/DAY SYSTEM)
+# 8. STRATEGI 4: AT-BAT OUTCOME "OUT OR ERROR"
 # ==============================================================================
 
 def run_at_bat_outcome_screener(h2h_records: list[dict]) -> list[AtBatOutcomeTarget]:
@@ -794,8 +855,8 @@ def run_at_bat_outcome_screener(h2h_records: list[dict]) -> list[AtBatOutcomeTar
     for r in h2h_records:
         if not r.get("is_dfs_top_pitcher_matchup", False):
             continue
-        ab = r.get("career_ab_vs_pitcher", 0)
-        ba = r.get("batting_avg_vs_pitcher", 0.0)
+        ab    = r.get("career_ab_vs_pitcher", 0)
+        ba    = r.get("batting_avg_vs_pitcher", 0.0)
         k_pct = r.get("strikeout_pct", 0.0)
 
         if (ab >= 10 and ba > config.OUT_OR_ERROR_MAX_BA) or k_pct > config.OUT_OR_ERROR_MAX_K_PCT:
@@ -815,7 +876,7 @@ def run_at_bat_outcome_screener(h2h_records: list[dict]) -> list[AtBatOutcomeTar
 
 
 # ==============================================================================
-# 7. STRATEGI 5: 5-FACTOR SCORE PROJECTION (OVER/UNDER)
+# 9. STRATEGI 5: 5-FACTOR SCORE PROJECTION
 # ==============================================================================
 
 def _get_park_factor(venue: str) -> float:
@@ -886,10 +947,10 @@ def project_game_total(game: dict) -> GameProjection:
     weather_adj, _ = _calc_weather_adjustment(weather)
     projected_total = round(raw_total + weather_adj, 2)
 
-    temp_f    = weather.get("temp_f", 72.0)
-    wind_mph  = weather.get("wind_speed_mph", 0.0)
-    wind_dir  = weather.get("wind_direction", "none")
-    cond      = weather.get("conditions", "Unknown")
+    temp_f   = weather.get("temp_f", 72.0)
+    wind_mph = weather.get("wind_speed_mph", 0.0)
+    wind_dir = weather.get("wind_direction", "none")
+    cond     = weather.get("conditions", "Unknown")
 
     if ou_line is None:
         edge = None
