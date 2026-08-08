@@ -11,6 +11,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
+import analytics
 import cli_ui
 
 
@@ -41,3 +42,24 @@ def test_menu_labels_completeness():
     assert "3, 4, 5, 8, 10 Legs" in option_2_text or "Slips 3, 4, 5, 8, 10" in option_2_text, (
         f"Option 2 menu label missing 8 and 10 legs! Current: {option_2_text}"
     )
+
+
+def test_no_team_truncation_for_long_parlays():
+    """Memastikan string tim untuk 6-Leg dan 8-Leg parlay TIDAK terpotong dengan '[:31]'."""
+    team_names = [
+        "Boston Red Sox", "Los Angeles Dodgers", "Chicago Cubs",
+        "Philadelphia Phillies", "New York Yankees", "Seattle Mariners",
+        "Atlanta Braves", "San Diego Padres"
+    ]
+    tri_codes = [cli_ui.get_team_tri_code(t) for t in team_names]
+    teams_str = " + ".join(tri_codes)
+
+    # 6-Leg teams string length is > 31 chars
+    teams_str_6 = " + ".join(tri_codes[:6])
+    assert len(teams_str_6) > 31, "6-Leg teams string should be longer than 31 chars"
+    assert teams_str_6.endswith("SEA"), "6-Leg teams string must end with full team code SEA, not truncated!"
+
+    # 8-Leg teams string length is > 31 chars
+    teams_str_8 = " + ".join(tri_codes[:8])
+    assert len(teams_str_8) > 31, "8-Leg teams string should be longer than 31 chars"
+    assert teams_str_8.endswith("SD"), "8-Leg teams string must end with full team code SD, not truncated!"

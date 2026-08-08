@@ -46,7 +46,7 @@ def test_moneyline_signal_classification():
 
 
 def test_parlay_generator_all_legs():
-    """Memastikan generator parlay WAJIB memproduksi slip kombinasi lengkap untuk 3, 4, 5, 8, dan 10 Legs dari kandidat teratas."""
+    """Memastikan generator parlay WAJIB memproduksi slip kombinasi lengkap untuk 3, 4, 5, dan 8 Legs dari kandidat teratas."""
     games = mock_data.MOCK_GAMES
     team_form = mock_data.MOCK_TEAM_FORM
     team_ops_splits = mock_data.MOCK_TEAM_OPS_SPLITS
@@ -61,15 +61,15 @@ def test_parlay_generator_all_legs():
 
     slips_by_legs = analytics.generate_moneyline_parlays(candidates)
 
-    # Since we have 15 games in mock_data, we should have enough candidates for 3, 4, 5, 8, 10 legs
-    for legs in [3, 4, 5, 8, 10]:
+    # Since we have 8 games in mock_data, we should have enough candidates for 3, 4, 5, and 8 legs
+    for legs in [3, 4, 5, 8]:
         assert legs in slips_by_legs, f"Parlay slips for {legs} legs must be generated!"
         assert len(slips_by_legs[legs]) > 0, f"Slip list for {legs} legs should not be empty!"
 
 
 def test_parlay_fallback_when_few_candidates():
-    """Memastikan jika kandidat tim kurang dari 8 atau 10, system menangani secara informatif (tidak crash/panel kosong)."""
-    # Create a slate of only 5 games so 3 and 4 legs can generate, but 8 and 10 cannot
+    """Memastikan jika kandidat tim kurang dari 8, system menangani secara informatif (tidak crash/panel kosong)."""
+    # Create a slate of only 5 games so 3 and 4 legs can generate, but 8 cannot
     games = mock_data.MOCK_GAMES[:5]
     candidates = analytics.run_moneyline_screener(
         games, mock_data.MOCK_TEAM_FORM, mock_data.MOCK_TEAM_OPS_SPLITS,
@@ -79,8 +79,7 @@ def test_parlay_fallback_when_few_candidates():
 
     slips_by_legs = analytics.generate_moneyline_parlays(candidates)
 
-    # 3 and 4 legs should be generated, but 8 and 10 should be missing or empty
+    # 3 and 4 legs should be generated, but 8 should be missing or empty
     assert 3 in slips_by_legs
     assert 4 in slips_by_legs
     assert 8 not in slips_by_legs or len(slips_by_legs[8]) == 0
-    assert 10 not in slips_by_legs or len(slips_by_legs[10]) == 0

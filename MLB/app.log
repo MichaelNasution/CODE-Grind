@@ -60,3 +60,34 @@ INFO:analytics:Pitcher slump penalty applied (L3 ERA: 4.60)
 2026-08-08 03:00:23 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
 2026-08-08 03:00:49 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
 2026-08-08 03:01:15 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
+2026-08-08 03:04:16 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
+2026-08-08 03:04:16 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 4.58)
+2026-08-08 03:04:16 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 7.53)
+2026-08-08 03:04:16 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 4.76)
+2026-08-08 03:04:16 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 5.25)
+2026-08-08 03:04:16 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 6.91)
+2026-08-08 03:04:16 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 4.80)
+2026-08-08 03:04:16 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 7.62)
+2026-08-08 03:04:16 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 5.27)
+2026-08-08 03:11:48 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
+2026-08-08 03:12:34 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
+2026-08-08 03:13:38 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
+2026-08-08 03:14:32 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 4.58)
+2026-08-08 03:14:32 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 7.53)
+2026-08-08 03:14:32 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 4.76)
+2026-08-08 03:14:32 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 5.25)
+2026-08-08 03:14:32 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 6.91)
+2026-08-08 03:14:32 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 4.80)
+2026-08-08 03:14:32 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 7.62)
+2026-08-08 03:14:32 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 5.27)
+2026-08-08 21:02:38 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
+2026-08-08 21:05:26 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
+2026-08-08 21:05:53 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 4.58)
+2026-08-08 21:05:53 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 7.53)
+2026-08-08 21:05:53 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 4.76)
+2026-08-08 21:05:53 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 5.25)
+2026-08-08 21:05:53 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 6.91)
+2026-08-08 21:05:53 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 4.80)
+2026-08-08 21:05:53 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 7.62)
+2026-08-08 21:05:53 | analytics            | INFO     | Pitcher slump penalty applied (L3 ERA: 5.27)
+2026-08-08 21:18:23 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
