@@ -335,7 +335,7 @@ def display_moneyline_results(
     cand_table = Table(
         title="[bold gold1]Top Moneyline Picks — Color-Coded Win Confidence Ranking (4-Pillar Advanced Sabermetrics)[/]",
         box=box.ROUNDED, border_style="blue", header_style="bold cyan",
-        padding=(0, 1), show_lines=False, width=120,
+        padding=(0, 1), show_lines=False, width=128,
     )
     cand_table.add_column("Rank",       justify="center", width=4,  no_wrap=True)
     cand_table.add_column("Trust",      justify="center", width=14, no_wrap=True)
@@ -343,6 +343,7 @@ def display_moneyline_results(
     cand_table.add_column("SP",         style="bold cyan", width=16, no_wrap=True, overflow="ellipsis")
     cand_table.add_column("ML Odds",    justify="center", width=10, no_wrap=True)
     cand_table.add_column("SIERA/xFIP", justify="center", width=12, no_wrap=True)  # Replaces Dec
+    cand_table.add_column("WHIP",       justify="center", width=8,  no_wrap=True)  # Added WHIP
     cand_table.add_column("7d wRC+",    justify="center", width=10, no_wrap=True)  # Replaces WHIP (slump warning)
     cand_table.add_column("Bullpen",    justify="center", width=10, no_wrap=True)  # New column
     cand_table.add_column("Win%",       justify="center", width=10, no_wrap=True)
@@ -390,6 +391,7 @@ def display_moneyline_results(
             escape(cand.pitcher_name[:14]),
             f"[bold gold1]{ml_str}[/]",
             siera_cell,
+            f"{cand.our_whip:.2f}",
             wrc_cell,
             bp_cell,
             f"[{trust_st}]{conf_str}[/]",
