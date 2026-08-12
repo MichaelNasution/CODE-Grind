@@ -1,13 +1,15 @@
 """
 mock_data.py
 ============
-Fallback engine with structured mock data v5.0.
+Fallback engine with structured mock data v5.0 (Advanced Sabermetrics).
 8-matchup slate optimized for color-coded trust system demo.
+New fields: siera, xfip, k_pct, bb_per9 (pitchers); wrc_plus_7d, iso_7d (team batting 7d); bullpen_xfip, bullpen_status.
 
 Teams covered:
-  HIGH TRUST   (>= 65%): BOS, PHI
-  MEDIUM TRUST (58-64%): STL, MIL
-  PASS/BORDER  (50-57%): TEX, NYY, CLE, PIT
+  HIGH TRUST   (>= 65%): PHI, LAD
+  MEDIUM TRUST (58-64%): MIL, CHC
+  PASS/BORDER  (50-57%): NYY, CLE, HOU, BAL
+  SLUMP DEMO   (<wRC+ 85): MIA, PIT (offensive slump, fatal penalty active)
 """
 
 from __future__ import annotations
@@ -154,6 +156,7 @@ MOCK_LINE_SHOPPING: dict[int, dict] = {
 
 # ==============================================================================
 # PITCHER STATS — Curated for proper WIN CONF distribution
+# Includes Advanced Sabermetrics: siera, xfip, k_pct, bb_per9
 # ==============================================================================
 MOCK_PITCHER_STATS: dict[int, dict] = {
     # NYY — GERRIT COLE (solid, not dominant)
@@ -163,14 +166,17 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 2.85, "last5_era": 2.70, "last3_era": 2.60,
         "whip": 0.97, "hr_per9": 0.65, "k_per9": 11.2,
         "innings_pitched": 112.0, "throws": "R",
+        # Advanced Sabermetrics
+        "siera": 3.10, "xfip": 2.95, "k_pct": 0.310, "bb_per9": 2.1,
     },
-    # BOS — BRAYAN BELLO (mediocre opp, BOS wins via dominance)
+    # BOS — BRAYAN BELLO
     1002: {
         "pitcher_id": 1002, "full_name": "Brayan Bello",
         "team": "Boston Red Sox", "team_id": 111,
         "era": 2.75, "last5_era": 2.55, "last3_era": 2.35,
         "whip": 0.95, "hr_per9": 0.60, "k_per9": 9.8,
         "innings_pitched": 105.0, "throws": "R",
+        "siera": 3.25, "xfip": 3.10, "k_pct": 0.272, "bb_per9": 2.5,
     },
     # PHI — ZACK WHEELER (elite)
     1015: {
@@ -179,6 +185,7 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 2.95, "last5_era": 2.60, "last3_era": 2.30,
         "whip": 0.98, "hr_per9": 0.70, "k_per9": 10.4,
         "innings_pitched": 114.0, "throws": "R",
+        "siera": 2.92, "xfip": 2.85, "k_pct": 0.290, "bb_per9": 2.2,
     },
     # MIA opp SP — Sandy Alcantara (declining)
     1026: {
@@ -187,6 +194,7 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 5.10, "last5_era": 5.40, "last3_era": 5.80,
         "whip": 1.55, "hr_per9": 1.45, "k_per9": 6.1,
         "innings_pitched": 88.0, "throws": "R",
+        "siera": 5.20, "xfip": 5.05, "k_pct": 0.170, "bb_per9": 4.2,  # high walks
     },
     # MIL — FREDDY PERALTA
     1017: {
@@ -195,6 +203,7 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 3.35, "last5_era": 3.15, "last3_era": 3.10,
         "whip": 1.08, "hr_per9": 0.80, "k_per9": 10.5,
         "innings_pitched": 106.0, "throws": "R",
+        "siera": 3.22, "xfip": 3.18, "k_pct": 0.292, "bb_per9": 3.1,
     },
     # STL opp SP — Miles Mikolas (mediocre)
     1018: {
@@ -203,6 +212,7 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 4.70, "last5_era": 4.90, "last3_era": 5.10,
         "whip": 1.32, "hr_per9": 1.15, "k_per9": 6.8,
         "innings_pitched": 92.0, "throws": "R",
+        "siera": 4.60, "xfip": 4.55, "k_pct": 0.190, "bb_per9": 2.8,
     },
     # HOU — FRAMBER VALDEZ
     1005: {
@@ -211,6 +221,7 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 3.15, "last5_era": 2.90, "last3_era": 2.80,
         "whip": 1.14, "hr_per9": 0.62, "k_per9": 8.8,
         "innings_pitched": 118.0, "throws": "L",
+        "siera": 3.08, "xfip": 3.02, "k_pct": 0.244, "bb_per9": 3.4,
     },
     # TEX opp SP — Nathan Eovaldi (wildcard)
     1006: {
@@ -219,6 +230,7 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 3.85, "last5_era": 3.70, "last3_era": 3.50,
         "whip": 1.20, "hr_per9": 1.10, "k_per9": 8.4,
         "innings_pitched": 98.0, "throws": "R",
+        "siera": 3.90, "xfip": 3.78, "k_pct": 0.234, "bb_per9": 2.8,
     },
     # CLE — SHANE BIEBER
     1011: {
@@ -227,6 +239,7 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 3.40, "last5_era": 3.20, "last3_era": 3.00,
         "whip": 1.05, "hr_per9": 0.75, "k_per9": 9.8,
         "innings_pitched": 108.0, "throws": "R",
+        "siera": 3.28, "xfip": 3.22, "k_pct": 0.272, "bb_per9": 1.8,
     },
     # DET opp SP — Eduardo Rodriguez
     1012: {
@@ -235,6 +248,7 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 4.55, "last5_era": 4.75, "last3_era": 4.95,
         "whip": 1.38, "hr_per9": 1.18, "k_per9": 7.5,
         "innings_pitched": 92.0, "throws": "L",
+        "siera": 4.48, "xfip": 4.40, "k_pct": 0.208, "bb_per9": 3.8,
     },
     # CHC — JUSTIN STEELE
     1010: {
@@ -243,6 +257,7 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 3.10, "last5_era": 2.90, "last3_era": 2.70,
         "whip": 1.08, "hr_per9": 0.88, "k_per9": 9.2,
         "innings_pitched": 102.0, "throws": "L",
+        "siera": 3.05, "xfip": 2.98, "k_pct": 0.256, "bb_per9": 2.9,
     },
     # PIT opp SP — Mitch Keller
     1028: {
@@ -251,6 +266,7 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 4.20, "last5_era": 4.45, "last3_era": 4.65,
         "whip": 1.30, "hr_per9": 1.20, "k_per9": 8.0,
         "innings_pitched": 95.0, "throws": "R",
+        "siera": 4.10, "xfip": 4.05, "k_pct": 0.222, "bb_per9": 3.5,
     },
     # LAD — TYLER GLASNOW
     1003: {
@@ -259,6 +275,7 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 2.90, "last5_era": 2.65, "last3_era": 2.40,
         "whip": 0.98, "hr_per9": 0.72, "k_per9": 11.8,
         "innings_pitched": 105.0, "throws": "R",
+        "siera": 2.80, "xfip": 2.75, "k_pct": 0.328, "bb_per9": 2.4,
     },
     # SD opp SP — Yu Darvish
     1021: {
@@ -267,6 +284,7 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 4.20, "last5_era": 4.40, "last3_era": 4.60,
         "whip": 1.22, "hr_per9": 1.05, "k_per9": 9.0,
         "innings_pitched": 97.0, "throws": "R",
+        "siera": 4.05, "xfip": 4.00, "k_pct": 0.250, "bb_per9": 2.5,
     },
     # BAL — DEAN KREMER
     1024: {
@@ -275,6 +293,7 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 3.75, "last5_era": 3.80, "last3_era": 3.70,
         "whip": 1.20, "hr_per9": 0.88, "k_per9": 8.4,
         "innings_pitched": 97.0, "throws": "R",
+        "siera": 3.72, "xfip": 3.68, "k_pct": 0.234, "bb_per9": 2.9,
     },
     # TOR opp SP — Kevin Gausman
     1013: {
@@ -283,29 +302,30 @@ MOCK_PITCHER_STATS: dict[int, dict] = {
         "era": 3.55, "last5_era": 3.45, "last3_era": 3.30,
         "whip": 1.12, "hr_per9": 0.90, "k_per9": 9.5,
         "innings_pitched": 100.0, "throws": "R",
+        "siera": 3.42, "xfip": 3.38, "k_pct": 0.264, "bb_per9": 2.0,
     },
 }
 
 # ==============================================================================
-# BULLPEN STATS
+# BULLPEN STATS (Added: bullpen_xfip, bullpen_status)
 # ==============================================================================
 MOCK_BULLPEN_STATS: dict[int, dict] = {
-    147: {"team": "New York Yankees",       "bullpen_era": 3.40, "whip": 1.18},
-    111: {"team": "Boston Red Sox",         "bullpen_era": 3.50, "whip": 1.15},
-    143: {"team": "Philadelphia Phillies",  "bullpen_era": 3.25, "whip": 1.10},
-    146: {"team": "Miami Marlins",          "bullpen_era": 4.60, "whip": 1.42},
-    158: {"team": "Milwaukee Brewers",      "bullpen_era": 3.45, "whip": 1.14},
-    138: {"team": "St. Louis Cardinals",    "bullpen_era": 4.20, "whip": 1.32},
-    117: {"team": "Houston Astros",         "bullpen_era": 3.20, "whip": 1.10},
-    140: {"team": "Texas Rangers",          "bullpen_era": 3.75, "whip": 1.22},
-    114: {"team": "Cleveland Guardians",    "bullpen_era": 3.55, "whip": 1.15},
-    116: {"team": "Detroit Tigers",         "bullpen_era": 4.30, "whip": 1.38},
-    112: {"team": "Chicago Cubs",           "bullpen_era": 3.90, "whip": 1.22},
-    134: {"team": "Pittsburgh Pirates",     "bullpen_era": 4.35, "whip": 1.38},
-    119: {"team": "Los Angeles Dodgers",    "bullpen_era": 3.10, "whip": 1.08},
-    135: {"team": "San Diego Padres",       "bullpen_era": 3.50, "whip": 1.15},
-    110: {"team": "Baltimore Orioles",      "bullpen_era": 3.55, "whip": 1.16},
-    141: {"team": "Toronto Blue Jays",      "bullpen_era": 3.70, "whip": 1.20},
+    147: {"team": "New York Yankees",       "bullpen_era": 3.40, "whip": 1.18, "bullpen_xfip": 3.45, "bullpen_status": "SOLID"},
+    111: {"team": "Boston Red Sox",         "bullpen_era": 3.50, "whip": 1.15, "bullpen_xfip": 3.55, "bullpen_status": "SOLID"},
+    143: {"team": "Philadelphia Phillies",  "bullpen_era": 3.25, "whip": 1.10, "bullpen_xfip": 3.20, "bullpen_status": "ELITE"},
+    146: {"team": "Miami Marlins",          "bullpen_era": 4.60, "whip": 1.42, "bullpen_xfip": 4.70, "bullpen_status": "BOTTOM-10"},
+    158: {"team": "Milwaukee Brewers",      "bullpen_era": 3.45, "whip": 1.14, "bullpen_xfip": 3.48, "bullpen_status": "SOLID"},
+    138: {"team": "St. Louis Cardinals",    "bullpen_era": 4.20, "whip": 1.32, "bullpen_xfip": 4.25, "bullpen_status": "WEAK"},
+    117: {"team": "Houston Astros",         "bullpen_era": 3.20, "whip": 1.10, "bullpen_xfip": 3.18, "bullpen_status": "ELITE"},
+    140: {"team": "Texas Rangers",          "bullpen_era": 3.75, "whip": 1.22, "bullpen_xfip": 3.80, "bullpen_status": "SOLID"},
+    114: {"team": "Cleveland Guardians",    "bullpen_era": 3.55, "whip": 1.15, "bullpen_xfip": 3.58, "bullpen_status": "SOLID"},
+    116: {"team": "Detroit Tigers",         "bullpen_era": 4.30, "whip": 1.38, "bullpen_xfip": 4.35, "bullpen_status": "WEAK"},
+    112: {"team": "Chicago Cubs",           "bullpen_era": 3.90, "whip": 1.22, "bullpen_xfip": 3.95, "bullpen_status": "SOLID"},
+    134: {"team": "Pittsburgh Pirates",     "bullpen_era": 4.35, "whip": 1.38, "bullpen_xfip": 4.40, "bullpen_status": "WEAK"},
+    119: {"team": "Los Angeles Dodgers",    "bullpen_era": 3.10, "whip": 1.08, "bullpen_xfip": 3.08, "bullpen_status": "ELITE"},
+    135: {"team": "San Diego Padres",       "bullpen_era": 3.50, "whip": 1.15, "bullpen_xfip": 3.52, "bullpen_status": "SOLID"},
+    110: {"team": "Baltimore Orioles",      "bullpen_era": 3.55, "whip": 1.16, "bullpen_xfip": 3.58, "bullpen_status": "SOLID"},
+    141: {"team": "Toronto Blue Jays",      "bullpen_era": 3.70, "whip": 1.20, "bullpen_xfip": 3.75, "bullpen_status": "SOLID"},
 }
 
 # ==============================================================================
@@ -360,6 +380,29 @@ MOCK_TEAM_OPS_SPLITS: dict[int, dict] = {
 MOCK_MONEYLINE_ODDS: dict[int, dict] = {
     g["game_id"]: MOCK_LINE_SHOPPING.get(g["game_id"], {}).get("DraftKings", {"home_ml": -110, "away_ml": -110})
     for g in MOCK_GAMES
+}
+
+# ==============================================================================
+# 7-DAY TEAM BATTING (wRC+, ISO) — FanGraphs Fallback Mock Data
+# MIA and PIT are set to slump (wRC+ < 85) for visual slump-warning demo.
+# ==============================================================================
+MOCK_TEAM_BATTING_7D: dict[str, dict] = {
+    "New York Yankees":       {"wrc_plus_7d": 108, "iso_7d": 0.188, "ops_7d": 0.762},
+    "Boston Red Sox":         {"wrc_plus_7d": 121, "iso_7d": 0.205, "ops_7d": 0.811},
+    "Philadelphia Phillies":  {"wrc_plus_7d": 118, "iso_7d": 0.215, "ops_7d": 0.822},
+    "Miami Marlins":          {"wrc_plus_7d":  72, "iso_7d": 0.095, "ops_7d": 0.618},  # SLUMP
+    "Milwaukee Brewers":      {"wrc_plus_7d": 105, "iso_7d": 0.172, "ops_7d": 0.744},
+    "St. Louis Cardinals":    {"wrc_plus_7d":  92, "iso_7d": 0.148, "ops_7d": 0.712},
+    "Houston Astros":         {"wrc_plus_7d": 112, "iso_7d": 0.190, "ops_7d": 0.770},
+    "Texas Rangers":          {"wrc_plus_7d": 103, "iso_7d": 0.175, "ops_7d": 0.748},
+    "Cleveland Guardians":    {"wrc_plus_7d":  96, "iso_7d": 0.155, "ops_7d": 0.726},
+    "Detroit Tigers":         {"wrc_plus_7d":  88, "iso_7d": 0.138, "ops_7d": 0.700},
+    "Chicago Cubs":           {"wrc_plus_7d": 102, "iso_7d": 0.168, "ops_7d": 0.738},
+    "Pittsburgh Pirates":     {"wrc_plus_7d":  78, "iso_7d": 0.112, "ops_7d": 0.652},  # SLUMP
+    "Los Angeles Dodgers":    {"wrc_plus_7d": 127, "iso_7d": 0.228, "ops_7d": 0.842},
+    "San Diego Padres":       {"wrc_plus_7d":  98, "iso_7d": 0.162, "ops_7d": 0.730},
+    "Baltimore Orioles":      {"wrc_plus_7d": 106, "iso_7d": 0.180, "ops_7d": 0.755},
+    "Toronto Blue Jays":      {"wrc_plus_7d":  95, "iso_7d": 0.158, "ops_7d": 0.720},
 }
 
 # ==============================================================================

@@ -1,6 +1,7 @@
-# MLB Analytics CLI System — Python Dependencies
+# MLB Analytics CLI System — Python Dependencies v5.0 (Advanced Sabermetrics)
 # Install with: pip install -r requirements.txt
 
 requests>=2.31.0       # HTTP client for all API calls
 rich>=13.7.0           # Modern terminal UI (tables, panels, progress bars)
-pandas>=2.0.0          # Optional: data manipulation (available for future extensions)
+pandas>=2.0.0          # Data manipulation (required by pybaseball)
+pybaseball>=2.2.7      # Real-time FanGraphs & Statcast data (xFIP, SIERA, wRC+, ISO)

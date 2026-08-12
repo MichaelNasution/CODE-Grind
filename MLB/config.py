@@ -1,7 +1,8 @@
 """
 config.py
 =========
-Central configuration hub for the MLB Analytics CLI System v4.1 Production Grade.
+Central configuration hub for the MLB Analytics CLI System v5.0 Production Grade.
+Advanced Sabermetrics (xFIP, SIERA, wRC+) 4-Pillar Weighting Engine.
 """
 
 # ==============================================================================
@@ -49,6 +50,43 @@ STRONG_PICK_MAX_L3_ERA        = 3.20   # Last 3 Starts ERA <= 3.20
 STRONG_PICK_MAX_ML_AMERICAN   = -140   # Moneyline <= -140 (Decimal <= 1.71)
 
 LAST3_ERA_PENALTY_THRESHOLD   = 4.50   # L3 ERA > 4.50 incurs heavy trend penalty
+
+# ==============================================================================
+# 4-PILLAR SABERMETRICS WEIGHTING SYSTEM
+# ==============================================================================
+# --- Pillar 1: Starting Pitcher True Skill (35%) ---
+PILLAR_WEIGHT_SP              = 0.35
+SIERA_STRONG_THRESHOLD        = 3.50   # SIERA <= 3.50 -> Strong SP
+XFIP_STRONG_THRESHOLD         = 3.50   # xFIP  <= 3.50 -> Strong SP
+K_PCT_STRONG_THRESHOLD        = 0.25   # K%    >= 25%  -> Swing-and-miss ace
+BB9_PENALTY_THRESHOLD         = 4.00   # BB/9  >= 4.0  -> Control penalty applied
+BB9_PENALTY_AMOUNT            = -0.08  # Subtract 0.08 from Pillar 1 score for high walk rate
+
+# --- Pillar 2: Recent Offensive Form — 7-Day wRC+ (30%) ---
+PILLAR_WEIGHT_OFFENSE         = 0.30
+WRC_PLUS_7D_SLUMP_THRESHOLD   = 85     # wRC+ < 85 -> Team is in offensive slump
+WRC_PLUS_7D_ELITE_THRESHOLD   = 115    # wRC+ >= 115 -> Historically hot offense
+WRC_PLUS_7D_FATAL_PENALTY     = -0.15  # Fatal penalty subtracted from final Win_Conf
+WRC_PLUS_LEAGUE_AVG           = 100    # League average wRC+ is always 100
+
+# --- Pillar 3: Bullpen Fatigue & Strength (20%) ---
+PILLAR_WEIGHT_BULLPEN         = 0.20
+BULLPEN_ELITE_ERA             = 3.20   # ERA <= 3.20 -> Elite bullpen
+BULLPEN_SOLID_ERA             = 3.80   # ERA <= 3.80 -> Solid bullpen
+BULLPEN_WEAK_ERA              = 4.50   # ERA <= 4.50 -> Weak bullpen
+BULLPEN_BOTTOM10_ERA          = 4.50   # ERA >= 4.50 -> Bottom-10 league penalty
+BULLPEN_FATIGUE_PENALTY       = -0.06  # Penalty if overused (high recent IP)
+
+# --- Pillar 4: Situational & Schedule Edge (15%) ---
+PILLAR_WEIGHT_SITUATIONAL     = 0.15
+HOME_ADVANTAGE_EDGE           = 0.03   # +3% for home team
+TRAVEL_FATIGUE_PENALTY        = -0.04  # -4% for teams on travel day
+
+# ==============================================================================
+# PYBASEBALL / FANGRAPHS REAL-TIME DATA
+# ==============================================================================
+PYBASEBALL_TIMEOUT            = 10     # Max seconds to wait for pybaseball calls
+FANGRAPHS_7D_LOOKBACK         = 7      # Days lookback for team batting wRC+
 
 # ==============================================================================
 # STRATEGY B1 — UNDER 0.5 HOME RUN PARLAY THRESHOLDS

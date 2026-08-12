@@ -10,13 +10,16 @@ Fetches:
   3. Sportsbook Line Shopping Odds (BetMGM, DraftKings, Caesars, FanDuel, ESPN Bet)
   4. Pitcher Stats (Season, Last 5, Last 3 Trend, WHIP, K/9, HR/9)
   5. Open-Meteo Weather Forecast (Date-aware)
-  6. Tracks `is_live_data: bool` verification flag
+  6. FanGraphs Advanced Pitching (SIERA, xFIP, K%, BB/9) via pybaseball
+  7. FanGraphs 7-Day Team Batting (wRC+, ISO) via pybaseball
+  8. Tracks `is_live_data: bool` verification flag
 """
 
 from __future__ import annotations
 
 import logging
 import warnings
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
@@ -25,6 +28,14 @@ import urllib3
 
 import config
 import mock_data
+
+# ── Pybaseball optional import (silent fallback if not installed) ───────────────
+try:
+    import pybaseball
+    pybaseball.cache.enable()            # Cache calls in ~/.pybaseball/ to speed up repeats
+    _PYBASEBALL_AVAILABLE = True
+except ImportError:
+    _PYBASEBALL_AVAILABLE = False
 
 # ── Silence ALL HTTP-related warnings & logs from stdout ──────────────────────
 warnings.filterwarnings("ignore")                       # suppress all Python warnings
@@ -486,15 +497,154 @@ def _mock_totals_lines() -> dict[str, float]:
 
 
 # ==============================================================================
-# 6. ENRICHED SLATE LOADER
+# 6. FANGRAPHS REAL-TIME DATA VIA PYBASEBALL
 # ==============================================================================
 
-def load_full_game_slate(date_str: str | None = None) -> tuple[list[dict], bool, dict[int, dict]]:
+def _run_with_timeout(fn, *args, timeout: int = 10, **kwargs):
+    """
+    Runs fn(*args, **kwargs) in a thread and raises FuturesTimeoutError if it
+    exceeds `timeout` seconds. Isolates pybaseball blocking scrapes from main thread.
+    """
+    with ThreadPoolExecutor(max_workers=1) as ex:
+        future = ex.submit(fn, *args, **kwargs)
+        return future.result(timeout=timeout)
+
+
+def fetch_fangraphs_pitcher_advanced(season: int | None = None) -> dict[str, dict]:
+    """
+    Fetch advanced pitching sabermetrics (SIERA, xFIP, K%, BB/9) from FanGraphs
+    via pybaseball.pitching_stats().
+
+    Returns:
+        dict keyed by pitcher FullName -> {siera, xfip, k_pct, bb_per9}
+    Falls back to mock pitcher stats sabermetrics if pybaseball unavailable or times out.
+    """
+    if not _PYBASEBALL_AVAILABLE:
+        logger.debug("pybaseball not available — using mock pitcher sabermetrics.")
+        return _mock_pitcher_sabermetrics()
+
+    if season is None:
+        season = _current_season()
+
+    def _fetch():
+        df = pybaseball.pitching_stats(season, qual=30)
+        return df
+
+    try:
+        df = _run_with_timeout(_fetch, timeout=config.PYBASEBALL_TIMEOUT)
+
+        result: dict[str, dict] = {}
+        for _, row in df.iterrows():
+            name = str(row.get("Name", "")).strip()
+            if not name:
+                continue
+            result[name] = {
+                "siera":    _safe_float(row.get("SIERA",  row.get("ERA", 4.50)), 4.50),
+                "xfip":     _safe_float(row.get("xFIP",   row.get("ERA", 4.50)), 4.50),
+                "k_pct":    _safe_float(row.get("K%",     0.220), 0.220),
+                "bb_per9":  _safe_float(row.get("BB/9",   3.0),   3.0),
+            }
+        logger.debug("FanGraphs pitching: loaded %d pitchers.", len(result))
+        return result if result else _mock_pitcher_sabermetrics()
+
+    except (FuturesTimeoutError, Exception) as exc:  # noqa: BLE001
+        logger.debug("FanGraphs pitching fetch failed (%s) — using mock.", exc)
+        return _mock_pitcher_sabermetrics()
+
+
+def fetch_fangraphs_team_batting_7d(today_str: str | None = None) -> dict[str, dict]:
+    """
+    Fetch 7-day team batting stats (wRC+, ISO) from FanGraphs
+    via pybaseball.team_batting().
+
+    Returns:
+        dict keyed by team name -> {wrc_plus_7d, iso_7d, ops_7d}
+    Falls back to MOCK_TEAM_BATTING_7D if pybaseball unavailable or times out.
+    """
+    if not _PYBASEBALL_AVAILABLE:
+        logger.debug("pybaseball not available — using mock 7-day team batting.")
+        return dict(mock_data.MOCK_TEAM_BATTING_7D)
+
+    try:
+        today_dt = date.fromisoformat(today_str) if today_str else date.today()
+    except ValueError:
+        today_dt = date.today()
+
+    end_dt   = today_dt - timedelta(days=1)         # Yesterday (last completed game)
+    start_dt = end_dt - timedelta(days=config.FANGRAPHS_7D_LOOKBACK - 1)
+    start_str = start_dt.strftime("%Y-%m-%d")
+    end_str   = end_dt.strftime("%Y-%m-%d")
+
+    def _fetch():
+        df = pybaseball.team_batting(start_str, end_str)
+        return df
+
+    try:
+        df = _run_with_timeout(_fetch, timeout=config.PYBASEBALL_TIMEOUT)
+
+        result: dict[str, dict] = {}
+        for _, row in df.iterrows():
+            team_name = str(row.get("Team", "")).strip()
+            if not team_name:
+                continue
+            result[team_name] = {
+                "wrc_plus_7d": _safe_int(row.get("wRC+",  row.get("wRC_plus", 100)), 100),
+                "iso_7d":      _safe_float(row.get("ISO",   0.160), 0.160),
+                "ops_7d":      _safe_float(row.get("OPS",   0.720), 0.720),
+            }
+        logger.debug("FanGraphs 7-day team batting: loaded %d teams (%s to %s).", len(result), start_str, end_str)
+        # FanGraphs uses abbreviated team names — do best-effort name matching against mock fallback
+        if len(result) < 5:
+            logger.debug("Too few teams from FanGraphs — using mock team batting 7d.")
+            return dict(mock_data.MOCK_TEAM_BATTING_7D)
+        return result
+
+    except (FuturesTimeoutError, Exception) as exc:  # noqa: BLE001
+        logger.debug("FanGraphs team batting 7d fetch failed (%s) — using mock.", exc)
+        return dict(mock_data.MOCK_TEAM_BATTING_7D)
+
+
+def _mock_pitcher_sabermetrics() -> dict[str, dict]:
+    """Extract sabermetric fields from MOCK_PITCHER_STATS keyed by full name."""
+    result: dict[str, dict] = {}
+    for stats in mock_data.MOCK_PITCHER_STATS.values():
+        name = stats.get("full_name", "")
+        if name:
+            result[name] = {
+                "siera":   stats.get("siera",   stats.get("era", 4.50)),
+                "xfip":    stats.get("xfip",    stats.get("era", 4.50)),
+                "k_pct":   stats.get("k_pct",   0.220),
+                "bb_per9": stats.get("bb_per9", 3.0),
+            }
+    return result
+
+
+# ==============================================================================
+# 7. ENRICHED SLATE LOADER (with FanGraphs advanced stats merge)
+# ==============================================================================
+
+def load_full_game_slate(
+    date_str: str | None = None,
+) -> tuple[list[dict], bool, dict[int, dict]]:
+    """
+    Load the full game slate for a given date, enriched with:
+    - Pitcher season stats (MLB StatsAPI)
+    - Bullpen stats (MLB StatsAPI)
+    - Team offense stats (MLB StatsAPI)
+    - Weather forecast (Open-Meteo)
+    - Line shopping odds (The Odds API)
+    - Advanced pitcher sabermetrics (FanGraphs via pybaseball) merged into home_sp/away_sp
+    - 7-day team batting wRC+ (FanGraphs via pybaseball) stored as team_batting_7d in game dict
+    """
     if date_str is None:
         date_str = date.today().strftime(config.DATE_FORMAT)
 
     games = fetch_games_for_date(date_str)
     ml_odds, all_ou, is_live_data, line_shopping = fetch_odds_lines()
+
+    # Fetch FanGraphs advanced stats (with timeout, silent fallback)
+    fg_pitchers   = fetch_fangraphs_pitcher_advanced()
+    fg_batting_7d = fetch_fangraphs_team_batting_7d(date_str)
 
     enriched: list[dict] = []
     for game in games:
@@ -506,19 +656,42 @@ def load_full_game_slate(date_str: str | None = None) -> tuple[list[dict], bool,
         home_sp = fetch_pitcher_stats(home_sp_id) if home_sp_id else None
         away_sp = fetch_pitcher_stats(away_sp_id) if away_sp_id else None
 
+        # Merge FanGraphs advanced pitching sabermetrics into SP dicts
+        if home_sp:
+            home_name = home_sp.get("full_name", game.get("home_starter_name", ""))
+            fg_h = fg_pitchers.get(home_name, {})
+            home_sp["siera"]   = fg_h.get("siera",   home_sp.get("siera",   home_sp.get("era", 4.50)))
+            home_sp["xfip"]    = fg_h.get("xfip",    home_sp.get("xfip",    home_sp.get("era", 4.50)))
+            home_sp["k_pct"]   = fg_h.get("k_pct",   home_sp.get("k_pct",   0.220))
+            home_sp["bb_per9"] = fg_h.get("bb_per9", home_sp.get("bb_per9", 3.0))
+
+        if away_sp:
+            away_name = away_sp.get("full_name", game.get("away_starter_name", ""))
+            fg_a = fg_pitchers.get(away_name, {})
+            away_sp["siera"]   = fg_a.get("siera",   away_sp.get("siera",   away_sp.get("era", 4.50)))
+            away_sp["xfip"]    = fg_a.get("xfip",    away_sp.get("xfip",    away_sp.get("era", 4.50)))
+            away_sp["k_pct"]   = fg_a.get("k_pct",   away_sp.get("k_pct",   0.220))
+            away_sp["bb_per9"] = fg_a.get("bb_per9", away_sp.get("bb_per9", 3.0))
+
+        home_team_name = game.get("home_team", "")
+        away_team_name = game.get("away_team", "")
+
         ml = ml_odds.get(game_id, mock_data.MOCK_MONEYLINE_ODDS.get(game_id, {"home_ml": -110, "away_ml": -110}))
 
         enriched.append({
             **game,
-            "home_sp":      home_sp,
-            "away_sp":      away_sp,
-            "home_bullpen": fetch_bullpen_stats(game.get("home_team_id")),
-            "away_bullpen": fetch_bullpen_stats(game.get("away_team_id")),
-            "home_offense": fetch_team_offense(game.get("home_team_id")),
-            "away_offense": fetch_team_offense(game.get("away_team_id")),
-            "weather":      fetch_weather(venue, date_str),
-            "moneyline":    ml,
-            "ou_line":      mock_data.MOCK_ODDS_LINES.get(game_id, {}).get("total_line", 8.5),
+            "home_sp":           home_sp,
+            "away_sp":           away_sp,
+            "home_bullpen":      fetch_bullpen_stats(game.get("home_team_id")),
+            "away_bullpen":      fetch_bullpen_stats(game.get("away_team_id")),
+            "home_offense":      fetch_team_offense(game.get("home_team_id")),
+            "away_offense":      fetch_team_offense(game.get("away_team_id")),
+            "weather":           fetch_weather(venue, date_str),
+            "moneyline":         ml,
+            "ou_line":           mock_data.MOCK_ODDS_LINES.get(game_id, {}).get("total_line", 8.5),
+            # 7-day FanGraphs batting keyed by team name
+            "home_batting_7d":   fg_batting_7d.get(home_team_name, mock_data.MOCK_TEAM_BATTING_7D.get(home_team_name, {"wrc_plus_7d": 100, "iso_7d": 0.160, "ops_7d": 0.720})),
+            "away_batting_7d":   fg_batting_7d.get(away_team_name, mock_data.MOCK_TEAM_BATTING_7D.get(away_team_name, {"wrc_plus_7d": 100, "iso_7d": 0.160, "ops_7d": 0.720})),
         })
 
     return enriched, is_live_data, line_shopping

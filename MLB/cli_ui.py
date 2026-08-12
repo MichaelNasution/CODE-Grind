@@ -234,7 +234,7 @@ def print_main_menu() -> None:
     for num, opt in get_main_menu_items():
         table.add_row(num, opt)
 
-    console.print(Panel(table, title="[gold1]⚾  MAIN MENU — MLB ANALYTICS V4.2[/]", border_style="panel_border", padding=(0, 2)))
+    console.print(Panel(table, title="[gold1]⚾  MAIN MENU — MLB ANALYTICS V5.0 (Advanced Sabermetrics)[/]", border_style="panel_border", padding=(0, 2)))
 
 
 def get_menu_choice() -> str:
@@ -314,11 +314,14 @@ def display_moneyline_results(
         ml_str    = analytics.format_american_odds(cand.best_line_american)
         unit_val  = bankroll_summary.unit_value if bankroll_summary else 20.00
         team_disp = format_team_display(cand.team_name, cand.is_home)
+        slump_warn = " ⚠️ SLUMP ALERT" if cand.is_slumping else ""
         console.print(Panel(
             f"🔒 [bold green]LOCK OF THE DAY: {escape(cand.team_name)} ({team_disp})[/] "
             f"([bold gold1]{ml_str}[/] @ [bold cyan]{cand.best_sportsbook}[/])\n"
-            f"Starter: {escape(cand.pitcher_name[:18])} (WHIP: {cand.our_whip:.2f} | L3 ERA: {cand.last3_era:.2f})"
-            f"  |  Win Conf: [bold green]{cand.win_confidence * 100:.1f}%[/]\n"
+            f"Starter: {escape(cand.pitcher_name[:18])} "
+            f"(SIERA: {cand.siera:.2f} | xFIP: {cand.xfip:.2f} | K%: {cand.k_pct*100:.1f}%)"
+            f"  |  Win Conf: [bold green]{cand.win_confidence * 100:.1f}%[/]"
+            f"[bold red]{slump_warn}[/]\n"
             f"Recommended Stake: [bold gold1]1.00 Unit (${unit_val:.2f})[/]",
             border_style="green",
             padding=(0, 2),
@@ -330,26 +333,55 @@ def display_moneyline_results(
     # ── B. COLOR-CODED TRUST TABLE (TABLE 1) ──────────────────────────────────
     top_picks = candidates[:8]
     cand_table = Table(
-        title="[bold gold1]Top Moneyline Picks — Color-Coded Win Confidence Ranking[/]",
+        title="[bold gold1]Top Moneyline Picks — Color-Coded Win Confidence Ranking (4-Pillar Advanced Sabermetrics)[/]",
         box=box.ROUNDED, border_style="blue", header_style="bold cyan",
-        padding=(0, 1), show_lines=False, width=108,
+        padding=(0, 1), show_lines=False, width=120,
     )
-    cand_table.add_column("Rank",    justify="center", width=4,  no_wrap=True)
-    cand_table.add_column("Trust",   justify="center", width=14, no_wrap=True)
-    cand_table.add_column("Team",    style="bold white", width=10, no_wrap=True)
-    cand_table.add_column("SP",      style="bold cyan", width=16, no_wrap=True, overflow="ellipsis")
-    cand_table.add_column("ML Odds", justify="center", width=10, no_wrap=True)
-    cand_table.add_column("Dec",     justify="center", width=8,  no_wrap=True)
-    cand_table.add_column("WHIP",    justify="center", width=8,  no_wrap=True)
-    cand_table.add_column("Win%",    justify="center", width=10, no_wrap=True)
+    cand_table.add_column("Rank",       justify="center", width=4,  no_wrap=True)
+    cand_table.add_column("Trust",      justify="center", width=14, no_wrap=True)
+    cand_table.add_column("Team",       style="bold white", width=6, no_wrap=True)
+    cand_table.add_column("SP",         style="bold cyan", width=16, no_wrap=True, overflow="ellipsis")
+    cand_table.add_column("ML Odds",    justify="center", width=10, no_wrap=True)
+    cand_table.add_column("SIERA/xFIP", justify="center", width=12, no_wrap=True)  # Replaces Dec
+    cand_table.add_column("7d wRC+",    justify="center", width=10, no_wrap=True)  # Replaces WHIP (slump warning)
+    cand_table.add_column("Bullpen",    justify="center", width=10, no_wrap=True)  # New column
+    cand_table.add_column("Win%",       justify="center", width=10, no_wrap=True)
+
+    _BULLPEN_STYLE = {
+        "ELITE":    "bold green",
+        "SOLID":    "bold cyan",
+        "WEAK":     "bold orange1",
+        "BOTTOM-10": "bold red",
+    }
 
     for idx, cand in enumerate(top_picks, start=1):
-        tri_code = get_team_tri_code(cand.team_name)
-        ml_str   = analytics.format_american_odds(cand.best_line_american)
-        trust_st = _TRUST_STYLE.get(cand.trust_level, "dim")
-        icon     = _TRUST_ICON.get(cand.trust_level, "⚪")
-        label    = _TRUST_LABEL.get(cand.trust_level, cand.trust_level)
-        conf_str = f"{cand.win_confidence * 100:.1f}%"
+        tri_code  = get_team_tri_code(cand.team_name)
+        ml_str    = analytics.format_american_odds(cand.best_line_american)
+        trust_st  = _TRUST_STYLE.get(cand.trust_level, "dim")
+        icon      = _TRUST_ICON.get(cand.trust_level, "⚪")
+        label     = _TRUST_LABEL.get(cand.trust_level, cand.trust_level)
+        conf_str  = f"{cand.win_confidence * 100:.1f}%"
+
+        # wRC+ display: red bold if slumping (< 85), else normal
+        wrc_display = f"{cand.wrc_plus_7d}"
+        if cand.is_slumping:
+            wrc_cell = f"[bold red]⚠ {wrc_display}[/]"
+        elif cand.wrc_plus_7d >= 115:
+            wrc_cell = f"[bold green]{wrc_display}[/]"
+        else:
+            wrc_cell = wrc_display
+
+        # SIERA/xFIP display — green if <= 3.50, red if > 4.50
+        siera_str = f"{cand.siera:.2f}/{cand.xfip:.2f}"
+        if cand.siera <= 3.50:
+            siera_cell = f"[bold green]{siera_str}[/]"
+        elif cand.siera >= 4.50:
+            siera_cell = f"[bold red]{siera_str}[/]"
+        else:
+            siera_cell = siera_str
+
+        bp_style = _BULLPEN_STYLE.get(cand.bullpen_status, "dim")
+        bp_cell  = f"[{bp_style}]{cand.bullpen_status}[/]"
 
         cand_table.add_row(
             str(idx),
@@ -357,8 +389,9 @@ def display_moneyline_results(
             tri_code,
             escape(cand.pitcher_name[:14]),
             f"[bold gold1]{ml_str}[/]",
-            f"{cand.moneyline_decimal:.3f}",
-            f"{cand.our_whip:.2f}",
+            siera_cell,
+            wrc_cell,
+            bp_cell,
             f"[{trust_st}]{conf_str}[/]",
         )
 
@@ -369,7 +402,8 @@ def display_moneyline_results(
     console.print(Align.center(Text.from_markup(
         "[dim]LEGEND[/]  [bold green]🟢 HIGH / LOCK[/] [dim]≥65.0%[/]   "
         "[bold yellow]🟡 MEDIUM / QUALIFIED[/] [dim]58.0–64.9%[/]   "
-        "[bold orange1]🟠 PASS / BORDERLINE[/] [dim]50.0–57.9%[/]"
+        "[bold orange1]🟠 PASS / BORDERLINE[/] [dim]50.0–57.9%[/]   "
+        "[bold red]⚠ SLUMP[/] [dim]wRC+ 7d < 85 (Fatal Penalty)[/]"
     )))
     console.print()
 

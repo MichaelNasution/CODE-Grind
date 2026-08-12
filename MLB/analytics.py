@@ -1,16 +1,21 @@
 """
 analytics.py
 ============
-Core mathematical analytics engine for the MLB Handicapping System v4.1.
+Core mathematical analytics engine for the MLB Handicapping System v5.0.
 
 Integrates:
   1. 4-Day Historical Calibration Engine (H-4 to H-1 performance logging)
-  2. Recalibrated Moneyline Engine & Bet Slip Suite (2-Leg Anchor, 3-Leg, 4-Leg, 3-of-5 Combo, 5-Leg, 6-Leg, 8-Leg Ultimate)
-  3. Strategi 1: Parlay "Under 0.5 Home Run" (3, 4, 5, 8, 10 Legs)
-  4. Strategi 2: Parlay / Single "Under 1.5 Hits" (Single Bets vs 2-Team Parlays)
-  5. Strategi 3: Alternate Team Total "Over 1.5 Runs" Screener
-  6. Strategi 4: At-Bat Outcome "Out or Error" ($100/day system targets)
-  7. Strategi 5: 5-Factor Total Score Projection (Over/Under)
+  2. 4-PILLAR Advanced Sabermetrics Moneyline Engine:
+       Pillar 1: Starting Pitcher True Skill (SIERA/xFIP/K%/BB9) - 35%
+       Pillar 2: 7-Day wRC+ Recent Offensive Form - 30%
+       Pillar 3: Bullpen Fatigue & Strength - 20%
+       Pillar 4: Situational & Schedule Edge (Home, Travel) - 15%
+  3. Full Bet Slip Suite (2-Leg Anchor, 3-Leg, 4-Leg, 3-of-5 Combo, 5-Leg, 6-Leg, 8-Leg Ultimate)
+  4. Strategy B1: Under 0.5 Home Run Parlay Engine
+  5. Strategy B2: Under 1.5 Hits Screener
+  6. Strategy B3: Alternate Team Total Over 1.5 Runs
+  7. Strategy B4: At-Bat Outcome 'Out or Error'
+  8. Strategy C: 5-Factor Score Projection (Over/Under)
 """
 
 from __future__ import annotations
@@ -61,12 +66,21 @@ class MoneylineCandidate:
     best_sportsbook: str
     best_line_american: int
 
+    # Legacy ERA-based fields (kept for backward compat)
     era_advantage: float
     whip_advantage: float
     our_whip: float
     last3_era: float
     last10_win_rate: float
     ops_advantage_pct: float
+
+    # Advanced Sabermetrics fields (v5.0 — 4-Pillar Engine)
+    siera: float            # SP Skill Independent ERA — Pillar 1
+    xfip: float             # Expected FIP — Pillar 1
+    k_pct: float            # Strikeout Rate — Pillar 1
+    wrc_plus_7d: int        # 7-Day wRC+ Offense — Pillar 2
+    bullpen_status: str     # ELITE / SOLID / WEAK / BOTTOM-10 — Pillar 3
+    is_slumping: bool       # True if wRC+ 7d < 85 — fatal penalty applied
 
     implied_prob: float
     model_prob: float
@@ -280,57 +294,122 @@ def calibrate_model_weights(lookback_data: dict[str, list[dict]]) -> Calibration
 
 
 # ==============================================================================
-# 2. RECALIBRATED MONEYLINE ENGINE & BET SLIP SUITE
+# 2. 4-PILLAR ADVANCED SABERMETRICS MONEYLINE ENGINE
 # ==============================================================================
 
-def _calculate_pitcher_score(
-    our_era: float,
-    opp_era: float,
-    our_whip: float,
-    opp_whip: float,
-    our_last3_era: float,
-    pitcher_weight: float = 0.40,
-) -> float:
-    era_diff  = opp_era - our_era
-    whip_diff = opp_whip - our_whip
+# ---- PILLAR 1: Starting Pitcher True Skill (SIERA / xFIP / K% / BB9) ---------
 
-    if era_diff >= 1.25:
-        score = 0.90
-    elif era_diff >= 0.75:
-        score = 0.75
-    elif era_diff >= 0.25:
+def _score_pitcher_pillar1(
+    our_sp: dict,
+    opp_sp: dict,
+) -> float:
+    """
+    Compute Pillar 1 score (0.0 to 1.0) using FanGraphs advanced metrics.
+    Uses SIERA (primary) > xFIP (fallback) > ERA (last resort).
+    Penalizes for high walk rate (BB/9 >= 4.0).
+    """
+    # Choose best metric available: SIERA -> xFIP -> ERA
+    our_skill  = our_sp.get("siera", our_sp.get("xfip", our_sp.get("era", 4.50)))
+    opp_skill  = opp_sp.get("siera", opp_sp.get("xfip", opp_sp.get("era", 4.50)))
+    our_kpct   = our_sp.get("k_pct",   0.220)
+    our_bb9    = our_sp.get("bb_per9", 3.0)
+    our_last3  = our_sp.get("last3_era", our_sp.get("era", 4.50))
+
+    skill_diff = opp_skill - our_skill   # positive means we're better
+
+    if skill_diff >= 1.50:
+        score = 0.92
+    elif skill_diff >= 1.00:
+        score = 0.82
+    elif skill_diff >= 0.50:
+        score = 0.70
+    elif skill_diff >= 0.10:
         score = 0.60
-    elif era_diff >= 0.00:
+    elif skill_diff >= 0.00:
         score = 0.50
     else:
-        score = max(0.20, 0.50 + era_diff * 0.20)
+        score = max(0.20, 0.50 + skill_diff * 0.18)
 
-    if our_whip < 1.15:
-        score += 0.10
-    if whip_diff > 0.15:
-        score += 0.05
+    # K% bonus — swing-and-miss ace quality
+    if our_kpct >= config.K_PCT_STRONG_THRESHOLD:       # >= 25%
+        score += 0.06
+    elif our_kpct >= 0.220:
+        score += 0.03
 
-    if our_last3_era > config.LAST3_ERA_PENALTY_THRESHOLD:
-        score -= 0.35
-        logger.info("Pitcher slump penalty applied (L3 ERA: %.2f)", our_last3_era)
+    # BB/9 control penalty
+    if our_bb9 >= config.BB9_PENALTY_THRESHOLD:         # >= 4.0
+        score += config.BB9_PENALTY_AMOUNT              # -0.08
 
-    return min(1.0, max(0.10, score))
+    # Last-3-start slump penalty (high ERA over last 3 starts)
+    if our_last3 > config.LAST3_ERA_PENALTY_THRESHOLD:  # > 4.50
+        score -= 0.30
+
+    return min(1.0, max(0.10, round(score, 4)))
 
 
-def _score_form(win_rate: float) -> float:
-    return min(1.0, max(0.0, win_rate))
+# ---- PILLAR 2: 7-Day wRC+ Recent Offensive Form -------------------------------
+
+def _score_offense_pillar2(our_batting_7d: dict) -> tuple[float, bool]:
+    """
+    Compute Pillar 2 score (0.0 to 1.0) and slump flag using 7-day wRC+.
+    Returns (score, is_slumping).
+    """
+    wrc = our_batting_7d.get("wrc_plus_7d", config.WRC_PLUS_LEAGUE_AVG)
+
+    if wrc >= config.WRC_PLUS_7D_ELITE_THRESHOLD:   # >= 115
+        score = 0.90
+    elif wrc >= config.WRC_PLUS_LEAGUE_AVG:         # >= 100
+        score = 0.70
+    elif wrc >= config.WRC_PLUS_7D_SLUMP_THRESHOLD: # >= 85
+        score = 0.55
+    else:                                            # < 85 — SLUMP
+        score = 0.20
+        return round(score, 4), True     # is_slumping = True
+
+    return round(score, 4), False
 
 
-def _score_ops(ops_advantage: float) -> float:
-    if ops_advantage >= 0.10:
-        return 0.90
-    elif ops_advantage >= 0.05:
-        return 0.70
-    elif ops_advantage >= 0.00:
-        return 0.50
-    else:
-        return max(0.20, 0.50 + ops_advantage * 2.5)
+# ---- PILLAR 3: Bullpen Fatigue & Strength ------------------------------------
 
+def _score_bullpen_pillar3(our_bullpen: dict) -> float:
+    """
+    Compute Pillar 3 score (0.0 to 1.0) based on Bullpen ERA/xFIP and status.
+    Penalizes BOTTOM-10 bullpens.
+    """
+    bp_era    = our_bullpen.get("bullpen_era", 4.00)
+    bp_status = our_bullpen.get("bullpen_status", "SOLID")
+
+    if bp_status == "ELITE" or bp_era <= config.BULLPEN_ELITE_ERA:   # <= 3.20
+        score = 0.90
+    elif bp_era <= config.BULLPEN_SOLID_ERA:                          # <= 3.80
+        score = 0.70
+    elif bp_era <= config.BULLPEN_WEAK_ERA:                           # <= 4.50
+        score = 0.50
+    else:                                                              # BOTTOM-10
+        score = 0.25
+
+    if bp_status == "BOTTOM-10":
+        score = min(score, 0.30)
+
+    return round(score, 4)
+
+
+# ---- PILLAR 4: Situational & Schedule Edge -----------------------------------
+
+def _score_situational_pillar4(is_home: bool, has_travel_fatigue: bool) -> float:
+    """
+    Compute Pillar 4 score as a delta from 0.50 baseline.
+    Returns final Pillar 4 score (0.40 to 0.65).
+    """
+    score = 0.50  # Neutral baseline
+    if is_home:
+        score += config.HOME_ADVANTAGE_EDGE        # +0.03
+    if has_travel_fatigue:
+        score += config.TRAVEL_FATIGUE_PENALTY     # -0.04
+    return round(min(0.75, max(0.30, score)), 4)
+
+
+# ---- MAIN CANDIDATE EVALUATOR -----------------------------------------------
 
 def _evaluate_team_moneyline(
     *,
@@ -343,13 +422,24 @@ def _evaluate_team_moneyline(
     our_form: dict,
     our_ops_splits: dict,
     opp_ops_splits: dict,
+    our_batting_7d: dict,
+    our_bullpen: dict,
     ml_american: int,
     opp_team_name: str,
     opp_pitcher_name: str,
     is_live_data: bool,
     line_shopping_game: dict,
     calib_report: CalibrationReport | None = None,
+    has_travel_fatigue: bool = False,
 ) -> MoneylineCandidate:
+    """
+    4-Pillar Sabermetrics-based Win Confidence calculator.
+
+    Pillar 1 — Starting Pitcher True Skill (35%): SIERA/xFIP/K%/BB9
+    Pillar 2 — 7-Day wRC+ Offense (30%): wRC+ with fatal slump penalty
+    Pillar 3 — Bullpen Fatigue & Strength (20%): ERA/status
+    Pillar 4 — Situational Edge (15%): Home advantage, travel fatigue
+    """
     our_era       = our_sp.get("era", 4.50)
     opp_era       = opp_sp.get("era", 4.50)
     our_whip      = our_sp.get("whip", 1.30)
@@ -365,37 +455,48 @@ def _evaluate_team_moneyline(
     last10_win_rate = (wins / total) if total > 0 else 0.5
 
     opp_throws   = opp_sp.get("throws", "R")
-    our_throws   = opp_sp.get("throws", "R")
+    our_throws   = our_sp.get("throws", "R")
     ops_key_ours   = f"ops_vs_{'r' if opp_throws == 'R' else 'l'}hp"
     ops_key_theirs = f"ops_vs_{'r' if our_throws == 'R' else 'l'}hp"
-
     our_ops   = our_ops_splits.get(ops_key_ours,   0.720)
     their_ops = opp_ops_splits.get(ops_key_theirs, 0.720)
     ops_advantage = (our_ops - their_ops) / their_ops if their_ops > 0 else 0.0
 
-    p_w = calib_report.calibrated_pitcher_weight if calib_report else 0.40
-    f_w = calib_report.calibrated_form_weight if calib_report else 0.30
-    o_w = calib_report.calibrated_ops_weight if calib_report else 0.30
+    # ================================================================
+    # 4-PILLAR ENGINE
+    # ================================================================
+    p1_score = _score_pitcher_pillar1(our_sp, opp_sp)
+    p2_score, is_slumping = _score_offense_pillar2(our_batting_7d)
+    p3_score = _score_bullpen_pillar3(our_bullpen)
+    p4_score = _score_situational_pillar4(is_home, has_travel_fatigue)
 
-    pitcher_score = _calculate_pitcher_score(our_era, opp_era, our_whip, opp_whip, our_last3_era, p_w)
-    form_score    = _score_form(last10_win_rate)
-    ops_score     = _score_ops(ops_advantage)
+    raw_model_val = (
+        p1_score * config.PILLAR_WEIGHT_SP         +
+        p2_score * config.PILLAR_WEIGHT_OFFENSE    +
+        p3_score * config.PILLAR_WEIGHT_BULLPEN    +
+        p4_score * config.PILLAR_WEIGHT_SITUATIONAL
+    )
 
-    raw_model_val = (pitcher_score * p_w) + (form_score * f_w) + (ops_score * o_w)
-    model_prob    = 0.50 + (raw_model_val - 0.50) * 0.36
-    model_prob    = min(config.MAX_WIN_CONFIDENCE_CAP, max(config.MIN_WIN_CONFIDENCE_CAP, model_prob))
+    # Normalize to 0.50–0.68 range
+    model_prob = 0.50 + (raw_model_val - 0.50) * 0.36
+    model_prob = min(config.MAX_WIN_CONFIDENCE_CAP, max(config.MIN_WIN_CONFIDENCE_CAP, model_prob))
 
+    # FATAL PENALTY: Apply if team is in offensive slump (wRC+ 7d < 85)
+    if is_slumping:
+        model_prob = min(model_prob, config.MIN_WIN_CONFIDENCE_CAP + 0.03)  # Cap at 53%
+        logger.info("Slump penalty applied for %s (wRC+ 7d < 85).", team_name)
+
+    # ================================================================
+    # LINE SHOPPING — find best moneyline across books
+    # ================================================================
     best_book = "DraftKings"
     best_ml   = ml_american
     if line_shopping_game and isinstance(line_shopping_game, dict):
         for book_name, odds_dict in line_shopping_game.items():
             if isinstance(odds_dict, dict):
                 b_ml = odds_dict.get("home_ml" if is_home else "away_ml", ml_american)
-                if is_home and b_ml > best_ml:
-                    best_ml = b_ml
-                    best_book = book_name
-                elif not is_home and b_ml > best_ml:
-                    best_ml = b_ml
+                if (is_home and b_ml > best_ml) or (not is_home and b_ml > best_ml):
+                    best_ml   = b_ml
                     best_book = book_name
 
     implied_prob  = odds_to_implied_prob(best_ml)
@@ -403,6 +504,10 @@ def _evaluate_team_moneyline(
 
     if -115 <= best_ml <= 115:
         composite_prob = min(config.BALANCED_ODDS_CONFIDENCE_CAP, composite_prob)
+
+    # Re-apply slump cap AFTER blending with market implied prob
+    if is_slumping:
+        composite_prob = min(composite_prob, 0.530)
 
     final_win_confidence = round(
         min(config.MAX_WIN_CONFIDENCE_CAP, max(config.MIN_WIN_CONFIDENCE_CAP, composite_prob)),
@@ -416,15 +521,27 @@ def _evaluate_team_moneyline(
     else:
         trust_level = "PASS"
 
+    # Slumping teams CANNOT get HIGH or MEDIUM trust (Lock prevention)
+    if is_slumping and trust_level in ("HIGH", "MEDIUM"):
+        trust_level = "PASS"
+
     is_strong = (
         is_live_data and
+        not is_slumping and
         (era_diff >= config.STRONG_PICK_MIN_ERA_ADV) and
         (our_whip <= config.STRONG_PICK_MAX_WHIP) and
         (our_last3_era <= config.STRONG_PICK_MAX_L3_ERA) and
         (best_ml <= config.STRONG_PICK_MAX_ML_AMERICAN)
     )
 
-    is_qualified = final_win_confidence >= 0.530
+    is_qualified = final_win_confidence >= 0.530 and not is_slumping
+
+    # Extract advanced sabermetrics for display
+    our_siera   = our_sp.get("siera",   our_sp.get("era", 4.50))
+    our_xfip    = our_sp.get("xfip",    our_sp.get("era", 4.50))
+    our_k_pct   = our_sp.get("k_pct",   0.220)
+    wrc_7d      = our_batting_7d.get("wrc_plus_7d", config.WRC_PLUS_LEAGUE_AVG)
+    bp_status   = our_bullpen.get("bullpen_status", "SOLID")
 
     return MoneylineCandidate(
         team_id=team_id,
@@ -444,6 +561,14 @@ def _evaluate_team_moneyline(
         last3_era=round(our_last3_era, 2),
         last10_win_rate=round(last10_win_rate, 3),
         ops_advantage_pct=round(ops_advantage, 4),
+        # Advanced Sabermetrics
+        siera=round(our_siera, 2),
+        xfip=round(our_xfip, 2),
+        k_pct=round(our_k_pct, 3),
+        wrc_plus_7d=int(wrc_7d),
+        bullpen_status=bp_status,
+        is_slumping=is_slumping,
+        # Model outputs
         implied_prob=round(implied_prob, 4),
         model_prob=round(model_prob, 4),
         win_confidence=final_win_confidence,
@@ -464,6 +589,13 @@ def run_moneyline_screener(
     line_shopping_data: dict[int, dict] | None = None,
     calib_report: CalibrationReport | None = None,
 ) -> list[MoneylineCandidate]:
+    """
+    Run the 4-Pillar Sabermetrics Moneyline Screener over a list of enriched game dicts.
+    Each game dict (from load_full_game_slate) is expected to have:
+      - home_sp / away_sp (with siera, xfip, k_pct, bb_per9 merged from FanGraphs)
+      - home_batting_7d / away_batting_7d (wrc_plus_7d, iso_7d)
+      - home_bullpen / away_bullpen (bullpen_era, bullpen_status)
+    """
     candidates: list[MoneylineCandidate] = []
     if line_shopping_data is None:
         line_shopping_data = {}
@@ -494,10 +626,19 @@ def run_moneyline_screener(
         home_ops  = team_ops_splits.get(home_id, {})
         away_ops  = team_ops_splits.get(away_id, {})
 
+        # 7-Day batting stats (from game dict enriched by load_full_game_slate)
+        home_batting_7d = game.get("home_batting_7d") or {"wrc_plus_7d": 100, "iso_7d": 0.160}
+        away_batting_7d = game.get("away_batting_7d") or {"wrc_plus_7d": 100, "iso_7d": 0.160}
+
+        # Bullpen dicts from game dict
+        home_bullpen = game.get("home_bullpen") or {"bullpen_era": 4.00, "bullpen_status": "SOLID"}
+        away_bullpen = game.get("away_bullpen") or {"bullpen_era": 4.00, "bullpen_status": "SOLID"}
+
         home_cand = _evaluate_team_moneyline(
             team_id=home_id or 0, team_name=home_name, is_home=True, game_id=game_id,
             our_sp=home_sp, opp_sp=away_sp, our_form=home_form,
             our_ops_splits=home_ops, opp_ops_splits=away_ops,
+            our_batting_7d=home_batting_7d, our_bullpen=home_bullpen,
             ml_american=ml.get("home_ml", -110), opp_team_name=away_name,
             opp_pitcher_name=away_sp.get("full_name", game.get("away_starter_name", "TBD")),
             is_live_data=is_live_data, line_shopping_game=ls_game, calib_report=calib_report,
@@ -507,6 +648,7 @@ def run_moneyline_screener(
             team_id=away_id or 0, team_name=away_name, is_home=False, game_id=game_id,
             our_sp=away_sp, opp_sp=home_sp, our_form=away_form,
             our_ops_splits=away_ops, opp_ops_splits=home_ops,
+            our_batting_7d=away_batting_7d, our_bullpen=away_bullpen,
             ml_american=ml.get("away_ml", +110), opp_team_name=home_name,
             opp_pitcher_name=home_sp.get("full_name", game.get("home_starter_name", "TBD")),
             is_live_data=is_live_data, line_shopping_game=ls_game, calib_report=calib_report,
