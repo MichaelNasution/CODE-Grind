@@ -1,7 +1,7 @@
 """
 analytics.py
 ============
-Core mathematical analytics engine for the MLB Handicapping System v5.0.
+Core mathematical analytics engine for the MLB Handicapping System v6.0.
 
 Integrates:
   1. 4-Day Historical Calibration Engine (H-4 to H-1 performance logging)
@@ -16,6 +16,8 @@ Integrates:
   6. Strategy B3: Alternate Team Total Over 1.5 Runs
   7. Strategy B4: At-Bat Outcome 'Out or Error'
   8. Strategy C: 5-Factor Score Projection (Over/Under)
+  [v6.0] Strategy D: 1st Inning Micro-Market Engine (NRFI/YRFI/Team 1st Inn/Handicap 0)
+  [v6.0] Hybrid Mega Slip Builder (ML Anchors + 1st Inning Micro-Markets)
 """
 
 from __future__ import annotations
@@ -1170,3 +1172,478 @@ def format_prob_pct(prob: float) -> str:
 
 def format_american_odds(american: int) -> str:
     return f"+{american}" if american >= 0 else str(american)
+
+
+# ==============================================================================
+# [v6.0] STRATEGY D — 1ST INNING MICRO-MARKET ENGINE
+# ==============================================================================
+
+@dataclass
+class FirstInningLeg:
+    """One 1st-inning micro-market leg for the Hybrid Mega Slip."""
+    game_id:               object
+    home_team:             str
+    away_team:             str
+    home_sp_name:          str
+    away_sp_name:          str
+    venue:                 str
+    # Best pick for this game
+    bet_type:              str    # NRFI | YRFI | TEAM_U0.5 | TEAM_O0.5 | HCP_0
+    confidence:            float  # 0.58–0.72
+    # All computed probabilities
+    nrfi_prob:             float
+    yrfi_prob:             float
+    team_u05_home_prob:    float
+    team_u05_away_prob:    float
+    handicap_home_prob:    float
+    # Contributing features (for CLI display and calibration logging)
+    home_sp_xfip_1st:      float
+    away_sp_xfip_1st:      float
+    home_top3_wrc_plus:    int
+    away_top3_wrc_plus:    int
+    nrfi_trend_pct:        float   # Blended matchup NRFI% from trend data
+    park_factor:           float
+    weather_note:          str     # e.g. "Wind: 16 mph out" or "Roof"
+
+
+@dataclass
+class HybridMegaSlip:
+    """The flagship output of v6.0: 1-2 ML Anchors + 6-7 Micro-Market legs."""
+    anchors:               list[MoneylineCandidate]
+    micro_legs:            list[FirstInningLeg]
+    total_legs:            int
+    combined_prob:         float
+    combined_decimal_odds: float
+    combined_american_odds: int
+    stake_units:           float
+    is_auto_calibrated:    bool
+    slip_quality:          str     # "FULL (8 legs)" | "PARTIAL (N legs)" | "INSUFFICIENT"
+
+
+# ── NRFI / YRFI Probability Model ─────────────────────────────────────────────
+
+def score_first_inning_nrfi(
+    home_sp_splits: dict,
+    away_sp_splits: dict,
+    home_top3_wrc: dict,
+    away_top3_wrc: dict,
+    home_nrfi_trends: dict,
+    away_nrfi_trends: dict,
+    park_factor: float = 1.00,
+    weather: dict | None = None,
+    is_home_batting_first: bool = False,
+) -> float:
+    """
+    Compute NRFI probability for a matchup using the 5-factor model.
+
+    Inputs:
+      - home_sp_splits / away_sp_splits: 1st-inning xFIP + NRFI rate
+      - home_top3_wrc / away_top3_wrc: top-3 batter wRC+ (7-day)
+      - home_nrfi_trends / away_nrfi_trends: team NRFI rate last 15 games
+      - park_factor: from config.PARK_FACTORS
+      - weather: dict with temp_f, wind_speed_mph, wind_direction
+
+    Returns:
+      nrfi_prob clipped to [NRFI_MIN_PROBABILITY, NRFI_MAX_PROBABILITY]
+    """
+    weather = weather or {}
+
+    # SP 1st inning NRFI rates (directly from splits data)
+    home_sp_nrfi_pct = home_sp_splits.get("nrfi_as_sp_pct", 0.55)
+    away_sp_nrfi_pct = away_sp_splits.get("nrfi_as_sp_pct", 0.55)
+    home_nrfi_team   = home_nrfi_trends.get("nrfi_home_rate", 0.53)
+    away_nrfi_team   = away_nrfi_trends.get("nrfi_away_rate", 0.53)
+
+    # Step 1: Blended base NRFI rate
+    base_nrfi = (
+        home_sp_nrfi_pct  * 0.30 +
+        away_sp_nrfi_pct  * 0.30 +
+        home_nrfi_team    * 0.20 +
+        away_nrfi_team    * 0.20
+    )
+
+    # Step 2: SP quality adjustment (1st inning xFIP)
+    home_xfip_1st = home_sp_splits.get("xfip_1st_inn", 4.00)
+    away_xfip_1st = away_sp_splits.get("xfip_1st_inn", 4.00)
+    sp_adj = 0.0
+    if max(home_xfip_1st, away_xfip_1st) <= config.NRFI_BOTH_ACES_XFIP_THRESHOLD:   # both <= 3.20
+        sp_adj += 0.04
+    if min(home_xfip_1st, away_xfip_1st) >= config.NRFI_LEAKY_SP_XFIP_THRESHOLD:    # any >= 4.50
+        sp_adj -= 0.06
+
+    # Step 3: Top-3 batter offense adjustment
+    home_top3 = home_top3_wrc.get("top3_wrc_plus_7d", 100)
+    away_top3 = away_top3_wrc.get("top3_wrc_plus_7d", 100)
+    offense_factor = (home_top3 + away_top3) / 200.0   # 1.0 = league avg
+    if offense_factor >= config.NRFI_ELITE_OFFENSE_THRESHOLD:    # >= 1.20
+        offense_adj = -0.06
+    elif offense_factor <= config.NRFI_WEAK_OFFENSE_THRESHOLD:   # <= 0.80
+        offense_adj = +0.05
+    else:
+        # Linear interpolation between weak and elite thresholds
+        offense_adj = (config.NRFI_WEAK_OFFENSE_THRESHOLD - offense_factor) * 0.25
+
+    # Step 4: Park factor adjustment
+    park_adj = (1.00 - park_factor) * 0.08   # Coors → -0.08, pitcher park → +0.04
+
+    # Step 5: Weather adjustment
+    wind_speed = weather.get("wind_speed_mph", 0)
+    wind_dir   = weather.get("wind_direction", "none")
+    temp_f     = weather.get("temp_f", 72)
+    weather_adj = 0.0
+    if wind_speed >= config.NRFI_WIND_OUT_SPEED_MPH and wind_dir == "out":
+        weather_adj = -0.04
+    if temp_f <= config.NRFI_COLD_TEMP_F:
+        weather_adj += 0.03
+
+    nrfi_prob = base_nrfi + sp_adj + offense_adj + park_adj + weather_adj
+    return round(
+        min(config.NRFI_MAX_PROBABILITY, max(config.NRFI_MIN_PROBABILITY, nrfi_prob)),
+        4,
+    )
+
+
+def score_first_inning_yrfi(nrfi_prob: float) -> float:
+    """YRFI probability = complement of NRFI. Also clipped symmetrically."""
+    yrfi = 1.0 - nrfi_prob
+    return round(
+        min(config.NRFI_MAX_PROBABILITY, max(config.NRFI_MIN_PROBABILITY, yrfi)),
+        4,
+    )
+
+
+def score_first_inning_team_total(
+    batting_sp_splits: dict,
+    batting_top3_wrc: dict,
+    pitching_sp_splits: dict,
+    is_home_batting: bool,
+    park_factor: float = 1.00,
+    weather: dict | None = None,
+) -> tuple[float, float]:
+    """
+    Compute Team 1st Inning Total O/U 0.5 probabilities.
+    Returns (under_0_5_prob, over_0_5_prob).
+    """
+    weather = weather or {}
+
+    # Use pitching SP's NRFI rate (as pitcher) and batting team's 1st inn scoring tendency
+    pitcher_nrfi = pitching_sp_splits.get("nrfi_as_sp_pct", 0.55)
+    batter_top3  = batting_top3_wrc.get("top3_wrc_plus_7d", 100)
+    batter_xfip1 = batting_sp_splits.get("xfip_1st_inn", 4.00)  # same as their SP quality
+    opp_xfip1    = pitching_sp_splits.get("xfip_1st_inn", 4.00)
+
+    # Under 0.5 runs base rate (team does not score in inning 1)
+    under_base = pitcher_nrfi   # start with pitcher's NRFI% as anchor
+
+    # Offense quality adjustment
+    if batter_top3 >= config.TOP3_WRC_ELITE_THRESHOLD:    # >= 120
+        under_base -= 0.08   # Elite offense → harder to hold scoreless
+    elif batter_top3 <= config.TOP3_WRC_WEAK_THRESHOLD:   # <= 85
+        under_base += 0.06   # Weak offense → easier to hold scoreless
+    else:
+        under_base += (config.TOP3_WRC_WEAK_THRESHOLD - batter_top3) * 0.002
+
+    # Pitcher xFIP adjustment
+    if opp_xfip1 <= 3.20:
+        under_base += 0.04
+    elif opp_xfip1 >= 4.50:
+        under_base -= 0.05
+
+    # Park + weather
+    under_base += (1.00 - park_factor) * 0.05
+    wind_speed = weather.get("wind_speed_mph", 0)
+    wind_dir   = weather.get("wind_direction", "none")
+    if wind_speed >= config.NRFI_WIND_OUT_SPEED_MPH and wind_dir == "out":
+        under_base -= 0.03
+
+    under_prob = round(min(0.75, max(0.30, under_base)), 4)
+    over_prob  = round(min(0.75, max(0.30, 1.0 - under_prob)), 4)
+    return under_prob, over_prob
+
+
+def score_first_inning_handicap(
+    home_sp_splits: dict,
+    away_sp_splits: dict,
+    home_top3_wrc: dict,
+    away_top3_wrc: dict,
+    park_factor: float = 1.00,
+) -> tuple[float, float]:
+    """
+    Compute 1st Inning Handicap 0 (Tie No Bet / Asian Handicap 0) probabilities.
+    Returns (home_win_prob, away_win_prob). Tie is "push".
+
+    Minimum SIERA gap of HANDICAP_1ST_INN_MIN_SIERA_GAP required for a signal.
+    Also requires favored team to have a Top-3 wRC+ advantage of at least +10 points.
+    """
+    home_xfip = home_sp_splits.get("xfip_1st_inn", 4.00)
+    away_xfip = away_sp_splits.get("xfip_1st_inn", 4.00)
+    home_top3 = home_top3_wrc.get("top3_wrc_plus_7d", 100)
+    away_top3 = away_top3_wrc.get("top3_wrc_plus_7d", 100)
+
+    # Check minimum gap (SIERA diff > 0.60)
+    siera_gap = abs(away_xfip - home_xfip)
+    if siera_gap < config.HANDICAP_1ST_INN_MIN_SIERA_GAP:
+        # No clear handicap edge — return near-50/50
+        return 0.52, 0.48
+
+    # Determine which team has the pitching advantage (lower xFIP)
+    # and enforce top-3 wRC+ advantage of at least +10 points
+    if home_xfip < away_xfip:
+        if (home_top3 - away_top3) < 10:
+            return 0.52, 0.48
+    else:
+        if (away_top3 - home_top3) < 10:
+            return 0.52, 0.48
+
+    # SP advantage component: home offense vs away pitcher
+    # Higher home_top3 + lower away_xfip → home scores easier
+    home_score_ease = (home_top3 - 100) / 100.0 + (away_xfip - 4.00) / 3.00
+    away_score_ease = (away_top3 - 100) / 100.0 + (home_xfip - 4.00) / 3.00
+    net_advantage   = home_score_ease - away_score_ease   # positive = home favored
+
+    # Park factor: home parks favor scoring more
+    net_advantage += (park_factor - 1.00) * 0.5
+
+    # Logistic-like transformation: sigmoid-ish but linear in [-1, 1]
+    raw_home = 0.50 + net_advantage * 0.15
+    home_prob = round(min(0.70, max(0.30, raw_home)), 4)
+    away_prob = round(1.0 - home_prob, 4)
+    return home_prob, away_prob
+
+
+# ── Micro-Market Leg Evaluator per Game ───────────────────────────────────────
+
+def evaluate_first_inning_legs(
+    game: dict,
+    sp_splits_data: dict,
+    top3_wrc_data: dict,
+    nrfi_trends_data: dict,
+) -> FirstInningLeg | None:
+    """
+    Evaluate all 1st-inning bet types for a single game and return the best
+    qualifying FirstInningLeg (confidence >= NRFI_MIN_CONFIDENCE_THRESHOLD).
+    Returns None if no bet type meets the confidence threshold.
+    """
+    home_team  = game.get("home_team", "Home")
+    away_team  = game.get("away_team", "Away")
+    venue      = game.get("venue", "DEFAULT")
+    game_id    = game.get("game_id")
+
+    home_sp_id = game.get("home_starter_id")
+    away_sp_id = game.get("away_starter_id")
+
+    # Resolve SP 1st inning splits (with fallback)
+    home_sp_splits = sp_splits_data.get(home_sp_id) or {}
+    away_sp_splits = sp_splits_data.get(away_sp_id) or {}
+
+    # Derive estimates from full-game SIERA if no 1st inn splits
+    if not home_sp_splits:
+        home_sp_dict = game.get("home_sp") or {}
+        base_siera = home_sp_dict.get("siera", 4.00) if isinstance(home_sp_dict, dict) else 4.00
+        home_sp_splits = {
+            "xfip_1st_inn":  round(base_siera * config.SP_1ST_INN_ERA_MULTIPLIER, 2),
+            "nrfi_as_sp_pct": 0.55,
+        }
+    if not away_sp_splits:
+        away_sp_dict = game.get("away_sp") or {}
+        base_siera = away_sp_dict.get("siera", 4.00) if isinstance(away_sp_dict, dict) else 4.00
+        away_sp_splits = {
+            "xfip_1st_inn":  round(base_siera * config.SP_1ST_INN_ERA_MULTIPLIER, 2),
+            "nrfi_as_sp_pct": 0.55,
+        }
+
+    # Top-3 wRC+ for both teams
+    home_top3 = top3_wrc_data.get(home_team) or {"top3_wrc_plus_7d": 100}
+    away_top3 = top3_wrc_data.get(away_team) or {"top3_wrc_plus_7d": 100}
+
+    # NRFI trends
+    home_trends = nrfi_trends_data.get(home_team) or {"nrfi_home_rate": 0.53, "nrfi_away_rate": 0.53}
+    away_trends = nrfi_trends_data.get(away_team) or {"nrfi_home_rate": 0.53, "nrfi_away_rate": 0.53}
+
+    # Park factor + weather
+    from config import PARK_FACTORS
+    park_factor = PARK_FACTORS.get(venue, PARK_FACTORS["DEFAULT"])
+    weather     = game.get("weather") or {}
+
+    # Build weather note for display
+    wind_mph = weather.get("wind_speed_mph", 0)
+    wind_dir = weather.get("wind_direction", "none")
+    temp_f   = weather.get("temp_f", 72)
+    if wind_dir == "none" or wind_dir == "":
+        weather_note = f"{temp_f:.0f}°F"
+    else:
+        weather_note = f"{temp_f:.0f}°F | Wind {wind_mph:.0f}mph {wind_dir}"
+
+    # Compute all probabilities
+    nrfi_prob  = score_first_inning_nrfi(
+        home_sp_splits, away_sp_splits,
+        home_top3, away_top3,
+        home_trends, away_trends,
+        park_factor, weather,
+    )
+    yrfi_prob  = score_first_inning_yrfi(nrfi_prob)
+
+    h_under, h_over = score_first_inning_team_total(
+        batting_sp_splits=home_sp_splits, batting_top3_wrc=home_top3,
+        pitching_sp_splits=away_sp_splits, is_home_batting=True,
+        park_factor=park_factor, weather=weather,
+    )
+    a_under, _ = score_first_inning_team_total(
+        batting_sp_splits=away_sp_splits, batting_top3_wrc=away_top3,
+        pitching_sp_splits=home_sp_splits, is_home_batting=False,
+        park_factor=park_factor, weather=weather,
+    )
+    h_hcp, a_hcp = score_first_inning_handicap(
+        home_sp_splits, away_sp_splits, home_top3, away_top3, park_factor,
+    )
+
+    # Best market = highest confidence above threshold
+    candidates = [
+        (config.MICRO_MARKET_NRFI,       nrfi_prob),
+        (config.MICRO_MARKET_YRFI,       yrfi_prob),
+        (config.MICRO_MARKET_TEAM_UNDER + ":HOME", h_under),
+        (config.MICRO_MARKET_TEAM_UNDER + ":AWAY", a_under),
+        (config.MICRO_MARKET_HANDICAP   + ":HOME", h_hcp),
+        (config.MICRO_MARKET_HANDICAP   + ":AWAY", a_hcp),
+    ]
+
+    qualifying = [(bt, conf) for bt, conf in candidates if conf >= config.NRFI_MIN_CONFIDENCE_THRESHOLD]
+    if not qualifying:
+        return None
+
+    best_type, best_conf = max(qualifying, key=lambda x: x[1])
+
+    # Blended NRFI trend for display
+    nrfi_trend_pct = (
+        home_trends.get("nrfi_home_rate", 0.53) * 0.5 +
+        away_trends.get("nrfi_away_rate", 0.53) * 0.5
+    )
+
+    return FirstInningLeg(
+        game_id=game_id,
+        home_team=home_team,
+        away_team=away_team,
+        home_sp_name=game.get("home_starter_name", game.get("home_sp", {}).get("full_name", "TBD")),
+        away_sp_name=game.get("away_starter_name", game.get("away_sp", {}).get("full_name", "TBD")),
+        venue=venue,
+        bet_type=best_type,
+        confidence=round(best_conf, 4),
+        nrfi_prob=nrfi_prob,
+        yrfi_prob=yrfi_prob,
+        team_u05_home_prob=h_under,
+        team_u05_away_prob=a_under,
+        handicap_home_prob=h_hcp,
+        home_sp_xfip_1st=round(home_sp_splits.get("xfip_1st_inn", 4.00), 2),
+        away_sp_xfip_1st=round(away_sp_splits.get("xfip_1st_inn", 4.00), 2),
+        home_top3_wrc_plus=int(home_top3.get("top3_wrc_plus_7d", 100)),
+        away_top3_wrc_plus=int(away_top3.get("top3_wrc_plus_7d", 100)),
+        nrfi_trend_pct=round(nrfi_trend_pct, 2),
+        park_factor=park_factor,
+        weather_note=weather_note,
+    )
+
+
+# ── Hybrid Mega Slip Builder ───────────────────────────────────────────────────
+
+def build_hybrid_mega_slip(
+    ml_candidates:    list[MoneylineCandidate],
+    games:            list[dict],
+    sp_splits_data:   dict,
+    top3_wrc_data:    dict,
+    nrfi_trends_data: dict,
+    is_auto_calibrated: bool = False,
+) -> HybridMegaSlip:
+    """
+    Build the Hybrid Mega Slip (v6.0 flagship output).
+
+    Algorithm:
+      1. Select 1–2 ML Anchors (HIGH confidence, >= HYBRID_SLIP_ANCHOR_MIN_CONF)
+         Fallback: top-1 MEDIUM candidate if no HIGH trust available.
+      2. Score all non-anchor games for 1st-inning micro-markets.
+         Zero-correlation: anchor games are excluded from micro-market pool.
+      3. Sort by confidence DESC, take top 6–8 micro legs.
+      4. Assemble HybridMegaSlip with combined odds and quality label.
+    """
+    # STEP 1: Anchor selection
+    anchor_min_conf  = config.HYBRID_SLIP_ANCHOR_MIN_CONF
+    fallback_conf    = config.HYBRID_SLIP_ANCHOR_FALLBACK_CONF
+    max_anchors      = config.HYBRID_SLIP_MAX_ANCHOR_LEGS
+
+    high_trust = [
+        c for c in ml_candidates
+        if c.trust_level == "HIGH"
+        and c.win_confidence >= anchor_min_conf
+        and not c.is_slumping
+    ]
+    if not high_trust:
+        # Fallback to top-1 MEDIUM
+        medium_trust = [
+            c for c in ml_candidates
+            if c.trust_level == "MEDIUM"
+            and c.win_confidence >= fallback_conf
+            and not c.is_slumping
+        ]
+        anchors = medium_trust[:1]
+    else:
+        anchors = high_trust[:max_anchors]
+
+    anchor_game_ids = {a.game_id for a in anchors}
+
+    # STEP 2: Score micro-market legs (exclude anchor games)
+    micro_legs_raw: list[FirstInningLeg] = []
+    for game in games:
+        gid = game.get("game_id")
+        if gid in anchor_game_ids:
+            continue   # Zero-correlation enforcement
+        leg = evaluate_first_inning_legs(game, sp_splits_data, top3_wrc_data, nrfi_trends_data)
+        if leg is not None:
+            micro_legs_raw.append(leg)
+
+    # STEP 3: Sort by confidence DESC
+    micro_legs_raw.sort(key=lambda x: x.confidence, reverse=True)
+
+    # Determine how many micro legs to include based on target
+    n_anchors      = len(anchors)
+    n_micro_target = config.HYBRID_SLIP_TARGET_LEGS - n_anchors  # e.g. 8-2 = 6
+    micro_legs     = micro_legs_raw[:n_micro_target]
+
+    total_legs = n_anchors + len(micro_legs)
+
+    # STEP 4: Build quality label
+    if total_legs >= config.HYBRID_SLIP_TARGET_LEGS:
+        slip_quality = f"FULL ({total_legs} legs)"
+    elif total_legs >= config.HYBRID_SLIP_MIN_LEGS:
+        slip_quality = f"PARTIAL ({total_legs} legs)"
+    else:
+        slip_quality = f"INSUFFICIENT ({total_legs} legs — below {config.HYBRID_SLIP_MIN_LEGS} minimum)"
+
+    # STEP 5: Combined probability and decimal odds
+    combined_prob    = 1.0
+    combined_decimal = 1.0
+
+    for anchor in anchors:
+        combined_prob    *= anchor.win_confidence
+        combined_decimal *= _american_to_decimal(anchor.best_line_american)
+
+    # Approximate 1st-inning market odds: NRFI/YRFI typically priced -110 to -130
+    _inn1_approx_american = -115
+    _inn1_approx_decimal  = _american_to_decimal(_inn1_approx_american)
+    for leg in micro_legs:
+        combined_prob    *= leg.confidence
+        combined_decimal *= _inn1_approx_decimal
+
+    combined_prob    = round(combined_prob, 6)
+    combined_decimal = round(combined_decimal, 4)
+    combined_american = _decimal_to_american(combined_decimal)
+
+    return HybridMegaSlip(
+        anchors=anchors,
+        micro_legs=micro_legs,
+        total_legs=total_legs,
+        combined_prob=combined_prob,
+        combined_decimal_odds=combined_decimal,
+        combined_american_odds=combined_american,
+        stake_units=config.HYBRID_SLIP_STAKE_UNITS,
+        is_auto_calibrated=is_auto_calibrated,
+        slip_quality=slip_quality,
+    )

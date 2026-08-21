@@ -503,3 +503,175 @@ def get_mock_games(date_str: str) -> list[dict]:
 
 def get_mock_odds_for_date(date_str: str) -> dict:
     return dict(MOCK_ODDS_LINES)
+
+
+# ==============================================================================
+# V6.0 — MOCK: SP 1ST INNING SPLITS
+# Keyed by pitcher_id. era_1st_inn / xfip_1st_inn derived from Statcast inning==1.
+# nrfi_as_sp_pct = % of SP's starts where inning 1 was scoreless (for that team).
+# ==============================================================================
+MOCK_SP_FIRST_INN_SPLITS: dict[int, dict] = {
+    # NYY — Gerrit Cole (fast starter, dominant in inning 1)
+    1001: {"pitcher_id": 1001, "full_name": "Gerrit Cole",
+           "era_1st_inn": 2.60, "xfip_1st_inn": 2.55, "k_pct_1st_inn": 0.330, "bb_per9_1st_inn": 1.8,
+           "nrfi_as_sp_pct": 0.66, "sample_starts": 18},
+    # BOS — Brayan Bello (inconsistent in inning 1)
+    1002: {"pitcher_id": 1002, "full_name": "Brayan Bello",
+           "era_1st_inn": 3.95, "xfip_1st_inn": 3.80, "k_pct_1st_inn": 0.250, "bb_per9_1st_inn": 3.2,
+           "nrfi_as_sp_pct": 0.52, "sample_starts": 15},
+    # PHI — Zack Wheeler (elite, dominates early innings)
+    1015: {"pitcher_id": 1015, "full_name": "Zack Wheeler",
+           "era_1st_inn": 2.40, "xfip_1st_inn": 2.30, "k_pct_1st_inn": 0.310, "bb_per9_1st_inn": 1.9,
+           "nrfi_as_sp_pct": 0.68, "sample_starts": 20},
+    # MIA — Sandy Alcantara (very leaky in inning 1)
+    1026: {"pitcher_id": 1026, "full_name": "Sandy Alcantara",
+           "era_1st_inn": 6.20, "xfip_1st_inn": 5.80, "k_pct_1st_inn": 0.160, "bb_per9_1st_inn": 5.1,
+           "nrfi_as_sp_pct": 0.36, "sample_starts": 14},
+    # MIL — Freddy Peralta
+    1017: {"pitcher_id": 1017, "full_name": "Freddy Peralta",
+           "era_1st_inn": 3.40, "xfip_1st_inn": 3.25, "k_pct_1st_inn": 0.305, "bb_per9_1st_inn": 3.5,
+           "nrfi_as_sp_pct": 0.60, "sample_starts": 16},
+    # STL — Miles Mikolas (mediocre early)
+    1018: {"pitcher_id": 1018, "full_name": "Miles Mikolas",
+           "era_1st_inn": 5.10, "xfip_1st_inn": 4.90, "k_pct_1st_inn": 0.175, "bb_per9_1st_inn": 3.0,
+           "nrfi_as_sp_pct": 0.42, "sample_starts": 14},
+    # HOU — Framber Valdez (strong sinker = NRFI friendly)
+    1005: {"pitcher_id": 1005, "full_name": "Framber Valdez",
+           "era_1st_inn": 2.90, "xfip_1st_inn": 2.80, "k_pct_1st_inn": 0.255, "bb_per9_1st_inn": 3.8,
+           "nrfi_as_sp_pct": 0.63, "sample_starts": 19},
+    # TEX — Nathan Eovaldi
+    1006: {"pitcher_id": 1006, "full_name": "Nathan Eovaldi",
+           "era_1st_inn": 3.80, "xfip_1st_inn": 3.65, "k_pct_1st_inn": 0.240, "bb_per9_1st_inn": 2.7,
+           "nrfi_as_sp_pct": 0.55, "sample_starts": 15},
+    # CLE — Shane Bieber (elite control, low 1st inn ERA)
+    1011: {"pitcher_id": 1011, "full_name": "Shane Bieber",
+           "era_1st_inn": 2.80, "xfip_1st_inn": 2.70, "k_pct_1st_inn": 0.285, "bb_per9_1st_inn": 1.6,
+           "nrfi_as_sp_pct": 0.65, "sample_starts": 17},
+    # DET — Eduardo Rodriguez
+    1012: {"pitcher_id": 1012, "full_name": "Eduardo Rodriguez",
+           "era_1st_inn": 4.80, "xfip_1st_inn": 4.60, "k_pct_1st_inn": 0.195, "bb_per9_1st_inn": 4.1,
+           "nrfi_as_sp_pct": 0.44, "sample_starts": 14},
+    # CHC — Justin Steele
+    1010: {"pitcher_id": 1010, "full_name": "Justin Steele",
+           "era_1st_inn": 3.10, "xfip_1st_inn": 2.95, "k_pct_1st_inn": 0.268, "bb_per9_1st_inn": 3.0,
+           "nrfi_as_sp_pct": 0.62, "sample_starts": 16},
+    # PIT — Mitch Keller (high 1st inn ERA)
+    1028: {"pitcher_id": 1028, "full_name": "Mitch Keller",
+           "era_1st_inn": 4.60, "xfip_1st_inn": 4.40, "k_pct_1st_inn": 0.215, "bb_per9_1st_inn": 3.8,
+           "nrfi_as_sp_pct": 0.46, "sample_starts": 14},
+    # LAD — Tyler Glasnow (elite swing-and-miss from pitch 1)
+    1003: {"pitcher_id": 1003, "full_name": "Tyler Glasnow",
+           "era_1st_inn": 2.20, "xfip_1st_inn": 2.10, "k_pct_1st_inn": 0.355, "bb_per9_1st_inn": 2.5,
+           "nrfi_as_sp_pct": 0.71, "sample_starts": 17},
+    # SD — Yu Darvish (streaky in inning 1)
+    1021: {"pitcher_id": 1021, "full_name": "Yu Darvish",
+           "era_1st_inn": 4.30, "xfip_1st_inn": 4.10, "k_pct_1st_inn": 0.258, "bb_per9_1st_inn": 2.6,
+           "nrfi_as_sp_pct": 0.48, "sample_starts": 15},
+    # BAL — Dean Kremer
+    1024: {"pitcher_id": 1024, "full_name": "Dean Kremer",
+           "era_1st_inn": 3.90, "xfip_1st_inn": 3.78, "k_pct_1st_inn": 0.240, "bb_per9_1st_inn": 3.0,
+           "nrfi_as_sp_pct": 0.54, "sample_starts": 15},
+    # TOR — Kevin Gausman (solid early)
+    1013: {"pitcher_id": 1013, "full_name": "Kevin Gausman",
+           "era_1st_inn": 3.20, "xfip_1st_inn": 3.10, "k_pct_1st_inn": 0.278, "bb_per9_1st_inn": 1.9,
+           "nrfi_as_sp_pct": 0.62, "sample_starts": 16},
+}
+
+
+# ==============================================================================
+# V6.0 — MOCK: TOP-3 ORDER wRC+ PER TEAM
+# wrc_plus_top3: weighted avg wRC+ of leadoff/2-hole/3-hole batters (7-day)
+# Used to estimate offensive pressure in 1st inning specifically.
+# ==============================================================================
+MOCK_TOP3_LINEUP_WRC: dict[str, dict] = {
+    "New York Yankees":       {"top3_batters": ["Juan Soto", "Aaron Judge", "Giancarlo Stanton"],
+                               "top3_wrc_plus_7d": 131, "top3_woba_7d": 0.388,
+                               "vs_rhp_wrc_plus": 128, "vs_lhp_wrc_plus": 135},
+    "Boston Red Sox":         {"top3_batters": ["Jarren Duran", "Rafael Devers", "Masataka Yoshida"],
+                               "top3_wrc_plus_7d": 118, "top3_woba_7d": 0.368,
+                               "vs_rhp_wrc_plus": 115, "vs_lhp_wrc_plus": 122},
+    "Philadelphia Phillies":  {"top3_batters": ["Kyle Schwarber", "Trea Turner", "Bryce Harper"],
+                               "top3_wrc_plus_7d": 134, "top3_woba_7d": 0.398,
+                               "vs_rhp_wrc_plus": 131, "vs_lhp_wrc_plus": 138},
+    "Miami Marlins":          {"top3_batters": ["Luis Arraez", "Jazz Chisholm Jr.", "Jake Burger"],
+                               "top3_wrc_plus_7d":  68, "top3_woba_7d": 0.295,
+                               "vs_rhp_wrc_plus":  65, "vs_lhp_wrc_plus":  72},  # SLUMP
+    "Milwaukee Brewers":      {"top3_batters": ["Christian Yelich", "William Contreras", "Rhys Hoskins"],
+                               "top3_wrc_plus_7d": 108, "top3_woba_7d": 0.352,
+                               "vs_rhp_wrc_plus": 105, "vs_lhp_wrc_plus": 112},
+    "St. Louis Cardinals":    {"top3_batters": ["Lars Nootbaar", "Paul Goldschmidt", "Nolan Arenado"],
+                               "top3_wrc_plus_7d":  90, "top3_woba_7d": 0.328,
+                               "vs_rhp_wrc_plus":  88, "vs_lhp_wrc_plus":  93},
+    "Houston Astros":         {"top3_batters": ["Jose Altuve", "Alex Bregman", "Yordan Alvarez"],
+                               "top3_wrc_plus_7d": 122, "top3_woba_7d": 0.378,
+                               "vs_rhp_wrc_plus": 119, "vs_lhp_wrc_plus": 126},
+    "Texas Rangers":          {"top3_batters": ["Leody Taveras", "Marcus Semien", "Corey Seager"],
+                               "top3_wrc_plus_7d": 110, "top3_woba_7d": 0.360,
+                               "vs_rhp_wrc_plus": 107, "vs_lhp_wrc_plus": 114},
+    "Cleveland Guardians":    {"top3_batters": ["Steven Kwan", "Amed Rosario", "Jose Ramirez"],
+                               "top3_wrc_plus_7d":  98, "top3_woba_7d": 0.338,
+                               "vs_rhp_wrc_plus":  96, "vs_lhp_wrc_plus": 101},
+    "Detroit Tigers":         {"top3_batters": ["Riley Greene", "Spencer Torkelson", "Matt Vierling"],
+                               "top3_wrc_plus_7d":  82, "top3_woba_7d": 0.312,
+                               "vs_rhp_wrc_plus":  80, "vs_lhp_wrc_plus":  85},
+    "Chicago Cubs":           {"top3_batters": ["Nico Hoerner", "Ian Happ", "Dansby Swanson"],
+                               "top3_wrc_plus_7d": 104, "top3_woba_7d": 0.345,
+                               "vs_rhp_wrc_plus": 101, "vs_lhp_wrc_plus": 108},
+    "Pittsburgh Pirates":     {"top3_batters": ["Bryan Reynolds", "Andrew McCutchen", "Ke'Bryan Hayes"],
+                               "top3_wrc_plus_7d":  74, "top3_woba_7d": 0.300,
+                               "vs_rhp_wrc_plus":  72, "vs_lhp_wrc_plus":  77},  # SLUMP
+    "Los Angeles Dodgers":    {"top3_batters": ["Shohei Ohtani", "Mookie Betts", "Freddie Freeman"],
+                               "top3_wrc_plus_7d": 142, "top3_woba_7d": 0.415,
+                               "vs_rhp_wrc_plus": 138, "vs_lhp_wrc_plus": 147},
+    "San Diego Padres":       {"top3_batters": ["Fernando Tatis Jr.", "Manny Machado", "Xander Bogaerts"],
+                               "top3_wrc_plus_7d":  96, "top3_woba_7d": 0.335,
+                               "vs_rhp_wrc_plus":  93, "vs_lhp_wrc_plus":  99},
+    "Baltimore Orioles":      {"top3_batters": ["Gunnar Henderson", "Adley Rutschman", "Ryan Mountcastle"],
+                               "top3_wrc_plus_7d": 112, "top3_woba_7d": 0.362,
+                               "vs_rhp_wrc_plus": 109, "vs_lhp_wrc_plus": 116},
+    "Toronto Blue Jays":      {"top3_batters": ["George Springer", "Bo Bichette", "Vladimir Guerrero Jr."],
+                               "top3_wrc_plus_7d":  97, "top3_woba_7d": 0.336,
+                               "vs_rhp_wrc_plus":  94, "vs_lhp_wrc_plus": 101},
+}
+
+
+# ==============================================================================
+# V6.0 — MOCK: NRFI / YRFI TREND DATA (Last 15 games)
+# nrfi_home_rate: % of home games where team did NOT score in inning 1 (as batting team)
+# nrfi_away_rate: % of away games where team did NOT score in inning 1 (as batting team)
+# nrfi_as_home_sp_rate: % of home games where SP held opponent scoreless in inning 1
+# ==============================================================================
+MOCK_NRFI_TRENDS: dict[str, dict] = {
+    "New York Yankees":       {"nrfi_home_rate": 0.60, "nrfi_away_rate": 0.55, "last_15_nrfi_count": 9,
+                               "yrfi_streak": 1, "nrfi_streak": 0},
+    "Boston Red Sox":         {"nrfi_home_rate": 0.47, "nrfi_away_rate": 0.50, "last_15_nrfi_count": 7,
+                               "yrfi_streak": 2, "nrfi_streak": 0},
+    "Philadelphia Phillies":  {"nrfi_home_rate": 0.53, "nrfi_away_rate": 0.60, "last_15_nrfi_count": 9,
+                               "yrfi_streak": 0, "nrfi_streak": 2},
+    "Miami Marlins":          {"nrfi_home_rate": 0.67, "nrfi_away_rate": 0.60, "last_15_nrfi_count": 10,
+                               "yrfi_streak": 0, "nrfi_streak": 3},  # Weak offense → NRFI trend
+    "Milwaukee Brewers":      {"nrfi_home_rate": 0.53, "nrfi_away_rate": 0.47, "last_15_nrfi_count": 8,
+                               "yrfi_streak": 1, "nrfi_streak": 0},
+    "St. Louis Cardinals":    {"nrfi_home_rate": 0.60, "nrfi_away_rate": 0.53, "last_15_nrfi_count": 9,
+                               "yrfi_streak": 0, "nrfi_streak": 1},
+    "Houston Astros":         {"nrfi_home_rate": 0.47, "nrfi_away_rate": 0.47, "last_15_nrfi_count": 7,
+                               "yrfi_streak": 2, "nrfi_streak": 0},  # Strong offense
+    "Texas Rangers":          {"nrfi_home_rate": 0.53, "nrfi_away_rate": 0.53, "last_15_nrfi_count": 8,
+                               "yrfi_streak": 0, "nrfi_streak": 0},
+    "Cleveland Guardians":    {"nrfi_home_rate": 0.60, "nrfi_away_rate": 0.60, "last_15_nrfi_count": 9,
+                               "yrfi_streak": 0, "nrfi_streak": 1},
+    "Detroit Tigers":         {"nrfi_home_rate": 0.67, "nrfi_away_rate": 0.60, "last_15_nrfi_count": 10,
+                               "yrfi_streak": 0, "nrfi_streak": 2},  # Weak offense → NRFI trend
+    "Chicago Cubs":           {"nrfi_home_rate": 0.47, "nrfi_away_rate": 0.53, "last_15_nrfi_count": 8,
+                               "yrfi_streak": 1, "nrfi_streak": 0},
+    "Pittsburgh Pirates":     {"nrfi_home_rate": 0.67, "nrfi_away_rate": 0.60, "last_15_nrfi_count": 10,
+                               "yrfi_streak": 0, "nrfi_streak": 3},  # Slump → NRFI
+    "Los Angeles Dodgers":    {"nrfi_home_rate": 0.40, "nrfi_away_rate": 0.43, "last_15_nrfi_count": 6,
+                               "yrfi_streak": 3, "nrfi_streak": 0},  # Elite offense → YRFI trend
+    "San Diego Padres":       {"nrfi_home_rate": 0.53, "nrfi_away_rate": 0.57, "last_15_nrfi_count": 8,
+                               "yrfi_streak": 0, "nrfi_streak": 1},
+    "Baltimore Orioles":      {"nrfi_home_rate": 0.53, "nrfi_away_rate": 0.47, "last_15_nrfi_count": 8,
+                               "yrfi_streak": 1, "nrfi_streak": 0},
+    "Toronto Blue Jays":      {"nrfi_home_rate": 0.60, "nrfi_away_rate": 0.53, "last_15_nrfi_count": 9,
+                               "yrfi_streak": 0, "nrfi_streak": 1},
+}

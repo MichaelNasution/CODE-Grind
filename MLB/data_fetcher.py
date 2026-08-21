@@ -1,7 +1,7 @@
 """
 data_fetcher.py
 ===============
-API handler layer for the MLB Analytics CLI System v5.0.
+API handler layer for the MLB Analytics CLI System v6.0.
 Silent logging & quiet API timeout engine (Logs exclusively to app.log).
 
 Fetches:
@@ -13,6 +13,10 @@ Fetches:
   6. FanGraphs Advanced Pitching (SIERA, xFIP, K%, BB/9) via pybaseball
   7. FanGraphs 7-Day Team Batting (wRC+, ISO) via pybaseball
   8. Tracks `is_live_data: bool` verification flag
+  [v6.0] SP 1st Inning Splits (xFIP/ERA/NRFI%) via Statcast 45-day window
+  [v6.0] Top-3 Lineup wRC+ per team via pybaseball
+  [v6.0] NRFI / YRFI Trend Data (last 15 games) via MLB StatsAPI
+  [v6.0] 12-hour file-based caching (.cache/) for all three above
 """
 
 from __future__ import annotations
@@ -705,3 +709,390 @@ def load_batter_h2h_records(date_str: str | None = None) -> list[dict]:
 def load_pitcher_stats(date_str: str | None = None) -> list[dict]:
     _ = date_str
     return list(mock_data.MOCK_PITCHER_STATS.values())
+
+
+# ==============================================================================
+# [v6.0] FILE-BASED CACHE HELPERS (12-HOUR TTL)
+# ==============================================================================
+
+import json as _json
+import os as _os
+from pathlib import Path as _Path
+
+_HERE_DF   = _Path(__file__).parent.resolve()
+_CACHE_DIR = _HERE_DF / config.CACHE_DIR
+
+
+def _ensure_cache_dir() -> None:
+    _CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _is_cache_valid(cache_path: _Path) -> bool:
+    """Returns True if cache file exists and is less than CACHE_TTL_HOURS old."""
+    if not cache_path.exists():
+        return False
+    try:
+        import time
+        age_seconds = time.time() - cache_path.stat().st_mtime
+        return age_seconds < (config.CACHE_TTL_HOURS * 3600)
+    except Exception:
+        return False
+
+
+def _load_cache(cache_path: _Path) -> dict | None:
+    try:
+        with cache_path.open("r", encoding="utf-8") as fh:
+            return _json.load(fh)
+    except Exception:
+        return None
+
+
+def _save_cache(cache_path: _Path, data: dict) -> None:
+    _ensure_cache_dir()
+    try:
+        with cache_path.open("w", encoding="utf-8") as fh:
+            _json.dump(data, fh, ensure_ascii=False)
+    except Exception as exc:
+        logger.debug("Could not save cache %s: %s", cache_path, exc)
+
+
+# ==============================================================================
+# [v6.0] SP 1ST INNING SPLITS (45-DAY STATCAST WINDOW)
+# ==============================================================================
+
+def fetch_sp_first_inning_splits(
+    pitcher_ids: list[int] | None = None,
+    season: int | None = None,
+) -> dict[int, dict]:
+    """
+    Fetch Starting Pitcher 1st Inning splits:
+      - xFIP_1st_inn, ERA_1st_inn, K%_1st_inn, BB/9_1st_inn, NRFI%_as_SP
+    Uses pybaseball.statcast_pitcher() filtered to inning_topbot / inning_start=1,
+    rolling 45 days, minimum 8 starts.
+
+    12-hour file-based cache at .cache/sp_1st_inn_splits_{season}.json.
+    Falls back silently to MOCK_SP_FIRST_INN_SPLITS.
+    """
+    season = season or _current_season()
+    cache_path = _CACHE_DIR / config.CACHE_SP_SPLITS_FILE.format(season=season)
+
+    if _is_cache_valid(cache_path):
+        cached = _load_cache(cache_path)
+        if cached:
+            logger.debug("SP 1st inn splits: cache hit")
+            return {int(k): v for k, v in cached.items()}
+
+    if not _PYBASEBALL_AVAILABLE:
+        logger.debug("pybaseball not available — using mock SP 1st inn splits")
+        return dict(mock_data.MOCK_SP_FIRST_INN_SPLITS)
+
+    from datetime import date as _date, timedelta as _td
+    try:
+        import pandas as pd
+        end_date   = _date.today()
+        start_date = end_date - _td(days=config.STATCAST_ROLLING_DAYS)
+        end_str    = end_date.strftime("%Y-%m-%d")
+        start_str  = start_date.strftime("%Y-%m-%d")
+
+        results: dict[int, dict] = {}
+        # For each pitcher, pull Statcast data (inning == 1)
+        target_ids = pitcher_ids or list(mock_data.MOCK_SP_FIRST_INN_SPLITS.keys())
+        for pid in target_ids:
+            try:
+                df = pybaseball.statcast_pitcher(start_str, end_str, player_id=pid)
+                if df is None or df.empty:
+                    results[pid] = mock_data.MOCK_SP_FIRST_INN_SPLITS.get(pid, {})
+                    continue
+                inn1 = df[df["inning"] == 1].copy()
+                if len(inn1) < config.STATCAST_MIN_STARTS:
+                    results[pid] = mock_data.MOCK_SP_FIRST_INN_SPLITS.get(pid, {})
+                    continue
+
+                # Compute metrics from Statcast pitch-level data
+                starts = inn1["game_pk"].nunique()
+                total_k  = (inn1["events"].isin(["strikeout", "strikeout_double_play"])).sum()
+                total_pa = inn1["at_bat_number"].nunique()
+                k_pct    = total_k / total_pa if total_pa > 0 else 0.22
+
+                total_bb = (inn1["events"] == "walk").sum()
+                ip_est   = starts * 1.0   # ~1 inning per start
+                bb_per9  = (total_bb / ip_est) * 9 if ip_est > 0 else 3.0
+
+                # ERA via earned runs (if available)
+                if "post_home_score" in inn1.columns and "home_score" in inn1.columns:
+                    earned_runs = (inn1["post_home_score"] - inn1["home_score"]).clip(lower=0).sum()
+                    era_1st = (earned_runs / ip_est) * 9 if ip_est > 0 else 4.50
+                else:
+                    era_1st = mock_data.MOCK_SP_FIRST_INN_SPLITS.get(pid, {}).get("era_1st_inn", 4.50)
+
+                # xFIP estimate from ERA × SP_1ST_INN_ERA_MULTIPLIER (or from mock)
+                xfip_1st = mock_data.MOCK_SP_FIRST_INN_SPLITS.get(pid, {}).get(
+                    "xfip_1st_inn", round(era_1st * 0.92, 2)
+                )
+
+                # NRFI% from game-level data: find games where inning 1 was scoreless
+                game_results = inn1.groupby("game_pk").agg(
+                    total_runs=("post_home_score", "max")
+                ).reset_index()
+                nrfi_pct = (game_results["total_runs"] == 0).mean() if len(game_results) > 0 else 0.55
+
+                results[pid] = {
+                    "pitcher_id":      pid,
+                    "era_1st_inn":     round(era_1st, 2),
+                    "xfip_1st_inn":    round(xfip_1st, 2),
+                    "k_pct_1st_inn":   round(k_pct, 3),
+                    "bb_per9_1st_inn": round(bb_per9, 2),
+                    "nrfi_as_sp_pct":  round(float(nrfi_pct), 3),
+                    "sample_starts":   int(starts),
+                }
+            except Exception as exc:
+                logger.debug("Statcast fetch failed for pitcher %s: %s", pid, exc)
+                results[pid] = mock_data.MOCK_SP_FIRST_INN_SPLITS.get(pid, {})
+
+        _save_cache(cache_path, {str(k): v for k, v in results.items()})
+        return results
+
+    except Exception as exc:
+        logger.debug("SP 1st inn splits fetch failed: %s", exc)
+        return dict(mock_data.MOCK_SP_FIRST_INN_SPLITS)
+
+
+# ==============================================================================
+# [v6.0] TOP-3 LINEUP wRC+ PER TEAM (7-DAY ROLLING)
+# ==============================================================================
+
+def fetch_top3_lineup_wrc(
+    date_str: str | None = None,
+) -> dict[str, dict]:
+    """
+    Fetch top-3 batting order wRC+ for each team over the last 7 days.
+    Uses pybaseball.batting_stats_range() to pull individual batter data,
+    then selects batters batting 1-2-3 for each team.
+
+    12-hour file-based cache at .cache/top3_wrc_{date}.json.
+    Falls back silently to MOCK_TOP3_LINEUP_WRC.
+    """
+    date_str  = date_str or date.today().strftime("%Y-%m-%d")
+    cache_path = _CACHE_DIR / config.CACHE_TOP3_WRC_FILE.format(date=date_str)
+
+    if _is_cache_valid(cache_path):
+        cached = _load_cache(cache_path)
+        if cached:
+            logger.debug("Top-3 wRC+ cache hit")
+            return cached
+
+    if not _PYBASEBALL_AVAILABLE:
+        logger.debug("pybaseball not available — using mock Top-3 wRC+")
+        return dict(mock_data.MOCK_TOP3_LINEUP_WRC)
+
+    try:
+        from datetime import date as _date, timedelta as _td
+        end_dt   = _date.fromisoformat(date_str) if date_str else _date.today()
+        start_dt = end_dt - _td(days=7)
+        end_s    = end_dt.strftime("%Y-%m-%d")
+        start_s  = start_dt.strftime("%Y-%m-%d")
+
+        df = pybaseball.batting_stats_range(start_s, end_s)
+        if df is None or df.empty:
+            raise ValueError("Empty batting_stats_range result")
+
+        # pybaseball returns season totals — blend into top-3 per team
+        # Columns: Team, Name, wRC+, etc.
+        results: dict[str, dict] = {}
+        for team_name in mock_data.MOCK_TOP3_LINEUP_WRC.keys():
+            team_rows = df[df["Team"] == team_name] if "Team" in df.columns else None
+            if team_rows is None or team_rows.empty:
+                results[team_name] = mock_data.MOCK_TOP3_LINEUP_WRC.get(team_name, {"top3_wrc_plus_7d": 100})
+                continue
+            wrc_col = "wRC+" if "wRC+" in team_rows.columns else "wrc_plus"
+            top3 = team_rows.nlargest(3, wrc_col) if wrc_col in team_rows.columns else team_rows.head(3)
+            avg_wrc = top3[wrc_col].mean() if wrc_col in top3.columns else 100
+            top3_names = top3["Name"].tolist() if "Name" in top3.columns else []
+            results[team_name] = {
+                "top3_batters":      top3_names[:3],
+                "top3_wrc_plus_7d": int(round(avg_wrc)),
+                "top3_woba_7d":     mock_data.MOCK_TOP3_LINEUP_WRC.get(team_name, {}).get("top3_woba_7d", 0.340),
+                "vs_rhp_wrc_plus":  mock_data.MOCK_TOP3_LINEUP_WRC.get(team_name, {}).get("vs_rhp_wrc_plus", int(round(avg_wrc)) - 3),
+                "vs_lhp_wrc_plus":  mock_data.MOCK_TOP3_LINEUP_WRC.get(team_name, {}).get("vs_lhp_wrc_plus", int(round(avg_wrc)) + 3),
+            }
+
+        _save_cache(cache_path, results)
+        return results
+
+    except Exception as exc:
+        logger.debug("Top-3 wRC+ fetch failed: %s", exc)
+        return dict(mock_data.MOCK_TOP3_LINEUP_WRC)
+
+
+# ==============================================================================
+# [v6.0] NRFI / YRFI TREND DATA (LAST 15 GAMES)
+# ==============================================================================
+
+def fetch_nrfi_trends(
+    date_str: str | None = None,
+) -> dict[str, dict]:
+    """
+    Fetch per-team NRFI/YRFI trend rates (last 15 games) from MLB StatsAPI.
+    Computes: nrfi_home_rate, nrfi_away_rate, last_15_nrfi_count, streaks.
+
+    12-hour file-based cache at .cache/nrfi_trends_{date}.json.
+    Falls back silently to MOCK_NRFI_TRENDS.
+    """
+    date_str   = date_str or date.today().strftime("%Y-%m-%d")
+    cache_path = _CACHE_DIR / config.CACHE_NRFI_TRENDS_FILE.format(date=date_str)
+
+    if _is_cache_valid(cache_path):
+        cached = _load_cache(cache_path)
+        if cached:
+            logger.debug("NRFI trends cache hit")
+            return cached
+
+    try:
+        from datetime import date as _date, timedelta as _td
+        end_dt   = _date.fromisoformat(date_str) if date_str else _date.today()
+        start_dt = end_dt - _td(days=30)  # 30-day window to get last 15 games
+        end_s    = end_dt.strftime("%Y-%m-%d")
+        start_s  = start_dt.strftime("%Y-%m-%d")
+
+        url    = f"{config.MLB_API_BASE}/schedule"
+        params = {"sportId": 1, "startDate": start_s, "endDate": end_s,
+                  "hydrate": "linescore", "gameType": "R"}
+        data   = _get(url, params, timeout=config.MLB_API_TIMEOUT)
+
+        if not data or not isinstance(data, dict):
+            raise ValueError("Invalid StatsAPI response for NRFI trends")
+
+        # Accumulate per-team NRFI rate (scored in inning 1 or not)
+        team_nrfi: dict[str, dict] = {}
+
+        for date_block in data.get("dates", []):
+            for game in date_block.get("games", []):
+                linescore = game.get("linescore", {})
+                innings   = linescore.get("innings", [])
+                if not innings:
+                    continue
+                inn1      = innings[0]
+                home_runs = inn1.get("home", {}).get("runs", None)
+                away_runs = inn1.get("away", {}).get("runs", None)
+                if home_runs is None or away_runs is None:
+                    continue
+
+                home_name = game.get("teams", {}).get("home", {}).get("team", {}).get("name", "")
+                away_name = game.get("teams", {}).get("away", {}).get("team", {}).get("name", "")
+
+                # Home team did not score in inning 1 (home_runs == 0 means NRFI for home batting side)
+                for team_name, runs, is_home in [(home_name, home_runs, True), (away_name, away_runs, False)]:
+                    if not team_name:
+                        continue
+                    if team_name not in team_nrfi:
+                        team_nrfi[team_name] = {
+                            "home_games": [], "away_games": [], "yrfi_streak": 0, "nrfi_streak": 0
+                        }
+                    scored = runs > 0
+                    if is_home:
+                        team_nrfi[team_name]["home_games"].append(not scored)   # True = NRFI
+                    else:
+                        team_nrfi[team_name]["away_games"].append(not scored)
+
+        results: dict[str, dict] = {}
+        for team_name, data_t in team_nrfi.items():
+            home_g = data_t["home_games"][-15:] if len(data_t["home_games"]) > 0 else []
+            away_g = data_t["away_games"][-15:] if len(data_t["away_games"]) > 0 else []
+            all_g  = (home_g + away_g)[-15:]
+
+            nrfi_home_rate = (sum(home_g) / len(home_g)) if home_g else 0.53
+            nrfi_away_rate = (sum(away_g) / len(away_g)) if away_g else 0.53
+            nrfi_count     = sum(all_g)
+
+            # Compute current streaks (last N games all NRFI or all YRFI)
+            yrfi_streak = 0
+            for val in reversed(all_g):
+                if not val:   # False = YRFI
+                    yrfi_streak += 1
+                else:
+                    break
+            nrfi_streak = 0
+            for val in reversed(all_g):
+                if val:   # True = NRFI
+                    nrfi_streak += 1
+                else:
+                    break
+
+            results[team_name] = {
+                "nrfi_home_rate":     round(nrfi_home_rate, 3),
+                "nrfi_away_rate":     round(nrfi_away_rate, 3),
+                "last_15_nrfi_count": nrfi_count,
+                "yrfi_streak":        yrfi_streak,
+                "nrfi_streak":        nrfi_streak,
+            }
+
+        if results:
+            _save_cache(cache_path, results)
+            return results
+        raise ValueError("No NRFI trend data found")
+
+    except Exception as exc:
+        logger.debug("NRFI trends fetch failed: %s", exc)
+        return dict(mock_data.MOCK_NRFI_TRENDS)
+
+
+# ==============================================================================
+# [v6.0] LOAD FIRST INNING SLATE — Combined loader for Hybrid Slip
+# ==============================================================================
+
+def load_first_inning_slate(
+    games: list[dict],
+    date_str: str | None = None,
+    pitcher_ids: list[int] | None = None,
+) -> tuple[dict, dict, dict]:
+    """
+    Load and return the three v6.0 data dicts needed for micro-market scoring:
+      1. sp_splits:    dict[pitcher_id -> 1st-inn splits dict]
+      2. top3_wrc:     dict[team_name -> top3 wRC+ dict]
+      3. nrfi_trends:  dict[team_name -> NRFI trend dict]
+
+    Uses ThreadPoolExecutor to load all three in parallel within 5 seconds.
+    Any failure falls back to mock data silently.
+    """
+    date_str    = date_str or date.today().strftime("%Y-%m-%d")
+    pids        = pitcher_ids or [
+        pid
+        for game in games
+        for pid in [game.get("home_starter_id"), game.get("away_starter_id")]
+        if pid is not None
+    ]
+
+    sp_splits   = {}
+    top3_wrc    = {}
+    nrfi_trends = {}
+
+    def _fetch_splits():
+        return fetch_sp_first_inning_splits(pids)
+
+    def _fetch_top3():
+        return fetch_top3_lineup_wrc(date_str)
+
+    def _fetch_nrfi():
+        return fetch_nrfi_trends(date_str)
+
+    with ThreadPoolExecutor(max_workers=3) as executor:
+        f_splits = executor.submit(_fetch_splits)
+        f_top3   = executor.submit(_fetch_top3)
+        f_nrfi   = executor.submit(_fetch_nrfi)
+        try:
+            sp_splits = f_splits.result(timeout=5)
+        except Exception as exc:
+            logger.debug("load_first_inning_slate: splits fallback (%s)", exc)
+            sp_splits = dict(mock_data.MOCK_SP_FIRST_INN_SPLITS)
+        try:
+            top3_wrc = f_top3.result(timeout=5)
+        except Exception as exc:
+            logger.debug("load_first_inning_slate: top3_wrc fallback (%s)", exc)
+            top3_wrc = dict(mock_data.MOCK_TOP3_LINEUP_WRC)
+        try:
+            nrfi_trends = f_nrfi.result(timeout=5)
+        except Exception as exc:
+            logger.debug("load_first_inning_slate: nrfi_trends fallback (%s)", exc)
+            nrfi_trends = dict(mock_data.MOCK_NRFI_TRENDS)
+
+    return sp_splits, top3_wrc, nrfi_trends

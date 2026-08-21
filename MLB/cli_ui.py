@@ -1,9 +1,9 @@
 """
 cli_ui.py
 =========
-Minimalist, responsive Rich UI layout v4.2.
-Fixes bet slip suite table formatting & truncation bugs (No [:31] slice, full team tri-codes,
-clear column headers, wide teams column with text-wrap for 6-leg & 8-leg parlays).
+Minimalist, responsive Rich UI layout v6.0.
+Adds: Menu 0 — Hybrid Mega Slip (1st Inning Micro-Markets + ML Anchors);
+Calibration Status bar; all legacy slip views preserved.
 """
 
 from __future__ import annotations
@@ -124,8 +124,8 @@ def clear_screen() -> None:
 
 
 def print_banner() -> None:
-    console.print(Align.center(Text("⚾  MLB QUANTITATIVE ANALYTICS ENGINE  |  v4.2", style="bold #00d4ff")))
-    console.print(Align.center(Text("Capped 68% Moneyline · 4-Day Calibration · Line Shopping · 5-Props Suite", style="dim #6699cc")))
+    console.print(Align.center(Text("⚾  MLB QUANTITATIVE ANALYTICS ENGINE  |  v6.0", style="bold #00d4ff")))
+    console.print(Align.center(Text("Hybrid Mega Slip · 1st Inning Micro-Markets · Self-Correction Calibration Loop", style="dim #6699cc")))
     console.print()
 
 
@@ -213,8 +213,9 @@ def prompt_date_selection() -> str:
 
 def get_main_menu_items() -> list[tuple[str, str]]:
     return [
+        ("0", "🔥  [v6.0] HYBRID MEGA SLIP  (ML Anchor + 1st Inning Micro-Markets | 8+ Legs)"),
         ("1", "🚀  Ultimate Slate-Wide Moneyline Slip  (Full Matchday + 15-Leg Slip)"),
-        ("2", "🏆  Strong Moneyline & Parlays  (Top Picks, Lock & Slips 3, 4, 5, 8, 10 Legs)"),
+        ("2", "🏆  Strong Moneyline & Parlays  (Top Picks, Lock & Slips 3, 4, 5, 6, 8, 10 Legs)"),
         ("3", "🎯  Under 0.5 Home Run Parlays  (Win Rate 90% | Slips 3, 4, 5, 8, 10 Legs)"),
         ("4", "⚾  Under 1.5 Hits Screener  (Win Rate 70%+ | Single Bets vs 2-Team Parlays)"),
         ("5", "🔥  Alternate Team Total Over 1.5 Runs Screener  (Win Rate 90%)"),
@@ -234,11 +235,11 @@ def print_main_menu() -> None:
     for num, opt in get_main_menu_items():
         table.add_row(num, opt)
 
-    console.print(Panel(table, title="[gold1]⚾  MAIN MENU — MLB ANALYTICS V5.0 (Advanced Sabermetrics)[/]", border_style="panel_border", padding=(0, 2)))
+    console.print(Panel(table, title="[gold1]⚾  MAIN MENU — MLB ANALYTICS V6.0 (Hybrid Mega Slip + Sabermetrics)[/]", border_style="panel_border", padding=(0, 2)))
 
 
 def get_menu_choice() -> str:
-    return Prompt.ask("\n[accent]Select option[/]", choices=["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"], show_choices=True)
+    return Prompt.ask("\n[accent]Select option[/]", choices=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"], show_choices=True)
 
 
 # ==============================================================================
@@ -824,3 +825,246 @@ def press_enter_to_continue() -> None:
 
 def display_exit_message() -> None:
     console.print("\n[bold gold1]Thank you for using MLB Analytics System. Bet responsibly.[/]\n")
+
+
+# ==============================================================================
+# [v6.0] MENU 0: HYBRID MEGA SLIP DISPLAY
+# ==============================================================================
+
+def _fmt_pct(val: float) -> str:
+    return f"{val * 100:.1f}%"
+
+
+def _market_label(bet_type: str) -> str:
+    """Human-readable label for micro-market bet types."""
+    labels = {
+        "NRFI":          "NRFI (No Run 1st Inn)",
+        "YRFI":          "YRFI (Run in 1st Inn)",
+        "TEAM_U0.5:HOME": "Home U0.5 Runs (1st)",
+        "TEAM_U0.5:AWAY": "Away U0.5 Runs (1st)",
+        "TEAM_O0.5:HOME": "Home O0.5 Runs (1st)",
+        "TEAM_O0.5:AWAY": "Away O0.5 Runs (1st)",
+        "HCP_0:HOME":     "Home HCP 0 (Tie No Bet)",
+        "HCP_0:AWAY":     "Away HCP 0 (Tie No Bet)",
+    }
+    return labels.get(bet_type, bet_type)
+
+
+def display_calibration_status_bar(
+    calib_status: Any,  # calibration_loop.CalibrationStatus | None
+) -> None:
+    """Display the self-correction calibration status bar in a compact panel."""
+    if calib_status is None:
+        console.print(Panel(
+            "[dim]⚙  Calibration: Cold Start (no betting log found)[/]",
+            border_style="dim #1a4a8a", padding=(0, 2),
+        ))
+        return
+
+    if calib_status.is_cold_start:
+        msg = (
+            f"[orange1]⚙  CALIBRATION: COLD START[/]  "
+            f"[dim]({calib_status.sample_size}/{calib_status.min_sample} resolved bets — "
+            f"dynamic weights activate at {calib_status.min_sample})[/]"
+        )
+        border_col = "orange1"
+    else:
+        acc = calib_status.accuracy_last_20
+        weights = calib_status.active_weights
+        overall = acc.get("overall", 0.0)
+        n       = acc.get("sample_size", 0)
+        msg = (
+            f"[green_bright]⚙  CALIBRATION: ACTIVE[/]  "
+            f"[dim]Win Rate: {_fmt_pct(overall)} ({n} bets)  |  "
+            f"SP={weights.get('sp', 0):.2f} OFF={weights.get('offense', 0):.2f} "
+            f"BP={weights.get('bullpen', 0):.2f} SIT={weights.get('situational', 0):.2f}[/]"
+        )
+        border_col = "green"
+
+    console.print(Panel(msg, border_style=border_col, padding=(0, 2)))
+
+
+def display_hybrid_mega_slip(
+    slip: analytics.HybridMegaSlip,
+    bankroll_summary: Any = None,
+    calib_status: Any = None,
+) -> None:
+    """
+    Display the v6.0 Hybrid Mega Slip:
+      1. Calibration status bar
+      2. Summary panel (combined odds, quality label)
+      3. ML Anchor legs table
+      4. 1st Inning micro-market legs table
+    """
+    clear_screen()
+    print_banner()
+    print_rule("🔥  [v6.0] HYBRID MEGA SLIP  (ML Anchors + 1st Inning Micro-Markets)")
+
+    # ── Calibration Status Bar ──
+    display_calibration_status_bar(calib_status)
+    console.print()
+
+    # ── Summary Panel ──
+    qual_color = "green_bright" if "FULL" in slip.slip_quality else ("orange1" if "PARTIAL" in slip.slip_quality else "red_bright")
+    calib_icon = "🧠" if (slip.is_auto_calibrated) else "🔵"
+    combined_pct = slip.combined_prob * 100
+
+    alloc_str = ""
+    if bankroll_summary:
+        alloc = bankroll_summary.allocations.get(slip.total_legs)
+        if alloc:
+            alloc_str = f" (${alloc.dollar_stake:.2f})"
+
+    summary_lines = (
+        f"{calib_icon} [{qual_color}]{slip.slip_quality}[/]  |  "
+        f"Stake: [gold1]{slip.stake_units:.2f} Unit{alloc_str}[/]\n"
+        f"Combined Odds: [bold gold1]{slip.combined_decimal_odds:,.2f}x[/]  "
+        f"({analytics.format_american_odds(slip.combined_american_odds)})\n"
+        f"Combined Win Prob: [bold cyan]{combined_pct:.6f}%[/]  |  "
+        f"Anchors: [bold white]{len(slip.anchors)}[/]  "
+        f"Micro Legs: [bold white]{len(slip.micro_legs)}[/]\n"
+        f"[dim]Zero-Correlation enforced — anchor game excluded from micro-market pool[/]"
+    )
+    console.print(Panel(
+        summary_lines,
+        title="[gold1]📊  HYBRID MEGA SLIP SUMMARY[/]",
+        border_style="panel_border", padding=(0, 2), width=108,
+    ))
+    console.print()
+
+    if not slip.anchors and not slip.micro_legs:
+        console.print("[red_bright]Insufficient data — no qualifying legs found.[/]")
+        return
+
+    # ── Anchor Legs Table ──
+    if slip.anchors:
+        print_rule(f"⚓  MONEYLINE ANCHORS ({len(slip.anchors)} leg(s))")
+        anchor_tbl = Table(
+            box=box.SIMPLE_HEAD,
+            show_header=True,
+            header_style="table_header",
+            padding=(0, 1),
+            width=108,
+            expand=True,
+        )
+        anchor_tbl.add_column("#",          width=2,  style="dim")
+        anchor_tbl.add_column("Team",       width=10, style="bold white")
+        anchor_tbl.add_column("Game",       width=24, style="dim white")
+        anchor_tbl.add_column("SP",         width=14, style="cyan")
+        anchor_tbl.add_column("ML",         width=6,  style="gold1",   justify="right")
+        anchor_tbl.add_column("Conf",       width=7,  style="bold",    justify="right")
+        anchor_tbl.add_column("Trust",      width=9,  style="bold")
+        anchor_tbl.add_column("wRC+ 7D",    width=8,  style="accent",  justify="right")
+        anchor_tbl.add_column("WHIP",       width=5,  style="dim",     justify="right")
+
+        for i, anc in enumerate(slip.anchors, 1):
+            conf_pct  = f"{anc.win_confidence * 100:.1f}%"
+            trust_sty = _TRUST_STYLE.get(anc.trust_level, "white")
+            trust_lbl = _TRUST_LABEL.get(anc.trust_level, anc.trust_level)
+            tri_code  = format_team_display(anc.team_name, anc.is_home)
+            matchup   = f"{get_team_tri_code(anc.opponent_team)} vs {get_team_tri_code(anc.team_name)}"
+            sp_abbr   = (anc.pitcher_name[:13] + "…") if len(anc.pitcher_name) > 13 else anc.pitcher_name
+            ml_str    = analytics.format_american_odds(anc.best_line_american)
+
+            anchor_tbl.add_row(
+                str(i), tri_code, matchup, sp_abbr, ml_str,
+                Text(conf_pct, style="bold green_bright" if anc.win_confidence >= 0.65 else "bold yellow"),
+                Text(trust_lbl, style=trust_sty),
+                str(anc.wrc_plus_7d),
+                str(anc.our_whip),
+            )
+        console.print(anchor_tbl)
+        console.print()
+
+    # ── Micro-Market Legs Table ──
+    if slip.micro_legs:
+        print_rule(f"⚡  1ST INNING MICRO-MARKET LEGS ({len(slip.micro_legs)} leg(s))")
+        micro_tbl = Table(
+            box=box.SIMPLE_HEAD,
+            show_header=True,
+            header_style="table_header",
+            padding=(0, 1),
+            width=108,
+            expand=True,
+        )
+        micro_tbl.add_column("#",          width=2,  style="dim")
+        micro_tbl.add_column("Matchup",    width=14, style="bold white")
+        micro_tbl.add_column("Market",     width=20, style="accent")
+        micro_tbl.add_column("Conf",       width=7,  style="bold",   justify="right")
+        micro_tbl.add_column("SPs",        width=24, style="dim cyan")
+        micro_tbl.add_column("Top3 wRC+",  width=12, style="dim",    justify="right")
+        micro_tbl.add_column("Park/F",     width=7,  style="dim",    justify="right")
+        micro_tbl.add_column("Weather",    width=16, style="dim")
+
+        for i, leg in enumerate(slip.micro_legs, 1):
+            h_code   = get_team_tri_code(leg.home_team)
+            a_code   = get_team_tri_code(leg.away_team)
+            matchup  = f"{a_code} @ {h_code}"
+            market   = _market_label(leg.bet_type)
+            conf_pct = f"{leg.confidence * 100:.1f}%"
+            conf_sty = "bold green_bright" if leg.confidence >= 0.65 else "bold yellow"
+            h_sp_abbr = (leg.home_sp_name[:10] + "…") if len(leg.home_sp_name) > 10 else leg.home_sp_name
+            a_sp_abbr = (leg.away_sp_name[:10] + "…") if len(leg.away_sp_name) > 10 else leg.away_sp_name
+            sps_str   = f"{h_sp_abbr} / {a_sp_abbr}"
+            top3_str  = f"H:{leg.home_top3_wrc_plus} A:{leg.away_top3_wrc_plus}"
+            park_str  = f"{leg.park_factor:.2f}x"
+
+            micro_tbl.add_row(
+                str(i), matchup, market,
+                Text(conf_pct, style=conf_sty),
+                sps_str, top3_str, park_str,
+                leg.weather_note[:15],
+            )
+        console.print(micro_tbl)
+        console.print()
+
+    # ── Full Slip Summary (ordered legs) ──
+    print_rule("📋  FULL SLIP — ORDERED LEGS")
+    full_tbl = Table(
+        box=box.MINIMAL,
+        show_header=True,
+        header_style="table_header",
+        padding=(0, 1),
+        width=108,
+        expand=True,
+    )
+    full_tbl.add_column("Leg", width=3,  style="gold1")
+    full_tbl.add_column("Type",    width=7,  style="dim")
+    full_tbl.add_column("Bet",     width=38, style="bold white")
+    full_tbl.add_column("Conf",    width=7,  style="bold",  justify="right")
+
+    leg_num = 1
+    for anc in slip.anchors:
+        full_tbl.add_row(
+            str(leg_num), "ML",
+            f"{format_team_display(anc.team_name, anc.is_home)}  {analytics.format_american_odds(anc.best_line_american)}",
+            Text(f"{anc.win_confidence * 100:.1f}%", style="bold green_bright"),
+        )
+        leg_num += 1
+    for leg in slip.micro_legs:
+        h_code = get_team_tri_code(leg.home_team)
+        a_code = get_team_tri_code(leg.away_team)
+        bet_str = f"{a_code} @ {h_code} — {_market_label(leg.bet_type)}"
+        full_tbl.add_row(
+            str(leg_num), "INN1",
+            bet_str,
+            Text(f"{leg.confidence * 100:.1f}%", style="bold yellow"),
+        )
+        leg_num += 1
+
+    console.print(full_tbl)
+    console.print()
+
+    # ── Bankroll Allocation Warning ──
+    console.print(Panel(
+        Align.center("[bold yellow]⚠️ PANDUAN EKSEKUSI: Alokasi Maksimal 0.25 Unit (Lottery / Test Luck Slip)[/bold yellow]"),
+        border_style="yellow", padding=(0, 2), width=108, expand=True
+    ))
+    console.print()
+
+    # ── Disclaimer ──
+    console.print(Panel(
+        "[dim]⚠  Bet responsibly. Micro-market odds subject to sportsbook availability. "
+        "NRFI/YRFI priced approx -115 to -130. Verify lines before placing.[/]",
+        border_style="dim #1a4a8a", padding=(0, 2),
+    ))

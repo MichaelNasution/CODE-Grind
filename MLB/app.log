@@ -188,3 +188,141 @@ INFO:analytics:Pitcher slump penalty applied (L3 ERA: 4.60)
 2026-08-12 14:40:08 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
 2026-08-12 14:40:08 | analytics            | INFO     | Slump penalty applied for Miami Marlins (wRC+ 7d < 85).
 2026-08-12 14:40:08 | analytics            | INFO     | Slump penalty applied for Pittsburgh Pirates (wRC+ 7d < 85).
+2026-08-12 19:56:41 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
+2026-08-12 19:56:41 | data_fetcher         | DEBUG    | FanGraphs pitching fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-12 19:56:42 | data_fetcher         | DEBUG    | FanGraphs team batting 7d fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-12 19:58:45 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/people/667755/stats
+2026-08-12 19:58:51 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/people/624133/stats
+2026-08-12 19:59:09 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
+2026-08-12 19:59:35 | data_fetcher         | DEBUG    | HTTP error 0 for URL: https://api.open-meteo.com/v1/forecast
+2026-08-12 19:59:50 | analytics            | INFO     | Slump penalty applied for Miami Marlins (wRC+ 7d < 85).
+2026-08-12 19:59:50 | analytics            | INFO     | Slump penalty applied for Pittsburgh Pirates (wRC+ 7d < 85).
+2026-08-14 23:52:15 | matplotlib           | DEBUG    | matplotlib data path: C:\Users\ASUS\AppData\Roaming\Python\Python314\site-packages\matplotlib\mpl-data
+2026-08-14 23:52:15 | matplotlib           | DEBUG    | CONFIGDIR=C:\Users\ASUS\.matplotlib
+2026-08-14 23:52:15 | matplotlib           | DEBUG    | interactive is False
+2026-08-14 23:52:15 | matplotlib           | DEBUG    | platform is win32
+2026-08-14 23:52:15 | matplotlib           | DEBUG    | CACHEDIR=C:\Users\ASUS\.matplotlib
+2026-08-14 23:52:15 | matplotlib.font_manager | DEBUG    | Using fontManager instance from C:\Users\ASUS\.matplotlib\fontlist-v390.json
+2026-08-14 23:52:25 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
+2026-08-14 23:52:26 | data_fetcher         | DEBUG    | FanGraphs pitching fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-14 23:52:26 | data_fetcher         | DEBUG    | FanGraphs team batting 7d fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-14 23:52:34 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/people/669461/stats
+2026-08-14 23:52:44 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/people/695505/stats
+2026-08-14 23:53:03 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/people/696149/stats
+2026-08-14 23:53:21 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/people/695549
+2026-08-14 23:53:26 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/people/656794/stats
+2026-08-14 23:53:29 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/teams/116/stats
+2026-08-14 23:53:31 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/teams/145/stats
+2026-08-14 23:53:36 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
+2026-08-14 23:53:42 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/people/674841
+2026-08-14 23:53:45 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/teams/121/stats
+2026-08-14 23:53:51 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
+2026-08-14 23:53:58 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/people/668909/stats
+2026-08-14 23:55:44 | analytics            | INFO     | Slump penalty applied for Miami Marlins (wRC+ 7d < 85).
+2026-08-14 23:55:44 | analytics            | INFO     | Slump penalty applied for Pittsburgh Pirates (wRC+ 7d < 85).
+2026-08-15 10:54:35 | matplotlib           | DEBUG    | matplotlib data path: C:\Users\ASUS\AppData\Roaming\Python\Python314\site-packages\matplotlib\mpl-data
+2026-08-15 10:54:35 | matplotlib           | DEBUG    | CONFIGDIR=C:\Users\ASUS\.matplotlib
+2026-08-15 10:54:35 | matplotlib           | DEBUG    | interactive is False
+2026-08-15 10:54:35 | matplotlib           | DEBUG    | platform is win32
+2026-08-15 10:54:35 | matplotlib           | DEBUG    | CACHEDIR=C:\Users\ASUS\.matplotlib
+2026-08-15 10:54:35 | matplotlib.font_manager | DEBUG    | Using fontManager instance from C:\Users\ASUS\.matplotlib\fontlist-v390.json
+2026-08-15 10:55:18 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
+2026-08-15 10:55:19 | data_fetcher         | DEBUG    | FanGraphs pitching fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-15 10:55:19 | data_fetcher         | DEBUG    | FanGraphs team batting 7d fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-15 10:57:22 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
+2026-08-15 10:57:36 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
+2026-08-15 10:58:26 | analytics            | INFO     | Slump penalty applied for Miami Marlins (wRC+ 7d < 85).
+2026-08-15 10:58:26 | analytics            | INFO     | Slump penalty applied for Pittsburgh Pirates (wRC+ 7d < 85).
+2026-08-17 22:45:16 | matplotlib           | DEBUG    | matplotlib data path: C:\Users\ASUS\AppData\Roaming\Python\Python314\site-packages\matplotlib\mpl-data
+2026-08-17 22:45:16 | matplotlib           | DEBUG    | CONFIGDIR=C:\Users\ASUS\.matplotlib
+2026-08-17 22:45:16 | matplotlib           | DEBUG    | interactive is False
+2026-08-17 22:45:16 | matplotlib           | DEBUG    | platform is win32
+2026-08-17 22:45:16 | matplotlib           | DEBUG    | CACHEDIR=C:\Users\ASUS\.matplotlib
+2026-08-17 22:45:16 | matplotlib.font_manager | DEBUG    | Using fontManager instance from C:\Users\ASUS\.matplotlib\fontlist-v390.json
+2026-08-17 22:45:28 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
+2026-08-17 22:45:29 | data_fetcher         | DEBUG    | FanGraphs pitching fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-17 22:45:29 | data_fetcher         | DEBUG    | FanGraphs team batting 7d fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-17 22:46:28 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
+2026-08-17 22:47:41 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
+2026-08-17 22:47:41 | analytics            | INFO     | Slump penalty applied for Miami Marlins (wRC+ 7d < 85).
+2026-08-17 22:47:41 | analytics            | INFO     | Slump penalty applied for Pittsburgh Pirates (wRC+ 7d < 85).
+2026-08-18 23:08:37 | matplotlib           | DEBUG    | matplotlib data path: C:\Users\ASUS\AppData\Roaming\Python\Python314\site-packages\matplotlib\mpl-data
+2026-08-18 23:08:37 | matplotlib           | DEBUG    | CONFIGDIR=C:\Users\ASUS\.matplotlib
+2026-08-18 23:08:37 | matplotlib           | DEBUG    | interactive is False
+2026-08-18 23:08:37 | matplotlib           | DEBUG    | platform is win32
+2026-08-18 23:08:37 | matplotlib           | DEBUG    | CACHEDIR=C:\Users\ASUS\.matplotlib
+2026-08-18 23:08:37 | matplotlib.font_manager | DEBUG    | Using fontManager instance from C:\Users\ASUS\.matplotlib\fontlist-v390.json
+2026-08-18 23:09:27 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
+2026-08-18 23:09:27 | data_fetcher         | DEBUG    | FanGraphs pitching fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-18 23:09:28 | data_fetcher         | DEBUG    | FanGraphs team batting 7d fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-18 23:12:46 | analytics            | INFO     | Slump penalty applied for Pittsburgh Pirates (wRC+ 7d < 85).
+2026-08-18 23:12:46 | analytics            | INFO     | Slump penalty applied for Miami Marlins (wRC+ 7d < 85).
+2026-08-19 23:21:50 | matplotlib           | DEBUG    | matplotlib data path: C:\Users\ASUS\AppData\Roaming\Python\Python314\site-packages\matplotlib\mpl-data
+2026-08-19 23:21:50 | matplotlib           | DEBUG    | CONFIGDIR=C:\Users\ASUS\.matplotlib
+2026-08-19 23:21:50 | matplotlib           | DEBUG    | interactive is False
+2026-08-19 23:21:50 | matplotlib           | DEBUG    | platform is win32
+2026-08-19 23:21:50 | matplotlib           | DEBUG    | CACHEDIR=C:\Users\ASUS\.matplotlib
+2026-08-19 23:21:50 | matplotlib.font_manager | DEBUG    | Using fontManager instance from C:\Users\ASUS\.matplotlib\fontlist-v390.json
+2026-08-19 23:22:16 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
+2026-08-19 23:22:16 | data_fetcher         | DEBUG    | FanGraphs pitching fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-19 23:22:16 | data_fetcher         | DEBUG    | FanGraphs team batting 7d fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-19 23:25:11 | analytics            | INFO     | Slump penalty applied for Pittsburgh Pirates (wRC+ 7d < 85).
+2026-08-19 23:25:11 | analytics            | INFO     | Slump penalty applied for Miami Marlins (wRC+ 7d < 85).
+2026-08-20 23:27:02 | matplotlib           | DEBUG    | matplotlib data path: C:\Users\ASUS\AppData\Roaming\Python\Python314\site-packages\matplotlib\mpl-data
+2026-08-20 23:27:02 | matplotlib           | DEBUG    | CONFIGDIR=C:\Users\ASUS\.matplotlib
+2026-08-20 23:27:02 | matplotlib           | DEBUG    | interactive is False
+2026-08-20 23:27:02 | matplotlib           | DEBUG    | platform is win32
+2026-08-20 23:27:02 | matplotlib           | DEBUG    | CACHEDIR=C:\Users\ASUS\.matplotlib
+2026-08-20 23:27:02 | matplotlib.font_manager | DEBUG    | Using fontManager instance from C:\Users\ASUS\.matplotlib\fontlist-v390.json
+2026-08-20 23:27:53 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
+2026-08-20 23:27:53 | data_fetcher         | DEBUG    | FanGraphs pitching fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-20 23:27:53 | data_fetcher         | DEBUG    | FanGraphs team batting 7d fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-20 23:29:20 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/people/594798/stats
+2026-08-21 10:59:25 | matplotlib           | DEBUG    | matplotlib data path: C:\Users\ASUS\AppData\Roaming\Python\Python314\site-packages\matplotlib\mpl-data
+2026-08-21 10:59:25 | matplotlib           | DEBUG    | CONFIGDIR=C:\Users\ASUS\.matplotlib
+2026-08-21 10:59:25 | matplotlib           | DEBUG    | interactive is False
+2026-08-21 10:59:25 | matplotlib           | DEBUG    | platform is win32
+2026-08-21 10:59:25 | matplotlib           | DEBUG    | CACHEDIR=C:\Users\ASUS\.matplotlib
+2026-08-21 10:59:25 | matplotlib.font_manager | DEBUG    | Using fontManager instance from C:\Users\ASUS\.matplotlib\fontlist-v390.json
+2026-08-21 11:00:29 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
+2026-08-21 11:00:29 | data_fetcher         | DEBUG    | FanGraphs pitching fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-21 11:00:30 | data_fetcher         | DEBUG    | FanGraphs team batting 7d fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-21 11:01:12 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
+2026-08-21 11:03:23 | analytics            | INFO     | Slump penalty applied for Miami Marlins (wRC+ 7d < 85).
+2026-08-21 11:03:23 | analytics            | INFO     | Slump penalty applied for Pittsburgh Pirates (wRC+ 7d < 85).
+2026-08-21 13:40:09 | matplotlib           | DEBUG    | matplotlib data path: C:\Users\ASUS\AppData\Roaming\Python\Python314\site-packages\matplotlib\mpl-data
+2026-08-21 13:40:09 | matplotlib           | DEBUG    | CONFIGDIR=C:\Users\ASUS\.matplotlib
+2026-08-21 13:40:09 | matplotlib           | DEBUG    | interactive is False
+2026-08-21 13:40:09 | matplotlib           | DEBUG    | platform is win32
+2026-08-21 13:40:09 | matplotlib           | DEBUG    | CACHEDIR=C:\Users\ASUS\.matplotlib
+2026-08-21 13:40:09 | matplotlib.font_manager | DEBUG    | Using fontManager instance from C:\Users\ASUS\.matplotlib\fontlist-v390.json
+2026-08-21 13:50:12 | matplotlib           | DEBUG    | matplotlib data path: C:\Users\ASUS\AppData\Roaming\Python\Python314\site-packages\matplotlib\mpl-data
+2026-08-21 13:50:12 | matplotlib           | DEBUG    | CONFIGDIR=C:\Users\ASUS\.matplotlib
+2026-08-21 13:50:12 | matplotlib           | DEBUG    | interactive is False
+2026-08-21 13:50:12 | matplotlib           | DEBUG    | platform is win32
+2026-08-21 13:50:12 | matplotlib           | DEBUG    | CACHEDIR=C:\Users\ASUS\.matplotlib
+2026-08-21 13:50:12 | matplotlib.font_manager | DEBUG    | Using fontManager instance from C:\Users\ASUS\.matplotlib\fontlist-v390.json
+2026-08-21 13:50:38 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
+2026-08-21 13:50:38 | data_fetcher         | DEBUG    | FanGraphs pitching fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-21 13:50:39 | data_fetcher         | DEBUG    | FanGraphs team batting 7d fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-08-21 13:53:28 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://api.open-meteo.com/v1/forecast
+2026-08-21 13:53:32 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/people/676106/stats
+2026-08-21 13:53:35 | data_fetcher         | DEBUG    | Silent fallback (Timeout/Connection) for URL: https://statsapi.mlb.com/api/v1/people/676106/stats
+2026-08-21 13:53:43 | analytics            | INFO     | Slump penalty applied for Miami Marlins (wRC+ 7d < 85).
+2026-08-21 13:53:43 | analytics            | INFO     | Slump penalty applied for Pittsburgh Pirates (wRC+ 7d < 85).
+2026-08-21 13:53:43 | data_fetcher         | DEBUG    | SP 1st inn splits: cache hit
+2026-08-21 13:53:43 | data_fetcher         | DEBUG    | NRFI trends cache hit
+2026-08-21 13:53:43 | data_fetcher         | DEBUG    | Top-3 wRC+ fetch failed: list index out of range
+2026-08-21 13:53:43 | __main__             | ERROR    | Hybrid Mega Slip error: 'NoneType' object has no attribute 'get'
+Traceback (most recent call last):
+  File "D:\[college]\CODE\CODE-Grind\MLB\main.py", line 131, in action_hybrid_mega_slip
+    hybrid_slip = analytics.build_hybrid_mega_slip(
+        candidates, games, sp_splits, top3_wrc, nrfi_trends,
+        is_auto_calibrated=is_calibrated,
+    )
+  File "D:\[college]\CODE\CODE-Grind\MLB\analytics.py", line 1596, in build_hybrid_mega_slip
+    leg = evaluate_first_inning_legs(game, sp_splits_data, top3_wrc_data, nrfi_trends_data)
+  File "D:\[college]\CODE\CODE-Grind\MLB\analytics.py", line 1447, in evaluate_first_inning_legs
+    base_siera = game.get("away_sp", {}).get("siera", 4.00)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'NoneType' object has no attribute 'get'

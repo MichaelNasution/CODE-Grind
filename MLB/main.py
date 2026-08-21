@@ -1,9 +1,10 @@
 """
 main.py
 =======
-Entry point for the MLB Analytics CLI System v5.0.
+Entry point for the MLB Analytics CLI System v6.0.
 
 Clean Screen Workflow & Silent File Logging to app.log.
+Integrates: Startup Calibration Cycle, Hybrid Mega Slip Builder.
 """
 
 from __future__ import annotations
@@ -54,6 +55,7 @@ logger = logging.getLogger(__name__)
 
 import analytics
 import bankroll
+import calibration_loop
 import cli_ui
 import data_fetcher
 import mock_data
@@ -61,10 +63,11 @@ import mock_data
 
 @dataclass
 class AppState:
-    analysis_date: str
-    bankroll_state: bankroll.BankrollState
-    is_live_data: bool = True
-    calib_report: analytics.CalibrationReport | None = None
+    analysis_date:    str
+    bankroll_state:   bankroll.BankrollState
+    is_live_data:     bool = True
+    calib_report:     analytics.CalibrationReport | None = None
+    calib_status:     calibration_loop.CalibrationStatus | None = None
 
 
 # ==============================================================================
@@ -92,6 +95,49 @@ def action_ultimate_slate(state: AppState) -> None:
     except Exception as exc:
         logger.exception("Ultimate slate error: %s", exc)
         cli_ui.display_error(f"Error generating ultimate slate:\n{exc}")
+    cli_ui.press_enter_to_continue()
+
+
+def action_hybrid_mega_slip(state: AppState) -> None:
+    """
+    Menu 0 — [v6.0] Hybrid Mega Slip Builder
+    1-2 ML Anchors + 6-7 1st Inning Micro-Market Legs.
+    """
+    try:
+        games, is_live, line_shopping = cli_ui.with_spinner(
+            "Loading game slate...",
+            data_fetcher.load_full_game_slate,
+            state.analysis_date,
+        )
+        state.is_live_data = is_live
+
+        candidates = analytics.run_moneyline_screener(
+            games, mock_data.MOCK_TEAM_FORM, mock_data.MOCK_TEAM_OPS_SPLITS,
+            mock_data.MOCK_MONEYLINE_ODDS, mock_data.MOCK_PITCHER_STATS,
+            is_live, line_shopping, state.calib_report,
+        )
+
+        # Load 1st-inning data (SP splits, Top-3 wRC+, NRFI trends)
+        sp_splits, top3_wrc, nrfi_trends = cli_ui.with_spinner(
+            "Fetching 1st inning data...",
+            data_fetcher.load_first_inning_slate,
+            games, state.analysis_date,
+        )
+
+        is_calibrated = (
+            state.calib_status is not None and
+            not state.calib_status.is_cold_start
+        )
+        hybrid_slip = analytics.build_hybrid_mega_slip(
+            candidates, games, sp_splits, top3_wrc, nrfi_trends,
+            is_auto_calibrated=is_calibrated,
+        )
+        summary     = bankroll.build_summary(state.bankroll_state)
+
+        cli_ui.display_hybrid_mega_slip(hybrid_slip, summary, state.calib_status)
+    except Exception as exc:
+        logger.exception("Hybrid Mega Slip error: %s", exc)
+        cli_ui.display_error(f"Error building Hybrid Mega Slip:\n{exc}")
     cli_ui.press_enter_to_continue()
 
 
@@ -219,6 +265,13 @@ def action_change_date(state: AppState) -> None:
 # ==============================================================================
 
 def main() -> None:
+    # ── Startup Calibration Cycle (v6.0 Self-Correction Loop) ─────────────────
+    calib_status = None
+    try:
+        calib_status = calibration_loop.run_calibration_cycle()
+    except Exception as exc:
+        logger.warning("Calibration cycle failed at startup: %s", exc)
+
     initial_date  = cli_ui.prompt_date_selection()
     b_state       = bankroll.load_state()
 
@@ -229,6 +282,7 @@ def main() -> None:
         analysis_date=initial_date,
         bankroll_state=b_state,
         calib_report=calib_report,
+        calib_status=calib_status,
     )
 
     while True:
@@ -240,7 +294,9 @@ def main() -> None:
 
             choice = cli_ui.get_menu_choice()
 
-            if choice == "1":
+            if choice == "0":
+                action_hybrid_mega_slip(app_state)
+            elif choice == "1":
                 action_ultimate_slate(app_state)
             elif choice == "2":
                 action_moneyline_screener(app_state)

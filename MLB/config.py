@@ -1,8 +1,9 @@
 """
 config.py
 =========
-Central configuration hub for the MLB Analytics CLI System v5.0 Production Grade.
-Advanced Sabermetrics (xFIP, SIERA, wRC+) 4-Pillar Weighting Engine.
+Central configuration hub for the MLB Analytics CLI System v6.0 Production Grade.
+Advanced Sabermetrics (xFIP, SIERA, wRC+) 4-Pillar Weighting Engine +
+1st Inning Micro-Market Engine + Self-Correction Calibration Loop.
 """
 
 # ==============================================================================
@@ -235,4 +236,93 @@ STADIUM_COORDINATES: dict[str, dict[str, float]] = {
     "Busch Stadium":             {"lat": 38.6226, "lon": -90.1928},
     "American Family Field":     {"lat": 43.0280, "lon": -87.9712},
     "DEFAULT":                   {"lat": 39.0500, "lon": -94.4800},
+}
+
+# ==============================================================================
+# V6.0 — 1ST INNING MICRO-MARKET ENGINE
+# ==============================================================================
+
+# Statcast rolling window: Pull only last N days (not full season)
+STATCAST_ROLLING_DAYS           = 45    # 45-day rolling window for SP 1st inning splits
+STATCAST_MIN_STARTS             = 8     # Minimum starts in sample for reliable 1st inn stats
+SP_1ST_INN_ERA_MULTIPLIER       = 1.18  # Empirical: pitchers avg 18% higher ERA in inning 1
+                                        # Used as fallback when no Statcast sample
+
+# NRFI / YRFI Model Probability Caps
+NRFI_MIN_PROBABILITY            = 0.35  # Floor — minimum realistic NRFI probability
+NRFI_MAX_PROBABILITY            = 0.72  # Ceiling — epistemic humility cap
+NRFI_MIN_CONFIDENCE_THRESHOLD   = 0.58  # Minimum to include as micro-market leg
+YRFI_MIN_CONFIDENCE_THRESHOLD   = 0.58  # Same threshold for YRFI legs
+TEAM_INN1_TOTAL_MIN_CONFIDENCE  = 0.58  # Team 1st Inning Total O/U 0.5
+HANDICAP_1ST_INN_MIN_CONFIDENCE = 0.58  # 1st Inning Handicap 0 (Tie No Bet)
+
+# NRFI Model Adjustment Knobs
+NRFI_BOTH_ACES_XFIP_THRESHOLD   = 3.20  # Both SP xFIP_1st <= 3.20 → +0.04
+NRFI_LEAKY_SP_XFIP_THRESHOLD    = 4.50  # Either SP xFIP_1st >= 4.50 → -0.06
+NRFI_ELITE_OFFENSE_THRESHOLD    = 1.20  # (top3_wrc_home + top3_wrc_away)/200 >= 1.20 → -0.06
+NRFI_WEAK_OFFENSE_THRESHOLD     = 0.80  # (top3_wrc_home + top3_wrc_away)/200 <= 0.80 → +0.05
+NRFI_WIND_OUT_SPEED_MPH         = 15    # Wind blowing out >= 15mph → -0.04
+NRFI_COLD_TEMP_F                = 50    # Temp <= 50°F → +0.03
+NRFI_TREND_SAMPLE_GAMES         = 15    # Last N games to compute per-team NRFI trend rate
+
+# Top-of-Order (Batters 1-3) wRC+ Thresholds
+TOP3_WRC_ELITE_THRESHOLD        = 120   # Top-3 avg wRC+ >= 120 → strong YRFI pressure
+TOP3_WRC_WEAK_THRESHOLD         = 85    # Top-3 avg wRC+ <= 85  → NRFI favorable
+
+# 1st Inning Handicap Model
+HANDICAP_1ST_INN_MIN_SIERA_GAP  = 0.60  # Min SIERA gap between SPs to qualify
+
+# ==============================================================================
+# V6.0 — FILE-BASED CACHE (12-HOUR TTL)
+# ==============================================================================
+CACHE_DIR                       = ".cache"          # Relative to script directory
+CACHE_TTL_HOURS                 = 12                # Re-fetch if older than 12 hours
+CACHE_SP_SPLITS_FILE            = "sp_1st_inn_splits_{season}.json"
+CACHE_TOP3_WRC_FILE             = "top3_wrc_{date}.json"
+CACHE_NRFI_TRENDS_FILE          = "nrfi_trends_{date}.json"
+CACHE_FG_PITCHING_FILE          = "fg_pitching_{season}.json"
+CACHE_FG_BATTING_FILE           = "fg_batting_{date}.json"
+
+# ==============================================================================
+# V6.0 — HYBRID MEGA SLIP ASSEMBLY
+# ==============================================================================
+HYBRID_SLIP_TARGET_LEGS         = 8     # Default target (1-2 ML anchors + 6-7 micro legs)
+HYBRID_SLIP_MIN_LEGS            = 6     # Minimum acceptable slip size
+HYBRID_SLIP_MAX_ANCHOR_LEGS     = 2     # Max Moneyline anchor legs
+HYBRID_SLIP_ANCHOR_MIN_CONF     = 0.65  # ML anchor must have Win Confidence >= 65%
+HYBRID_SLIP_ANCHOR_FALLBACK_CONF= 0.58  # Fallback threshold if no HIGH trust candidates
+HYBRID_SLIP_STAKE_UNITS         = 0.25  # Always 0.25 unit for Mega Slips
+HYBRID_SLIP_ZERO_CORRELATION    = True  # Enforce: anchor game cannot also be a micro leg
+
+# Micro-market type labels (for CLI display and log)
+MICRO_MARKET_NRFI               = "NRFI"           # Neither Run in First Inning
+MICRO_MARKET_YRFI               = "YRFI"           # Yes Run in First Inning
+MICRO_MARKET_TEAM_UNDER         = "TEAM_U0.5"      # Team 1st Inning Total Under 0.5
+MICRO_MARKET_TEAM_OVER          = "TEAM_O0.5"      # Team 1st Inning Total Over 0.5
+MICRO_MARKET_HANDICAP           = "HCP_0"          # 1st Inning Handicap 0 (Tie No Bet)
+
+# ==============================================================================
+# V6.0 — SELF-CORRECTION CALIBRATION LOOP
+# ==============================================================================
+DATA_DIR                        = "data"            # Relative to script directory
+BETTING_LOG_FILE                = "betting_log.json"
+WEIGHTS_OVERRIDE_FILE           = "weights_override.json"
+
+CALIB_MIN_SAMPLE_SIZE           = 10    # Min resolved bets before activating dynamic weights
+CALIB_LOOKBACK_BETS             = 20    # Rolling window for weight computation
+CALIB_LEARNING_RATE             = 0.05  # Gradient descent step size
+CALIB_MAX_WEIGHT_DELTA          = 0.03  # Max weight change per pillar per day
+CALIB_MIN_PILLAR_WEIGHT         = 0.10  # Floor: no pillar drops below 10%
+CALIB_MAX_PILLAR_WEIGHT         = 0.50  # Ceiling: no pillar exceeds 50%
+
+# Parlay unit allocations — extended for v6.0 hybrid slip
+PARLAY_UNIT_ALLOCATION_V6: dict[int, float] = {
+    3:  1.00,
+    4:  0.75,
+    5:  0.50,
+    6:  0.25,
+    7:  0.25,
+    8:  0.25,
+    10: 0.25,
+    15: 0.25,
 }
