@@ -132,17 +132,21 @@ def print_banner() -> None:
 def display_analysis_header(date_str: str, is_live_data: bool = True) -> None:
     dt_obj = date.fromisoformat(date_str)
     day_name = dt_obj.strftime("%A")
+    is_past = dt_obj < date.today()
 
     header_text = Text()
     header_text.append("📅 Date: ", style="bold dim_text")
     header_text.append(f"{day_name[:3]}, {date_str}", style="bold gold1")
 
-    if is_live_data:
+    if is_past:
+        header_text.append("  |  [PAST DATE — HISTORICAL]", style="bold orange1")
+    elif is_live_data:
         header_text.append("  |  [LIVE VERIFIED]", style="bold green_bright")
     else:
         header_text.append("  |  [MOCK / UNVERIFIED]", style="bold orange1")
 
-    console.print(Align.center(Panel(header_text, border_style="panel_border" if is_live_data else "orange1", padding=(0, 2))))
+    border_style = "orange1" if (is_past or not is_live_data) else "panel_border"
+    console.print(Align.center(Panel(header_text, border_style=border_style, padding=(0, 2))))
     console.print()
 
 
@@ -173,8 +177,10 @@ def prompt_date_selection() -> str:
     print_banner()
 
     today_dt = date.today()
+    yesterday_dt = today_dt - timedelta(days=1)
     tomorrow_dt = today_dt + timedelta(days=1)
     today_str = today_dt.strftime("%Y-%m-%d")
+    yesterday_str = yesterday_dt.strftime("%Y-%m-%d")
     tomorrow_str = tomorrow_dt.strftime("%Y-%m-%d")
 
     menu_table = Table(show_header=False, box=box.SIMPLE, padding=(0, 2))
@@ -184,16 +190,19 @@ def prompt_date_selection() -> str:
 
     menu_table.add_row("A", "Hari Ini (Today)", today_str)
     menu_table.add_row("B", "Besok (Tomorrow)", tomorrow_str)
-    menu_table.add_row("C", "Custom Date", "Format: YYYY-MM-DD")
+    menu_table.add_row("C", "Kemarin (Yesterday)", yesterday_str)
+    menu_table.add_row("D", "Custom Date", "Format: YYYY-MM-DD")
 
     console.print(Panel(menu_table, title="[gold1]📅  SELECT ANALYSIS DATE[/]", border_style="panel_border", padding=(1, 2)))
 
-    choice = Prompt.ask("\n[accent]Select option[/]", choices=["A", "a", "B", "b", "C", "c"], default="A").upper()
+    choice = Prompt.ask("\n[accent]Select option[/]", choices=["A", "a", "B", "b", "C", "c", "D", "d"], default="A").upper()
 
     if choice == "A":
         return today_str
     elif choice == "B":
         return tomorrow_str
+    elif choice == "C":
+        return yesterday_str
     else:
         while True:
             custom_input = Prompt.ask("[gold1]Enter date (YYYY-MM-DD)[/]")
@@ -208,7 +217,7 @@ def prompt_date_selection() -> str:
 
 
 # ==============================================================================
-# MAIN MENU (10 Options)
+# MAIN MENU (11 Options)
 # ==============================================================================
 
 def get_main_menu_items() -> list[tuple[str, str]]:
@@ -223,7 +232,8 @@ def get_main_menu_items() -> list[tuple[str, str]]:
         ("7", "📊  5-Factor Total Score Projection  (Over / Under Total Runs)"),
         ("8", "🔄  4-Day Historical Calibration Engine Log  (H-4 to H-1 Performance)"),
         ("9", "💰  Bankroll Status & Sportsbook Line Shopping Prices"),
-        ("10", "📅  Ganti Tanggal Analisis / Keluar  (Change Date / Exit)"),
+        ("10", "📅  Ganti Tanggal Analisis  (Change Date — Hari Ini / Besok / Kemarin / Custom)"),
+        ("11", "🚪  Keluar  (Exit)"),
     ]
 
 
@@ -239,7 +249,7 @@ def print_main_menu() -> None:
 
 
 def get_menu_choice() -> str:
-    return Prompt.ask("\n[accent]Select option[/]", choices=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"], show_choices=True)
+    return Prompt.ask("\n[accent]Select option[/]", choices=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"], show_choices=True)
 
 
 # ==============================================================================
@@ -427,10 +437,10 @@ def _display_bet_slip_suite(
     slip_table = Table(
         title="[bold gold1]Complete Bet Slip Suite — Berdasarkan Urutan Win Confidence[/]",
         box=box.ROUNDED, border_style="blue", header_style="bold cyan",
-        padding=(0, 1), show_lines=True, width=108,
+        padding=(0, 1), show_lines=True, width=130,
     )
-    slip_table.add_column("Slip Type",  style="bold white", width=22, no_wrap=True)
-    slip_table.add_column("Teams",      style="bold cyan",  width=44, no_wrap=False)
+    slip_table.add_column("Slip Type",  style="bold white", width=20, no_wrap=True)
+    slip_table.add_column("Teams",      style="bold cyan",  min_width=30, no_wrap=False, ratio=1)
     slip_table.add_column("Dec Odds",   justify="center", width=10, no_wrap=True)
     slip_table.add_column("Am Odds",    justify="center", style="bold gold1", width=10, no_wrap=True)
     slip_table.add_column("Comb Conf",  justify="center", width=11, no_wrap=True)
@@ -449,7 +459,7 @@ def _display_bet_slip_suite(
         conf_pct  = f"{slip.combined_confidence * 100:.2f}%"
         slip_table.add_row(
             f"[{style}]{label}[/]",
-            teams_str,  # Full string without hardcoded [:31] truncation
+            teams_str,
             f"{slip.combined_decimal_odds:.2f}x",
             f"[bold gold1]{am_str}[/]",
             f"[bold cyan]{conf_pct}[/]",
@@ -478,10 +488,10 @@ def _display_bet_slip_suite(
         combo_table = Table(
             title="[bold gold1]3-of-5 Combination — Semua Opsi (C(5,3) = 10 combo)[/]",
             box=box.ROUNDED, border_style="blue", header_style="bold cyan",
-            padding=(0, 1), show_lines=False, width=108,
+            padding=(0, 1), show_lines=False, width=130,
         )
         combo_table.add_column("#",         justify="center", width=3,  no_wrap=True)
-        combo_table.add_column("Teams",     style="bold cyan", width=44, no_wrap=False)
+        combo_table.add_column("Teams",     style="bold cyan", min_width=30, no_wrap=False, ratio=1)
         combo_table.add_column("Dec Odds",  justify="center", width=10, no_wrap=True)
         combo_table.add_column("Am Odds",   justify="center", style="bold gold1", width=10, no_wrap=True)
         combo_table.add_column("Comb Conf", justify="center", width=11, no_wrap=True)

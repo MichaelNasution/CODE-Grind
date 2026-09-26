@@ -315,6 +315,8 @@ def main() -> None:
             elif choice == "9":
                 action_bankroll_manager(app_state)
             elif choice == "10":
+                action_change_date(app_state)
+            elif choice == "11":
                 cli_ui.display_exit_message()
                 sys.exit(0)
 
