@@ -674,3 +674,16 @@ rich.errors.MissingStyle: Failed to get style 'bold green_bright'; unable to par
 2026-09-27 02:38:50 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
 2026-09-27 02:38:50 | data_fetcher         | DEBUG    | FanGraphs pitching fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
 2026-09-27 02:38:51 | data_fetcher         | DEBUG    | FanGraphs team batting 7d fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-09-27 02:41:03 | analytics            | INFO     | Slump penalty applied for Pittsburgh Pirates (wRC+ 7d < 85).
+2026-09-27 02:41:03 | analytics            | INFO     | Slump penalty applied for Miami Marlins (wRC+ 7d < 85).
+2026-09-27 06:21:11 | matplotlib           | DEBUG    | matplotlib data path: C:\Users\ASUS\AppData\Roaming\Python\Python314\site-packages\matplotlib\mpl-data
+2026-09-27 06:21:11 | matplotlib           | DEBUG    | CONFIGDIR=C:\Users\ASUS\.matplotlib
+2026-09-27 06:21:11 | matplotlib           | DEBUG    | interactive is False
+2026-09-27 06:21:11 | matplotlib           | DEBUG    | platform is win32
+2026-09-27 06:21:11 | matplotlib           | DEBUG    | CACHEDIR=C:\Users\ASUS\.matplotlib
+2026-09-27 06:21:11 | matplotlib.font_manager | DEBUG    | Using fontManager instance from C:\Users\ASUS\.matplotlib\fontlist-v390.json
+2026-09-27 06:21:28 | data_fetcher         | DEBUG    | The Odds API key unverified — using mock odds with is_live_data=False.
+2026-09-27 06:21:29 | data_fetcher         | DEBUG    | FanGraphs pitching fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-09-27 06:21:29 | data_fetcher         | DEBUG    | FanGraphs team batting 7d fetch failed (Error accessing 'https://www.fangraphs.com/leaders-legacy.aspx'. Received status code 403) — using mock.
+2026-09-27 06:24:01 | analytics            | INFO     | Slump penalty applied for Pittsburgh Pirates (wRC+ 7d < 85).
+2026-09-27 06:24:01 | analytics            | INFO     | Slump penalty applied for Miami Marlins (wRC+ 7d < 85).

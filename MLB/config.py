@@ -42,11 +42,11 @@ MAX_WIN_CONFIDENCE_CAP        = 0.680  # 68.0% max confidence cap (MLB high vari
 MIN_WIN_CONFIDENCE_CAP        = 0.500  # 50.0% min confidence cap
 BALANCED_ODDS_CONFIDENCE_CAP  = 0.580  # 58.0% cap for pick'em (-115 to +115)
 
-MIN_ML_WIN_CONFIDENCE         = 0.580  # Minimum to qualify in screener table
-LOCK_OF_DAY_MIN_CONFIDENCE     = 0.620  # Minimum for Lock of the Day
+MIN_ML_WIN_CONFIDENCE         = 0.600  # Minimum to qualify in screener table (STRICTER)
+LOCK_OF_DAY_MIN_CONFIDENCE     = 0.650  # Minimum for Lock of the Day (STRICTER)
 
-STRONG_PICK_MIN_ERA_ADV       = 1.25   # Starter ERA advantage >= +1.25
-STRONG_PICK_MAX_WHIP          = 1.18   # Starter WHIP <= 1.18
+STRONG_PICK_MIN_ERA_ADV       = 1.50   # Starter ERA advantage >= +1.50 (STRICTER)
+STRONG_PICK_MAX_WHIP          = 1.15   # Starter WHIP <= 1.15 (STRICTER)
 STRONG_PICK_MAX_L3_ERA        = 3.20   # Last 3 Starts ERA <= 3.20
 STRONG_PICK_MAX_ML_AMERICAN   = -140   # Moneyline <= -140 (Decimal <= 1.71)
 
@@ -67,7 +67,7 @@ BB9_PENALTY_AMOUNT            = -0.08  # Subtract 0.08 from Pillar 1 score for h
 PILLAR_WEIGHT_OFFENSE         = 0.30
 WRC_PLUS_7D_SLUMP_THRESHOLD   = 85     # wRC+ < 85 -> Team is in offensive slump
 WRC_PLUS_7D_ELITE_THRESHOLD   = 115    # wRC+ >= 115 -> Historically hot offense
-WRC_PLUS_7D_FATAL_PENALTY     = -0.15  # Fatal penalty subtracted from final Win_Conf
+WRC_PLUS_7D_FATAL_PENALTY     = -0.25  # Fatal penalty subtracted from final Win_Conf (AGGRESSIVE FADE)
 WRC_PLUS_LEAGUE_AVG           = 100    # League average wRC+ is always 100
 
 # --- Pillar 3: Bullpen Fatigue & Strength (20%) ---
