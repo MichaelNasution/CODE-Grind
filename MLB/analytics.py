@@ -610,18 +610,8 @@ def run_moneyline_screener(
         away_name = game.get("away_team", "Away")
         home_sp   = game.get("home_sp") or {}
         away_sp   = game.get("away_sp") or {}
-        ml        = ml_odds.get(game_id, {})
+        ml        = game.get("moneyline") or ml_odds.get(game_id, {})
         ls_game   = line_shopping_data.get(game_id, {})
-
-        if home_sp.get("pitcher_id") and home_sp["pitcher_id"] in pitcher_stats:
-            home_sp = pitcher_stats[home_sp["pitcher_id"]]
-        if away_sp.get("pitcher_id") and away_sp["pitcher_id"] in pitcher_stats:
-            away_sp = pitcher_stats[away_sp["pitcher_id"]]
-
-        if not home_sp and game.get("home_starter_id"):
-            home_sp = pitcher_stats.get(game["home_starter_id"], {})
-        if not away_sp and game.get("away_starter_id"):
-            away_sp = pitcher_stats.get(game["away_starter_id"], {})
 
         home_form = team_form.get(home_id, {})
         away_form = team_form.get(away_id, {})
