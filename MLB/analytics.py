@@ -312,7 +312,9 @@ def _score_pitcher_pillar1(
     """
     # Choose best metric available: SIERA -> xFIP -> ERA
     our_skill  = our_sp.get("siera", our_sp.get("xfip", our_sp.get("era", 4.50)))
+    if not our_skill or our_skill <= 0.50: our_skill = 4.50
     opp_skill  = opp_sp.get("siera", opp_sp.get("xfip", opp_sp.get("era", 4.50)))
+    if not opp_skill or opp_skill <= 0.50: opp_skill = 4.50
     our_kpct   = our_sp.get("k_pct",   0.220)
     our_bb9    = our_sp.get("bb_per9", 3.0)
     our_last3  = our_sp.get("last3_era", our_sp.get("era", 4.50))
@@ -479,9 +481,14 @@ def _evaluate_team_moneyline(
         p4_score * config.PILLAR_WEIGHT_SITUATIONAL
     )
 
-    # Normalize to 0.50–0.68 range
-    model_prob = 0.50 + (raw_model_val - 0.50) * 0.36
+    # Normalize with a wider spread to prevent over-regression (allows 40% - 75% range)
+    model_prob = 0.50 + (raw_model_val - 0.50) * 0.50
     model_prob = min(config.MAX_WIN_CONFIDENCE_CAP, max(config.MIN_WIN_CONFIDENCE_CAP, model_prob))
+
+    # TBD / Null Starter Guard
+    if "TBD" in our_sp.get("full_name", "TBD").upper() or "TBD" in opp_sp.get("full_name", "TBD").upper():
+        model_prob = 0.50
+        is_slumping = True  # Force qualification failure
 
     # FATAL PENALTY: Apply if team is in offensive slump (wRC+ 7d < 85)
     if is_slumping:
@@ -683,17 +690,23 @@ def generate_bet_slip_suite(candidates: list[MoneylineCandidate]) -> BetSlipSuit
     """
     Generate the full 7-type Bet Slip Suite from ranked MoneylineCandidate list.
     """
-    n = len(candidates)
+    # STRICT GATEKEEPER: Minimum Confidence >= Config AND Must be +EV (Positive Expected Value)
+    qualified = [
+        c for c in candidates 
+        if c.win_confidence >= config.MIN_ML_WIN_CONFIDENCE 
+        and (c.win_confidence > c.implied_prob)
+    ]
+    n = len(qualified)
 
-    anchor_2leg   = _build_slip(candidates[:2], "2-Leg Anchor") if n >= 2 else None
-    parlay_3leg   = _build_slip(candidates[:3], "3-Leg Parlay") if n >= 3 else None
-    parlay_4leg   = _build_slip(candidates[:4], "4-Leg Parlay") if n >= 4 else None
-    parlay_5leg   = _build_slip(candidates[:5], "5-Leg Parlay") if n >= 5 else None
-    parlay_6leg   = _build_slip(candidates[:6], "6-Leg Parlay") if n >= 6 else None
-    ultimate_8leg = _build_slip(candidates[:8], "8-Leg Ultimate") if n >= 8 else None
+    anchor_2leg   = _build_slip(qualified[:2], "2-Leg Anchor") if n >= 2 else None
+    parlay_3leg   = _build_slip(qualified[:3], "3-Leg Parlay") if n >= 3 else None
+    parlay_4leg   = _build_slip(qualified[:4], "4-Leg Parlay") if n >= 4 else None
+    parlay_5leg   = _build_slip(qualified[:5], "5-Leg Parlay") if n >= 5 else None
+    parlay_6leg   = _build_slip(qualified[:6], "6-Leg Parlay") if n >= 6 else None
+    ultimate_8leg = _build_slip(qualified[:8], "8-Leg Ultimate") if n >= 8 else None
 
     combo_3of5: list[MoneylineSlip] = []
-    top5 = candidates[:5]
+    top5 = qualified[:5]
     if len(top5) >= 3:
         for combo in itertools.combinations(top5, 3):
             combo_3of5.append(_build_slip(list(combo), "3-of-5 Combo"))

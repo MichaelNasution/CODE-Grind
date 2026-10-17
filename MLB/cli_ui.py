@@ -434,6 +434,20 @@ def _display_bet_slip_suite(
     """Render Table 2 (Bet Slip Suite) and Table 3 (3-of-5 Combo Detail)."""
     print_rule("🎯  REKOMENDASI BET SLIP SUITE (7 TIPE)")
 
+    if suite.anchor_2leg is None and suite.parlay_3leg is None:
+        console.print(Panel(
+            "[bold red]🚨 NO QUALIFIED PICKS TODAY - SAVE YOUR BANKROLL[/]\n\n"
+            "[white]Sistem tidak menemukan satu pun pertandingan dengan probabilitas kemenangan (Win%) $\\ge$ 58.0% hari ini.\n"
+            "Sesuai dengan protokol Strict Gatekeeper dan Manajemen Risiko, seluruh pembentukan Parlay/Bet Slip [bold]DIBATALKAN[/].\n"
+            "Jangan paksa bertaruh pada pertandingan 50/50 (Coin-Flip).[/]",
+            border_style="red",
+            padding=(1, 2),
+            width=108,
+            expand=True,
+        ))
+        console.print()
+        return
+
     slip_table = Table(
         title="[bold gold1]Complete Bet Slip Suite — Berdasarkan Urutan Win Confidence[/]",
         box=box.ROUNDED, border_style="blue", header_style="bold cyan",
